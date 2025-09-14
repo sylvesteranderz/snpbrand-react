@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Chilanka', cursive;
+  }
+  
+  body {
+    @apply bg-white text-dark-800 leading-relaxed;
+    letter-spacing: 0.01625rem;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-chilanka text-dark-800 font-normal capitalize;
+  }
+
+  a {
+    @apply no-underline;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-12 py-5 bg-accent-500 text-white border-0 rounded-sm text-lg font-medium uppercase tracking-wide transition-all duration-300 hover:bg-accent-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2;
+  }
+
+  .btn-outline-primary {
+    @apply px-12 py-5 text-accent-500 border-2 border-accent-500 bg-transparent rounded-sm text-lg font-medium uppercase tracking-wide transition-all duration-300 hover:bg-accent-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2;
+  }
+
+  .btn-outline-dark {
+    @apply px-12 py-5 text-dark-800 border-2 border-dark-800 bg-transparent rounded-sm text-lg font-medium uppercase tracking-wide transition-all duration-300 hover:bg-dark-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-dark-800 focus:ring-offset-2;
+  }
+
+  .btn-dark {
+    @apply px-12 py-5 bg-dark-800 text-white border-0 rounded-sm text-lg font-medium uppercase tracking-wide transition-all duration-300 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-dark-800 focus:ring-offset-2;
+  }
+
+  .search-bar {
+    @apply border border-gray-300 rounded-lg px-3 py-2 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500;
+  }
+
+  .search-bar input {
+    @apply border-0 bg-transparent outline-none placeholder-gray-500;
+  }
+
+  .card {
+    @apply bg-transparent border-0 rounded-none;
+  }
+
+  .btn-cart {
+    @apply border border-dark-200 rounded-md px-4 py-3 text-dark-800 font-medium uppercase tracking-wide transition-all duration-300 hover:bg-dark-800 hover:text-white;
+  }
+
+  .btn-wishlist {
+    @apply border border-dark-200 rounded-md px-4 py-3 text-dark-800 transition-all duration-300 hover:bg-accent-500 hover:text-white hover:border-accent-500;
+  }
+
+  .filter-button {
+    @apply border-0 border-b-2 border-gray-300 bg-transparent text-dark-800 uppercase text-lg tracking-wide transition-all duration-300 hover:border-accent-500;
+  }
+
+  .filter-button.active {
+    @apply border-b-2 border-accent-500;
+  }
+
+  .service-icon {
+    @apply text-3xl text-primary-500 border border-gray-300 rounded-full p-5;
+  }
+
+  .social-icon {
+    @apply text-gray-400 text-lg p-3 rounded-full border border-gray-300 shadow-soft transition-all duration-500 hover:text-white hover:border-accent-500 hover:bg-accent-500;
+  }
+
+  .blog-paragraph {
+    @apply text-gray-500 text-base font-montserrat font-normal leading-normal;
+  }
+
+  .blog-read {
+    @apply text-gray-500 text-base tracking-wide uppercase border-b-2 border-gray-300 transition-all duration-300 hover:border-gray-500;
+  }
+
+  .secondary-font {
+    @apply font-montserrat font-light;
+  }
+
+  .preloader {
+    @apply w-8 h-8 rounded-full bg-primary-500 animate-pulse;
+  }
+
+  .preloader::before,
+  .preloader::after {
+    @apply content-[''] absolute top-0 w-8 h-8 rounded-full bg-primary-500 animate-pulse;
+  }
+
+  .preloader::before {
+    @apply -left-14;
+  }
+
+  .preloader::after {
+    @apply left-14;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Swiper customizations */
+.swiper-pagination-bullet {
+  @apply border border-dark-800 bg-transparent opacity-100 w-4 h-4 relative inline-block p-10;
+}
+
+.swiper-pagination-bullet-active {
+  @apply bg-dark-800;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .btn-primary,
+  .btn-outline-primary,
+  .btn-outline-dark,
+  .btn-dark {
+    @apply px-6 py-3 text-base;
+  }
+}
