@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Product } from '../types'
 import { useCart } from '../hooks/useCart'
 import { useWishlist } from '../hooks/useWishlist'
+import { formatPrice } from '../utils/currency'
 
 interface ProductCardProps {
   product: Product
@@ -117,11 +118,11 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
         {/* Price */}
         <div className="flex items-center space-x-2">
           <span className="text-lg font-semibold text-primary-500">
-            ${product.price.toFixed(2)}
+            {formatPrice(product.price)}
           </span>
           {product.originalPrice && product.originalPrice > product.price && (
             <span className="text-sm text-gray-500 line-through">
-              ${product.originalPrice.toFixed(2)}
+              {formatPrice(product.originalPrice)}
             </span>
           )}
         </div>

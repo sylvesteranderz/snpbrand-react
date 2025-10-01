@@ -9,6 +9,7 @@ import Cart from './pages/Cart'
 import Wishlist from './pages/Wishlist'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
+import AnimatedSlipperDemo from './pages/AnimatedSlipperDemo'
 import { CartProvider } from './hooks/useCart'
 import { WishlistProvider } from './hooks/useWishlist'
 import Preloader from './components/Preloader'
@@ -44,6 +45,7 @@ function App() {
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
               </Routes>
             </main>
             <Footer />

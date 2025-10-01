@@ -7,6 +7,7 @@ import { Thumbs, Navigation } from 'swiper/modules'
 import { products } from '../utils/data'
 import { useCart } from '../hooks/useCart'
 import { useWishlist } from '../hooks/useWishlist'
+import { formatPrice } from '../utils/currency'
 import 'swiper/css'
 import 'swiper/css/thumbs'
 import 'swiper/css/navigation'
@@ -177,11 +178,11 @@ const ProductDetail = () => {
             {/* Price */}
             <div className="flex items-center space-x-4">
               <span className="text-3xl font-bold text-primary-500">
-                ${product.price.toFixed(2)}
+                {formatPrice(product.price)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
                 <span className="text-xl text-gray-500 line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  {formatPrice(product.originalPrice)}
                 </span>
               )}
             </div>

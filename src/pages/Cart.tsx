@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
+import { formatPrice } from '../utils/currency'
 
 const Cart = () => {
   const { state, updateQuantity, removeFromCart, clearCart } = useCart()
@@ -101,7 +102,7 @@ const Cart = () => {
                       <p className="text-sm text-gray-500">Color: {item.selectedColor}</p>
                     )}
                     <p className="text-lg font-semibold text-primary-500">
-                      ${item.price.toFixed(2)}
+                      {formatPrice(item.price)}
                     </p>
                   </div>
 
@@ -155,7 +156,7 @@ const Cart = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">${state.total.toFixed(2)}</span>
+                  <span className="font-medium">{formatPrice(state.total)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
@@ -163,12 +164,12 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax</span>
-                  <span className="font-medium">$0.00</span>
+                  <span className="font-medium">{formatPrice(0)}</span>
                 </div>
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>${state.total.toFixed(2)}</span>
+                  <span>{formatPrice(state.total)}</span>
                 </div>
               </div>
 

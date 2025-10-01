@@ -1,6 +1,7 @@
 import { X, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react'
 import { useCart } from '../hooks/useCart'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatPrice } from '../utils/currency'
 
 interface CartSidebarProps {
   isOpen: boolean
@@ -69,7 +70,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                         {item.selectedColor && (
                           <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
                         )}
-                        <p className="text-sm font-medium text-primary-500">${item.price.toFixed(2)}</p>
+                        <p className="text-sm font-medium text-primary-500">{formatPrice(item.price)}</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
@@ -103,7 +104,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
               <div className="border-t p-6 space-y-4">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total:</span>
-                  <span>${state.total.toFixed(2)}</span>
+                  <span>{formatPrice(state.total)}</span>
                 </div>
                 <button className="w-full btn-primary">
                   Continue to Checkout
