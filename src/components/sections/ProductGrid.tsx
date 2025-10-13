@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import ProductCard from '../ProductCard'
-import { products, categories } from '../../utils/data'
+import { useProducts } from '../../hooks/useProductsSupabase'
+import { categories } from '../../utils/data'
 
 interface ProductGridProps {
   title: string
@@ -19,6 +20,7 @@ const ProductGrid = ({
   showViewAll = false, 
   className = '' 
 }: ProductGridProps) => {
+  const { products } = useProducts()
   const [activeFilter, setActiveFilter] = useState('all')
 
   // Filter products by category and active filter
@@ -32,7 +34,7 @@ const ProductGrid = ({
 
   return (
     <section className={`py-12 ${className}`}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 w-full">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -85,7 +87,7 @@ const ProductGrid = ({
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="products-grid w-full"
         >
           {filteredProducts.map((product, index) => (
             <motion.div
@@ -94,6 +96,7 @@ const ProductGrid = ({
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
               viewport={{ once: true }}
+              className="col-span-1 w-full"
             >
               <ProductCard product={product} />
             </motion.div>

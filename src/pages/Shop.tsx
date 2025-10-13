@@ -19,7 +19,7 @@ const Shop = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50"
+      className="bg-gray-50"
     >
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}

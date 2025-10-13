@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useCart } from '../hooks/useCart'
+import { useCart } from '../hooks/useCartSupabase'
 import { formatPrice } from '../utils/currency'
 
 const Cart = () => {
-  const { state, updateQuantity, removeFromCart, clearCart } = useCart()
+  const { items, itemCount, totalPrice, updateQuantity, removeFromCart, clearCart } = useCart()
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -15,13 +15,13 @@ const Cart = () => {
     }
   }
 
-  if (state.items.length === 0) {
+  if (items.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="min-h-screen py-16"
+        className="py-16"
       >
         <div className="container mx-auto px-4">
           <div className="text-center">
@@ -42,7 +42,7 @@ const Cart = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen py-8"
+      className="py-8"
     >
       <div className="container mx-auto px-4">
         {/* Header */}
@@ -62,7 +62,7 @@ const Cart = () => {
             </Link>
           </div>
           <h1 className="text-3xl font-chilanka font-normal text-gray-900">
-            Shopping Cart ({state.itemCount} items)
+            Shopping Cart ({itemCount} items)
           </h1>
         </motion.div>
 
@@ -74,7 +74,7 @@ const Cart = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="lg:col-span-2 space-y-4"
           >
-            {state.items.map((item, index) => (
+            {items.map((item, index) => (
               <motion.div
                 key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
                 initial={{ opacity: 0, x: -20 }}
@@ -85,15 +85,15 @@ const Cart = () => {
                 <div className="flex items-center space-x-4">
                   {/* Product Image */}
                   <img
-                    src={item.image}
-                    alt={item.name}
+                    src={item.product?.image || item.image || '/images/placeholder.jpg'}
+                    alt={item.product?.name || item.name || 'Product'}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {item.name}
+                      {item.product?.name || item.name || 'Product'}
                     </h3>
                     {item.selectedSize && (
                       <p className="text-sm text-gray-500">Size: {item.selectedSize}</p>
@@ -102,7 +102,7 @@ const Cart = () => {
                       <p className="text-sm text-gray-500">Color: {item.selectedColor}</p>
                     )}
                     <p className="text-lg font-semibold text-primary-500">
-                      {formatPrice(item.price)}
+                      {formatPrice(item.product?.price || item.price)}
                     </p>
                   </div>
 
@@ -156,7 +156,7 @@ const Cart = () => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-medium">{formatPrice(state.total)}</span>
+                  <span className="font-medium">{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
@@ -169,14 +169,14 @@ const Cart = () => {
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>{formatPrice(state.total)}</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <button className="w-full btn-primary">
+                <Link to="/checkout" className="w-full btn-primary block text-center">
                   Proceed to Checkout
-                </button>
+                </Link>
                 <Link to="/shop" className="w-full btn-outline-primary block text-center">
                   Continue Shopping
                 </Link>

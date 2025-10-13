@@ -1,21 +1,21 @@
 import { motion } from 'framer-motion'
 import { Heart, ShoppingCart, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useWishlist } from '../hooks/useWishlist'
-import { useCart } from '../hooks/useCart'
+import { useWishlist } from '../hooks/useWishlistSupabase'
+import { useCart } from '../hooks/useCartSupabase'
 import ProductCard from '../components/ProductCard'
 
 const Wishlist = () => {
-  const { state, removeFromWishlist } = useWishlist()
+  const { items, removeFromWishlist } = useWishlist()
   const { addToCart } = useCart()
 
-  if (state.items.length === 0) {
+  if (items.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="min-h-screen py-16"
+        className="py-16"
       >
         <div className="container mx-auto px-4">
           <div className="text-center">
@@ -36,7 +36,7 @@ const Wishlist = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen py-8"
+      className="py-8"
     >
       <div className="container mx-auto px-4">
         {/* Header */}
@@ -56,7 +56,7 @@ const Wishlist = () => {
             </Link>
           </div>
           <h1 className="text-3xl font-chilanka font-normal text-gray-900">
-            My Wishlist ({state.items.length} items)
+            My Wishlist ({items.length} items)
           </h1>
         </motion.div>
 
@@ -67,14 +67,14 @@ const Wishlist = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
-          {state.items.map((product, index) => (
+          {items.map((item, index) => (
             <motion.div
-              key={product.id}
+              key={item.product.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
             >
-              <ProductCard product={product} />
+              <ProductCard product={item.product} />
             </motion.div>
           ))}
         </motion.div>
@@ -89,7 +89,7 @@ const Wishlist = () => {
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button
               onClick={() => {
-                state.items.forEach(product => addToCart(product))
+                items.forEach(item => addToCart(item.product))
               }}
               className="btn-primary inline-flex items-center space-x-2"
             >

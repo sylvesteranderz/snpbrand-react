@@ -22,6 +22,7 @@ const ProductCarousel = ({
   className = '',
   limit
 }: ProductCarouselProps) => {
+  
   // Filter products by category if specified
   const filteredProducts = category 
     ? products.filter(product => product.category === category)
@@ -58,7 +59,7 @@ const ProductCarousel = ({
           )}
         </motion.div>
 
-        {/* Products Carousel */}
+        {/* ✅ Products Carousel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -67,7 +68,7 @@ const ProductCarousel = ({
         >
           <Swiper
             modules={[Navigation, Autoplay]}
-            spaceBetween={30}
+            spaceBetween={20}
             slidesPerView={1}
             navigation
             autoplay={{
@@ -77,12 +78,15 @@ const ProductCarousel = ({
             breakpoints={{
               640: {
                 slidesPerView: 2,
+                spaceBetween: 20,
               },
               768: {
                 slidesPerView: 3,
+                spaceBetween: 24,
               },
               1024: {
                 slidesPerView: 4,
+                spaceBetween: 30,
               },
             }}
             className="products-carousel"

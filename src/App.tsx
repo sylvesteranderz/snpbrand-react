@@ -1,58 +1,71 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Shop from './pages/Shop'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
+import OrderConfirmation from './pages/OrderConfirmation'
+import OrderTracking from './pages/OrderTracking'
+import Account from './pages/Account'
+import AdminDashboard from './pages/AdminDashboard'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import Orders from './pages/Orders'
 import Wishlist from './pages/Wishlist'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import AnimatedSlipperDemo from './pages/AnimatedSlipperDemo'
-import { CartProvider } from './hooks/useCart'
-import { WishlistProvider } from './hooks/useWishlist'
-import Preloader from './components/Preloader'
+import ProtectedRoute from './components/ProtectedRoute'
+import { CartProvider } from './hooks/useCartSupabase'
+import { WishlistProvider } from './hooks/useWishlistSupabase'
+import { AuthProvider } from './hooks/useAuthSupabase'
+import { ProductProvider } from './hooks/useProductsSupabase'
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 2000)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (isLoading) {
-    return <Preloader />
-  }
 
   return (
-    <CartProvider>
-      <WishlistProvider>
-        <Router>
-          <div className="min-h-screen bg-white">
-            <Header />
-            <main>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </Router>
-      </WishlistProvider>
-    </CartProvider>
+    <AuthProvider>
+      <ProductProvider>
+        <CartProvider>
+          <WishlistProvider>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <div className="bg-white overflow-x-hidden">
+              <Header />
+              <main className="overflow-x-hidden">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/shop" element={<Shop />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-tracking/:orderNumber" element={<OrderTracking />} />
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route 
+                    path="/admin" 
+                    element={
+                      <ProtectedRoute requireAdmin={true}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+          </WishlistProvider>
+        </CartProvider>
+      </ProductProvider>
+    </AuthProvider>
   )
 }
 

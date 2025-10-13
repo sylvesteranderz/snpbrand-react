@@ -11,7 +11,10 @@ export const CURRENCY_CODE = 'GHS'
  * @param showSymbol - Whether to show the currency symbol (default: true)
  * @returns Formatted currency string
  */
-export const formatCurrency = (amount: number, showSymbol: boolean = true): string => {
+export const formatCurrency = (amount: number | undefined | null, showSymbol: boolean = true): string => {
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    return showSymbol ? `${CURRENCY_SYMBOL}0.00` : '0.00'
+  }
   const formatted = amount.toFixed(2)
   return showSymbol ? `${CURRENCY_SYMBOL}${formatted}` : formatted
 }

@@ -1,5 +1,6 @@
 import { X, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react'
-import { useCart } from '../hooks/useCart'
+import { Link } from 'react-router-dom'
+import { useCart } from '../hooks/useCartSupabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatPrice } from '../utils/currency'
 
@@ -9,7 +10,7 @@ interface CartSidebarProps {
 }
 
 const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
-  const { state, updateQuantity, removeFromCart } = useCart()
+  const { items, totalPrice, updateQuantity, removeFromCart } = useCart()
 
   return (
     <AnimatePresence>
@@ -45,7 +46,7 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-6">
-              {state.items.length === 0 ? (
+              {items.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ShoppingCart className="w-8 h-8 text-gray-400" />
@@ -55,22 +56,22 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {state.items.map((item) => (
+                  {items.map((item) => (
                     <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex items-center space-x-4 p-4 border rounded-lg">
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={item.product?.image || item.image || '/images/placeholder.jpg'}
+                        alt={item.product?.name || item.name || 'Product'}
                         className="w-16 h-16 object-cover rounded-md"
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">{item.name}</h3>
+                        <h3 className="text-sm font-medium text-gray-900 truncate">{item.product?.name || item.name || 'Product'}</h3>
                         {item.selectedSize && (
                           <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>
                         )}
                         {item.selectedColor && (
                           <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
                         )}
-                        <p className="text-sm font-medium text-primary-500">{formatPrice(item.price)}</p>
+                        <p className="text-sm font-medium text-primary-500">{formatPrice(item.product?.price || item.price)}</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
@@ -100,18 +101,28 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
             </div>
 
             {/* Footer */}
-            {state.items.length > 0 && (
+            {items.length > 0 && (
               <div className="border-t p-6 space-y-4">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total:</span>
-                  <span>{formatPrice(state.total)}</span>
+                  <span>{formatPrice(totalPrice)}</span>
                 </div>
-                <button className="w-full btn-primary">
-                  Continue to Checkout
-                </button>
-                <button className="w-full btn-outline-primary">
-                  View Cart
-                </button>
+                <div className="space-y-3">
+                  <Link 
+                    to="/checkout" 
+                    onClick={onClose}
+                    className="w-full btn-primary block text-center"
+                  >
+                    Continue to Checkout
+                  </Link>
+                  <Link 
+                    to="/cart" 
+                    onClick={onClose}
+                    className="w-full btn-outline-primary block text-center"
+                  >
+                    View Cart
+                  </Link>
+                </div>
               </div>
             )}
           </motion.div>

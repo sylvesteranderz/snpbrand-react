@@ -1,90 +1,60 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, Star, Shield, Truck, Heart, ArrowRight, Play } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Shield, Truck, ArrowRight, Star } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Pagination, Autoplay, EffectFade, Parallax } from 'swiper/modules'
-import TypewriterText from '../TypewriterText'
+import { Autoplay, EffectFade, Parallax } from 'swiper/modules'
 import 'swiper/css'
-import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
 import 'swiper/css/parallax'
 
 const LuxuryHeroSection = () => {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-
   const slides = [
     {
       id: 1,
-      title: 'Step With Style',
-      titleHighlight: 'Today!',
-      subtitle: 'Premium Slippers Collection',
-      description: 'Discover our exclusive range of comfortable and stylish slippers designed for modern living.',
-      image: '/images/SnPimage.jpg',
-      buttonText: 'Explore Collection',
-      features: ['Free Shipping', 'Premium Quality', '30-Day Returns'],
-      bgGradient: 'from-purple-900 via-blue-900 to-indigo-900'
+      title: 'SnP BRAND',
+      titleHighlight: 'SLIDES',
+      subtitle: "WALK DON'T HIDE",
+      description: 'Style that rises to make every eye fall',
+      image: '/images/SnPimage.png',
+      buttonText: 'SHOP NOW',
+      features: [
+        { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
+        // { id: 2, icon: <Shield className="w-6 h-6" />, text: 'Comfortable Fit' },
+        // { id: 3, icon: <Truck className="w-6 h-6" />, text: 'Fast Delivery' }
+      ]
     },
     {
       id: 2,
-      title: 'Fashion Forward',
-      titleHighlight: 'Apparel',
-      subtitle: 'Trendy Clothing Line',
-      description: 'From casual wear to formal attire, find the perfect outfit for every occasion.',
-      image: '/images/image2.png',
-      buttonText: 'Shop Now',
-      features: ['Latest Trends', 'Comfortable Fit', 'Eco-Friendly'],
-      bgGradient: 'from-rose-900 via-pink-900 to-red-900'
+      title: 'SnP BRAND',
+      titleHighlight: 'SLIDES',
+      subtitle: "WALK DON'T HIDE",
+      description: 'Style that rises to make every eye fall',
+      image: '/images/Background2.png',
+      buttonText: 'SHOP NOW',
+      features: [
+        { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
+        // { id: 2, icon: <Shield className="w-6 h-6" />, text: 'Comfortable Fit' },
+        // { id: 3, icon: <Truck className="w-6 h-6" />, text: 'Fast Delivery' }
+      ]
     },
     {
       id: 3,
-      title: 'Best Destination for',
-      titleHighlight: 'Your Style',
-      subtitle: 'Complete Wardrobe Solution',
-      description: 'Everything you need for a complete wardrobe makeover in one place.',
-      image: '/images/image3.png',
-      buttonText: 'Start Shopping',
-      features: ['Curated Selection', 'Expert Styling', 'Personal Service'],
-      bgGradient: 'from-emerald-900 via-teal-900 to-cyan-900'
+      fullscreen: true,
+      title: 'SnP BRAND',
+      titleHighlight: 'SLIDES',
+      subtitle: "WALK DON'T HIDE",
+      description: 'Style that rises to make every eye fall',
+      image: '/images/FeetBackground.jpg',
+      buttonText: 'SHOP NOW',
+      features: [
+        { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
+        // { id: 2, icon: <Shield className="w-6 h-6" />, text: 'Comfortable Fit' },
+        // { id: 3, icon: <Truck className="w-6 h-6" />, text: 'Fast Delivery' }
+      ]
     }
   ]
-
-  const typewriterTexts = [
-    "Step With Style Today!",
-    "Fashion Forward Apparel",
-    "Best Destination for Your Style",
-    "Premium Quality Products",
-    "Trendy & Comfortable"
-  ]
-
-  useEffect(() => {
-    setIsLoaded(true)
-  }, [])
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 100,
-        y: (e.clientY / window.innerHeight) * 100
-      })
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
 
   return (
-    <section className="relative min-h-screen overflow-hidden">
-      {/* Dynamic Background */}
-      <div 
-        className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black z-0"
-        style={{
-          background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(102, 126, 234, 0.1) 0%, transparent 50%)`
-        }}
-      />
-      
-
+    <section className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-white pt-20">
       {/* Main Content */}
       <div className="relative z-10">
         <Swiper
@@ -93,145 +63,127 @@ const LuxuryHeroSection = () => {
           slidesPerView={1}
           effect="fade"
           parallax={true}
-          fadeEffect={{
-            crossFade: true
-          }}
+          fadeEffect={{ crossFade: true }}
           autoplay={{
             delay: 6000,
             disableOnInteraction: false,
           }}
-          onSlideChange={(swiper) => setCurrentSlide(swiper.activeIndex)}
           className="main-swiper h-screen relative"
         >
-          {slides.map((slide, index) => (
+          {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
-              <div className="flex flex-col lg:flex-row items-center min-h-screen py-8 lg:py-20 relative z-10">
-                {/* Image - Show first on mobile */}
+              {/* If this slide is fullscreen, render its image as a full-viewport background */}
+                {slide.fullscreen && (
+                  <>
+                    <div
+                      className="absolute inset-0 z-0 bg-center bg-cover hero-fullscreen-bg"
+                      style={{ backgroundImage: `url(${slide.image})` }}
+                    />
+                    {/* subtle dark gradient overlay to improve contrast */}
+                    <div className="absolute inset-0 z-10 pointer-events-none hero-bg-overlay" />
+                  </>
+                )}
+
+              <div className="flex flex-col lg:flex-row items-center min-h-[calc(100vh-5rem)] pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-10">
+                
+                {/* Image */}
                 <motion.div
                   initial={{ opacity: 0, x: 100, scale: 0.8 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   transition={{ duration: 1.2, delay: 0.3 }}
-                  className="w-full lg:w-1/2 px-4 lg:px-12 z-20 relative order-1 lg:order-2"
+                  className="w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2"
                 >
                   <div className="relative">
-                    {/* Main Image Container */}
-                    <div className="relative z-10">
-                      {/* Main Image */}
-                      <div className="circle-image-wrapper mx-auto relative z-10">
+                    <div className="circle-image-wrapper mx-auto relative z-10">
+                      {/* If slide is fullscreen we already use it as background, so hide the inline image */}
+                      {slide.fullscreen ? null : (
                         <img
                           src={slide.image}
-                          alt={slide.title}
-                          className="circle-image relative z-10"
+                          alt={`${slide.title} product`}
+                          className="circle-image relative z-10 object-contain max-h-[500px] mx-auto"
                         />
-                      </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Content - Show second on mobile */}
+                {/* Content */}
                 <motion.div
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1.2, delay: 0.5 }}
-                  className="w-full lg:w-1/2 px-4 lg:px-12 z-30 relative order-2 lg:order-1"
+                  className="w-full lg:w-2/5 px-4 lg:px-8 z-30 relative order-2 lg:order-1"
                 >
                   <div className="max-w-2xl relative z-30 hero-content">
-                    {/* Subtitle with luxury styling */}
+                    
+                    {/* Title */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 0.2 }}
-                      className="text-primary-400 text-lg font-medium uppercase tracking-wider mb-4 flex items-center hero-subtitle"
+                      className={`${slide.fullscreen ? 'text-white' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
                     >
-                      <div className="w-8 h-px bg-primary-400 mr-4"></div>
-                      {slide.subtitle}
+                      {slide.title}{' '}
+                      <span className={`${slide.fullscreen ? 'text-yellow-400' : 'text-yellow-500'}`}>{slide.titleHighlight}</span>
                     </motion.div>
                     
-                    {/* Main Title with Typewriter Effect */}
-                    <div className="mb-6 hero-title">
-                      {index === 0 ? (
-                        <TypewriterText
-                          texts={typewriterTexts}
-                          speed={80}
-                          deleteSpeed={40}
-                          pauseTime={2500}
-                          className="text-6xl lg:text-8xl xl:text-9xl font-chilanka font-normal leading-tight text-white hero-text"
-                          highlightWords={['Style', 'Today', 'Fashion', 'Forward', 'Apparel', 'Best', 'Destination', 'Premium', 'Quality', 'Trendy', 'Comfortable']}
-                          highlightColor="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400"
-                        />
-                      ) : (
-                        <motion.h1
-                          initial={{ opacity: 0, y: 30 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.8, delay: 0.5 }}
-                          className="text-6xl lg:text-8xl xl:text-9xl font-chilanka font-normal leading-tight text-white hero-text"
-                        >
-                          {slide.title}{' '}
-                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400">
-                            {slide.titleHighlight}
-                          </span>
-                        </motion.h1>
-                      )}
-                    </div>
+                    {/* Tagline */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.5 }}
+                      className="mb-6 hero-title"
+                    >
+                      <h1 className={`text-5xl lg:text-7xl xl:text-8xl font-black leading-tight ${slide.fullscreen ? 'text-white' : 'text-black'} hero-text`}>
+                        {slide.subtitle}
+                      </h1>
+                    </motion.div>
                     
                     {/* Description */}
-                    <motion.p
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.7 }}
-                      className="text-xl text-gray-300 mb-8 leading-relaxed max-w-lg hero-description"
-                    >
-                      {slide.description}
-                    </motion.p>
-
-                    {/* Features */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.9 }}
-                      className="flex flex-wrap gap-4 mb-8 hero-features"
+                      transition={{ duration: 0.8, delay: 0.7 }}
+                      className="mb-8 hero-description"
                     >
-                      {slide.features.map((feature, featureIndex) => (
-                        <motion.div
-                          key={feature}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5, delay: 1 + featureIndex * 0.1 }}
-                          className="flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20"
-                        >
-                          <Star className="w-4 h-4 text-primary-400" />
-                          <span className="text-sm font-medium text-white">{feature}</span>
-                        </motion.div>
-                      ))}
+                      <div className="w-16 h-px bg-gray-300 mb-4"></div>
+                      <p className={`text-lg leading-relaxed max-w-lg ${slide.fullscreen ? 'text-gray-100' : 'text-gray-700'}`}>
+                        {slide.description}
+                      </p>
                     </motion.div>
-                    
-                    {/* CTA Buttons */}
+
+                    {/* CTA Button */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8, delay: 1.2 }}
-                      className="flex flex-col sm:flex-row gap-4 hero-buttons"
+                      className="hero-buttons mb-8"
                     >
                       <motion.button
-                        whileHover={{ 
-                          scale: 1.05, 
-                          boxShadow: "0 20px 40px rgba(102, 126, 234, 0.3)" 
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-gradient-to-r from-primary-500 to-accent-500 text-white px-8 py-4 rounded-full font-medium text-lg inline-flex items-center justify-center space-x-2 shadow-2xl"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="gradient-cta text-white px-8 py-4 font-bold text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-transform duration-300"
                       >
-                        <span>{slide.buttonText}</span>
+                        <span className="mr-2">{slide.buttonText}</span>
                         <ArrowRight className="w-5 h-5" />
                       </motion.button>
-                      
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="border-2 border-white/30 text-white px-8 py-4 rounded-full font-medium text-lg inline-flex items-center justify-center space-x-2 backdrop-blur-md bg-white/10"
-                      >
-                        <Play className="w-5 h-5" />
-                        <span>Watch Video</span>
-                      </motion.button>
+                    </motion.div>
+
+                    {/* Features row */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, delay: 1.5 }}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+                    >
+                      {slide.features.map((feature) => (
+                        <div key={feature.id} className="flex items-center space-x-3">
+                          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                            {feature.icon}
+                          </div>
+                          <span className="text-gray-800 font-medium">{feature.text}</span>
+                        </div>
+                      ))}
                     </motion.div>
                   </div>
                 </motion.div>
@@ -251,7 +203,7 @@ const LuxuryHeroSection = () => {
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="w-16 h-16 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-full shadow-2xl flex items-center justify-center backdrop-blur-md"
+          className="w-16 h-16 bg-black text-white rounded-full shadow-2xl flex items-center justify-center"
         >
           <Truck className="w-6 h-6" />
         </motion.button>
@@ -259,7 +211,7 @@ const LuxuryHeroSection = () => {
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="w-16 h-16 bg-gradient-to-r from-accent-500 to-primary-500 text-white rounded-full shadow-2xl flex items-center justify-center backdrop-blur-md"
+          className="w-16 h-16 bg-gray-800 text-white rounded-full shadow-2xl flex items-center justify-center"
         >
           <Shield className="w-6 h-6" />
         </motion.button>
@@ -275,12 +227,12 @@ const LuxuryHeroSection = () => {
         <motion.div
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center"
+          className="w-6 h-10 border-2 border-gray-400 rounded-full flex justify-center"
         >
           <motion.div
             animate={{ y: [0, 12, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-1 h-3 bg-white/60 rounded-full mt-2"
+            className="w-1 h-3 bg-gray-600 rounded-full mt-2"
           />
         </motion.div>
       </motion.div>
