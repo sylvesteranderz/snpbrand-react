@@ -66,6 +66,11 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           Sold
         </div>
       )}
+      
+      {/* Category Label */}
+      <div className="absolute top-2 right-2 z-10 bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-medium text-gray-700 capitalize">
+        {product.category}
+      </div>
 
       {/* Product Image */}
       <div className="relative overflow-hidden bg-gray-100">
@@ -79,7 +84,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
         
         {/* Quick Actions */}
         <motion.div
-          className="absolute top-2 right-2 flex flex-col space-y-2"
+          className="absolute top-12 right-2 flex flex-col space-y-2"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : 20 }}
           transition={{ duration: 0.2 }}
@@ -126,6 +131,25 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
             </span>
           )}
         </div>
+
+        {/* Size Buttons */}
+        {product.sizes && product.sizes.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {product.sizes.slice(0, 4).map((size) => (
+              <button
+                key={size}
+                className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors"
+              >
+                {size}
+              </button>
+            ))}
+            {product.sizes.length > 4 && (
+              <button className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors">
+                +{product.sizes.length - 4}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex space-x-2 pt-2">

@@ -133,6 +133,35 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
           </motion.div>
         )}
 
+        {/* Results Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8"
+        >
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl lg:text-3xl font-chilanka font-normal text-gray-900 mb-2">
+              Products
+            </h1>
+            <p className="text-gray-600">
+              Showing {filteredProducts.length} results
+            </p>
+          </div>
+          
+          {/* Sort Dropdown */}
+          <div className="flex items-center space-x-2">
+            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+              <option value="default">Default sorting</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="rating">Rating</option>
+              <option value="newest">Newest</option>
+            </select>
+          </div>
+        </motion.div>
+
         {/* Category Description */}
         {currentCategory && (
           <motion.div
@@ -146,13 +175,13 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
           </motion.div>
         )}
 
-        {/* Products Grid */}
+        {/* Products Grid - 2 columns layout */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-2 gap-4 sm:gap-6"
         >
           {filteredProducts.map((product, index) => (
             <motion.div
