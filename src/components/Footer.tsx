@@ -2,7 +2,11 @@ import { Link } from 'react-router-dom'
 import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react'
 import { contactInfo } from '../utils/data'
 
-const Footer = () => {
+interface FooterProps {
+  className?: string
+}
+
+const Footer = ({ className = '' }: FooterProps) => {
   const currentYear = new Date().getFullYear()
 
   const quickLinks = [
@@ -30,7 +34,7 @@ const Footer = () => {
   ]
 
   return (
-    <footer className="bg-white border-t">
+    <footer className={`bg-white border-t ${className}`}>
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}

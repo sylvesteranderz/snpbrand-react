@@ -261,7 +261,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('Using mock authentication (Supabase not available)')
         console.log('Available mock users:', mockUsers.map(u => ({ email: u.email, password: u.password })))
         
-        const user = mockUsers.find(u => u.email === email && u.password === password)
+        // Trim whitespace from inputs
+        const trimmedEmail = email.trim()
+        const trimmedPassword = password.trim()
+        console.log('Trimmed inputs:', { email: trimmedEmail, password: trimmedPassword })
+        
+        const user = mockUsers.find(u => u.email === trimmedEmail && u.password === trimmedPassword)
         console.log('Found user:', user)
         
         if (user) {
@@ -279,7 +284,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('Login successful, user profile set:', userProfile)
           return true
         } else {
-          console.log('No matching user found for:', { email, password })
+          console.log('No matching user found for:', { email: trimmedEmail, password: trimmedPassword })
           dispatch({ type: 'SET_ERROR', payload: 'Invalid email or password' })
           return false
         }

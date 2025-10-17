@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { CreditCard, MapPin, User, Mail, Phone, ArrowLeft, Lock, CheckCircle, Truck, Wallet } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { CreditCard, MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCartSupabase'
 import { formatPrice } from '../utils/currency'
 import OrderConfirmation from './OrderConfirmation'
@@ -21,7 +21,6 @@ interface FormData {
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart()
-  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
@@ -144,7 +143,7 @@ const Checkout = () => {
         transition={{ duration: 0.5 }}
         className="min-h-screen py-16"
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl font-semibold text-gray-900 mb-4">Your cart is empty</h1>
             <p className="text-gray-600 mb-8">Add some items to proceed to checkout</p>
@@ -174,13 +173,13 @@ const Checkout = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen py-8 bg-gray-50"
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex items-center justify-between mb-8"
+          className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 space-y-4 md:space-y-0"
         >
           <div className="flex items-center space-x-4">
             <Link
@@ -191,7 +190,7 @@ const Checkout = () => {
               <span>Back to Cart</span>
             </Link>
           </div>
-          <h1 className="text-3xl font-chilanka font-normal text-gray-900">
+          <h1 className="text-2xl md:text-3xl font-chilanka font-normal text-gray-900 text-center md:text-right">
             Checkout
           </h1>
         </motion.div>
@@ -203,11 +202,14 @@ const Checkout = () => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="mb-8"
         >
-          <div className="flex items-center justify-center space-x-8">
-            {steps.map((step, index) => {
+          <div className="flex items-center justify-center">
+            {steps.map((step) => {
               const Icon = step.icon
-              const isActive = currentStep >= step.number
+              const isActive = currentStep === step.number
               const isCompleted = currentStep > step.number
+              
+              // Only show current step and completed steps
+              if (!isActive && !isCompleted) return null
               
               return (
                 <div key={step.number} className="flex items-center">
@@ -229,11 +231,6 @@ const Checkout = () => {
                   }`}>
                     {step.title}
                   </span>
-                  {index < steps.length - 1 && (
-                    <div className={`w-16 h-0.5 mx-4 ${
-                      isCompleted ? 'bg-green-500' : 'bg-gray-300'
-                    }`} />
-                  )}
                 </div>
               )
             })}
@@ -248,7 +245,7 @@ const Checkout = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="bg-white rounded-lg shadow-sm p-6 border">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border">
               {/* Step 1: Personal Information */}
               {currentStep === 1 && (
                 <motion.div
@@ -602,32 +599,26 @@ const Checkout = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white rounded-lg shadow-sm p-6 border sticky top-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
               
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
-                  <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex items-center space-x-3">
+                  <div key={item.id} className="flex items-center space-x-3">
                     <img
-                      src={item.product?.image || item.image || '/images/placeholder.jpg'}
-                      alt={item.product?.name || item.name || 'Product'}
+                      src={item.product?.image || '/images/placeholder.jpg'}
+                      alt={item.product?.name || 'Product'}
                       className="w-12 h-12 object-cover rounded-md"
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-gray-900 truncate">
-                        {item.product?.name || item.name || 'Product'}
+                        {item.product?.name || 'Product'}
                       </h4>
-                      {item.selectedSize && (
-                        <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>
-                      )}
-                      {item.selectedColor && (
-                        <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
-                      )}
                       <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-gray-900">
-                      {formatPrice((item.product?.price || item.price) * item.quantity)}
+                      {formatPrice((item.product?.price || 0) * item.quantity)}
                     </p>
                   </div>
                 ))}

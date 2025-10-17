@@ -21,6 +21,9 @@ const Header = () => {
   const { items: wishlistItems } = useWishlist()
   const { user, isAuthenticated, logout } = useAuth()
 
+  // Debug authentication state
+  console.log('Header - Auth State:', { user, isAuthenticated })
+
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Shop', href: '/shop' },
@@ -188,109 +191,118 @@ const Header = () => {
                 </div>
               </div>
               {isAuthenticated ? (
-                <>
-                  {/* Profile Dropdown */}
-                  <div className="relative dropdown-container profile-dropdown">
-                    <button
-                      onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      className="flex items-center space-x-2 p-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
-                    >
-                      <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                        <span className="text-black text-sm font-medium">
-                          {user?.name?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="text-sm hidden md:block">{user?.name}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    
-                    <AnimatePresence>
-                      {isProfileOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          transition={{ duration: 0.2 }}
-                          className="dropdown-menu w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 right-0"
-                        >
-                          {/* Profile Header */}
-                          <div className="px-4 py-3 border-b border-gray-700">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                                <span className="text-black text-lg font-medium">
-                                  {user?.name?.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-white">{user?.name}</div>
-                                <div className="text-sm text-gray-400">{user?.email}</div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Menu Items */}
-                          <div className="py-2">
-                            <Link
-                              to="/account"
-                              onClick={() => setIsProfileOpen(false)}
-                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                            >
-                              <User className="w-5 h-5" />
-                              <span>My Account</span>
-                            </Link>
-                            <Link
-                              to="/orders"
-                              onClick={() => setIsProfileOpen(false)}
-                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                            >
-                              <ShoppingCart className="w-5 h-5" />
-                              <span>My Orders</span>
-                            </Link>
-                            <Link
-                              to="/wishlist"
-                              onClick={() => setIsProfileOpen(false)}
-                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                            >
-                              <Heart className="w-5 h-5" />
-                              <span>Wishlist</span>
-                            </Link>
-                            {user?.role === 'admin' && (
-                              <Link
-                                to="/admin"
-                                onClick={() => setIsProfileOpen(false)}
-                                className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                              >
-                                <Settings className="w-5 h-5" />
-                                <span>Admin Dashboard</span>
-                              </Link>
-                            )}
-                            <hr className="my-2 border-gray-700" />
-                            <button
-                              onClick={() => {
-                                setIsProfileOpen(false)
-                                logout()
-                              }}
-                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left"
-                            >
-                              <LogOut className="w-5 h-5" />
-                              <span>Logout</span>
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </>
+                <></>
               ) : (
                 <>
                   <Link 
                     to="/login" 
-                    className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
+                    className="px-4 py-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 text-sm font-medium"
                   >
-                    <User className="w-6 h-6" />
+                    Sign In
+                  </Link>
+                  <Link 
+                    to="/signup" 
+                    className="px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 rounded-full transition-all duration-200 text-sm font-medium"
+                  >
+                    Sign Up
                   </Link>
                 </>
               )}
+              
+              {/* Profile Dropdown - Desktop */}
+              {isAuthenticated && (
+                <div className="relative dropdown-container profile-dropdown">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center space-x-2 p-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
+                  >
+                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-black text-sm font-medium">
+                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <span className="text-sm hidden md:block">{user?.name || 'User'}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isProfileOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
+                      >
+                        {/* Profile Header */}
+                        <div className="px-4 py-3 border-b border-gray-700">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                              <span className="text-black text-lg font-medium">
+                                {user?.name?.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{user?.name}</div>
+                              <div className="text-sm text-gray-400">{user?.email}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Menu Items */}
+                        <div className="py-2">
+                          <Link
+                            to="/account"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <User className="w-5 h-5" />
+                            <span>My Account</span>
+                          </Link>
+                          <Link
+                            to="/orders"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <ShoppingCart className="w-5 h-5" />
+                            <span>My Orders</span>
+                          </Link>
+                          <Link
+                            to="/wishlist"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <Heart className="w-5 h-5" />
+                            <span>Wishlist</span>
+                          </Link>
+                          {user?.role === 'admin' && (
+                            <Link
+                              to="/admin"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <Settings className="w-5 h-5" />
+                              <span>Admin Dashboard</span>
+                            </Link>
+                          )}
+                          <hr className="my-2 border-gray-700" />
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false)
+                              logout()
+                            }}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left"
+                          >
+                            <LogOut className="w-5 h-5" />
+                            <span>Logout</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+              
               <Link 
                 to="/wishlist" 
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 relative"
@@ -342,6 +354,99 @@ const Header = () => {
                   </span>
                 )}
               </button>
+              
+              {/* Mobile Profile Icon */}
+              {isAuthenticated && (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="p-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
+                  >
+                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-black text-sm font-medium">
+                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                  </button>
+                  
+                  <AnimatePresence>
+                    {isProfileOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
+                      >
+                        {/* Profile Header */}
+                        <div className="px-4 py-3 border-b border-gray-700">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                              <span className="text-black text-lg font-medium">
+                                {user?.name?.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{user?.name}</div>
+                              <div className="text-sm text-gray-400">{user?.email}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Menu Items */}
+                        <div className="py-2">
+                          <Link
+                            to="/account"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <User className="w-5 h-5" />
+                            <span>My Account</span>
+                          </Link>
+                          <Link
+                            to="/orders"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <ShoppingCart className="w-5 h-5" />
+                            <span>My Orders</span>
+                          </Link>
+                          <Link
+                            to="/wishlist"
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                          >
+                            <Heart className="w-5 h-5" />
+                            <span>Wishlist</span>
+                          </Link>
+                          {user?.role === 'admin' && (
+                            <Link
+                              to="/admin"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <Settings className="w-5 h-5" />
+                              <span>Admin Dashboard</span>
+                            </Link>
+                          )}
+                          <hr className="my-2 border-gray-700" />
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false)
+                              logout()
+                            }}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left"
+                          >
+                            <LogOut className="w-5 h-5" />
+                            <span>Logout</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+              
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
@@ -365,6 +470,29 @@ const Header = () => {
             >
               <div className="container mx-auto px-4 py-6">
                 <nav className="space-y-4">
+                  {/* Authentication Links - Top Priority */}
+                  {!isAuthenticated && (
+                    <div className="pb-4 border-b border-gray-700">
+                      <Link
+                        to="/login"
+                        className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 mb-2"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="w-5 h-5" />
+                        <span>Sign In</span>
+                      </Link>
+                      <Link
+                        to="/signup"
+                        className="flex items-center space-x-3 py-3 px-4 bg-yellow-500 text-black hover:bg-yellow-400 rounded-lg transition-colors duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="w-5 h-5" />
+                        <span>Sign Up</span>
+                      </Link>
+                    </div>
+                  )}
+                  
+                  {/* Navigation Links */}
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
@@ -380,24 +508,26 @@ const Header = () => {
                     </Link>
                   ))}
                   
-                  {/* Mobile Categories */}
-                  <div className="pt-4 border-t border-gray-700">
-                    <div className="text-sm font-medium text-gray-400 mb-3 px-4">Categories</div>
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        to={`/shop?category=${category.id}`}
-                        className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {getCategoryIcon(category.id)}
-                        <div className="flex-1">
-                          <div className="font-medium">{category.name}</div>
-                          <div className="text-sm text-gray-500">{category.count} items</div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                  {/* Mobile Categories - Only show when logged in */}
+                  {isAuthenticated && (
+                    <div className="pt-4 border-t border-gray-700">
+                      <div className="text-sm font-medium text-gray-400 mb-3 px-4">Categories</div>
+                      {categories.map((category) => (
+                        <Link
+                          key={category.id}
+                          to={`/shop?category=${category.id}`}
+                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {getCategoryIcon(category.id)}
+                          <div className="flex-1">
+                            <div className="font-medium">{category.name}</div>
+                            <div className="text-sm text-gray-500">{category.count} items</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                   
                   {/* Mobile Account Links */}
                   <div className="pt-4 border-t border-gray-700">
@@ -443,26 +573,7 @@ const Header = () => {
                           <span>Logout</span>
                         </button>
                       </>
-                    ) : (
-                      <>
-                        <Link
-                          to="/login"
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <User className="w-5 h-5" />
-                          <span>Sign In</span>
-                        </Link>
-                        <Link
-                          to="/signup"
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <User className="w-5 h-5" />
-                          <span>Sign Up</span>
-                        </Link>
-                      </>
-                    )}
+                    ) : null}
                     <Link
                       to="/wishlist"
                       className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"

@@ -11,8 +11,8 @@ const LuxuryHeroSection = () => {
     {
       id: 1,
       title: 'SnP BRAND',
-      titleHighlight: 'SLIDES',
-      subtitle: "WALK DON'T HIDE",
+      titleHighlight: 'Step',
+      subtitle: "With Style",
       description: 'Style that rises to make every eye fall',
       image: '/images/SnPimage.png',
       buttonText: 'SHOP NOW',
@@ -24,11 +24,13 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
+      fullscreen: true,
       title: 'SnP BRAND',
-      titleHighlight: 'SLIDES',
+      titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
       description: 'Style that rises to make every eye fall',
-      image: '/images/Background2.png',
+      image: '/images/SlippersBg.jpg',
+      mobileImage: '/images/SlippersBg.jpg', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -41,9 +43,10 @@ const LuxuryHeroSection = () => {
       fullscreen: true,
       title: 'SnP BRAND',
       titleHighlight: 'SLIDES',
-      subtitle: "WALK DON'T HIDE",
+      subtitle: "Feel and walk confidently",
       description: 'Style that rises to make every eye fall',
       image: '/images/FeetBackground.jpg',
+      mobileImage: '/images/FeetBackground.jpg', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -54,7 +57,7 @@ const LuxuryHeroSection = () => {
   ]
 
   return (
-    <section className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-white pt-20">
+    <section className="relative min-h-screen overflow-hidden">
       {/* Main Content */}
       <div className="relative z-10">
         <Swiper
@@ -68,31 +71,46 @@ const LuxuryHeroSection = () => {
             delay: 6000,
             disableOnInteraction: false,
           }}
-          className="main-swiper h-screen relative"
+          className="main-swiper h-screen w-full relative"
         >
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
               {/* If this slide is fullscreen, render its image as a full-viewport background */}
                 {slide.fullscreen && (
                   <>
+                    {/* Desktop Background */}
                     <div
-                      className="absolute inset-0 z-0 bg-center bg-cover hero-fullscreen-bg"
-                      style={{ backgroundImage: `url(${slide.image})` }}
+                      className="hidden lg:block absolute inset-0 z-0 bg-center bg-cover bg-no-repeat hero-fullscreen-bg"
+                      style={{ 
+                        backgroundImage: `url(${slide.image})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center center'
+                      }}
                     />
-                    {/* subtle dark gradient overlay to improve contrast */}
-                    <div className="absolute inset-0 z-10 pointer-events-none hero-bg-overlay" />
+                    {/* Mobile Background */}
+                    <div
+                      className="lg:hidden absolute inset-0 z-0 bg-center bg-cover bg-no-repeat hero-fullscreen-bg"
+                      style={{ 
+                        backgroundImage: `url(${slide.mobileImage || slide.image})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center center'
+                      }}
+                    />
+                    {/* Enhanced dark gradient overlay to improve text contrast */}
+                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/30 via-black/20 to-transparent" />
                   </>
                 )}
 
-              <div className="flex flex-col lg:flex-row items-center min-h-[calc(100vh-5rem)] pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-10">
+              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-10 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
                 
                 {/* Image */}
-                <motion.div
-                  initial={{ opacity: 0, x: 100, scale: 0.8 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  transition={{ duration: 1.2, delay: 0.3 }}
-                  className="w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2"
-                >
+                {!slide.fullscreen && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 100, scale: 0.8 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ duration: 1.2, delay: 0.3 }}
+                    className={`w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2 ${slide.id === 1 ? 'ml-8 lg:ml-0' : ''}`}
+                  >
                   <div className="relative">
                     <div className="circle-image-wrapper mx-auto relative z-10">
                       {/* If slide is fullscreen we already use it as background, so hide the inline image */}
@@ -106,66 +124,174 @@ const LuxuryHeroSection = () => {
                     </div>
                   </div>
                 </motion.div>
+                )}
 
                 {/* Content */}
                 <motion.div
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1.2, delay: 0.5 }}
-                  className="w-full lg:w-2/5 px-4 lg:px-8 z-30 relative order-2 lg:order-1"
+                  className={`w-full ${slide.fullscreen ? 'lg:w-full' : 'lg:w-2/5'} px-4 lg:px-8 z-30 relative order-2 lg:order-1 ${slide.id === 1 ? 'lg:ml-16 ml-4' : 'text-center'}`}
                 >
                   <div className="max-w-2xl relative z-30 hero-content">
                     
                     {/* Title */}
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.2 }}
-                      className={`${slide.fullscreen ? 'text-white' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
+                      initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        duration: 1.2, 
+                        delay: 0.3,
+                        type: "spring",
+                        stiffness: 100,
+                        damping: 15
+                      }}
+                      className={`${slide.fullscreen ? 'text-white drop-shadow-2xl' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
                     >
-                      {slide.title}{' '}
-                      <span className={`${slide.fullscreen ? 'text-yellow-400' : 'text-yellow-500'}`}>{slide.titleHighlight}</span>
+                      <motion.span
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.5 }}
+                      >
+                        {slide.title}{' '}
+                      </motion.span>
+                      <motion.span 
+                        className={`${slide.fullscreen ? 'text-yellow-400 drop-shadow-lg' : 'text-yellow-500'}`}
+                        initial={{ opacity: 0, x: 30, scale: 0.5 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ 
+                          duration: 1, 
+                          delay: 0.8,
+                          type: "spring",
+                          stiffness: 120
+                        }}
+                        whileHover={{ scale: 1.1, rotate: 2 }}
+                      >
+                        {slide.titleHighlight}
+                      </motion.span>
                     </motion.div>
                     
                     {/* Tagline */}
                     <motion.div
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.5 }}
+                      initial={{ opacity: 0, y: 60, rotateX: -90 }}
+                      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                      transition={{ 
+                        duration: 1.5, 
+                        delay: 0.7,
+                        type: "spring",
+                        stiffness: 80,
+                        damping: 20
+                      }}
                       className="mb-6 hero-title"
                     >
-                      <h1 className={`text-5xl lg:text-7xl xl:text-8xl font-black leading-tight ${slide.fullscreen ? 'text-white' : 'text-black'} hero-text`}>
-                        {slide.subtitle}
-                      </h1>
+                      <motion.h1 
+                        className={`text-5xl lg:text-7xl xl:text-8xl font-black leading-tight ${slide.fullscreen ? 'text-white drop-shadow-2xl' : 'text-black'} hero-text`}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ 
+                          duration: 1.2, 
+                          delay: 1,
+                          type: "spring",
+                          stiffness: 100
+                        }}
+                        whileHover={{ 
+                          scale: 1.05,
+                          textShadow: slide.fullscreen ? "0 0 20px rgba(255,255,255,0.5)" : "0 0 20px rgba(0,0,0,0.3)"
+                        }}
+                      >
+                        {slide.subtitle.split(' ').map((word, index) => (
+                          <motion.span
+                            key={index}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ 
+                              duration: 0.8, 
+                              delay: 1.2 + (index * 0.1),
+                              type: "spring",
+                              stiffness: 120
+                            }}
+                            className="inline-block mr-4"
+                          >
+                            {word}
+                          </motion.span>
+                        ))}
+                      </motion.h1>
                     </motion.div>
                     
                     {/* Description */}
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.7 }}
+                      initial={{ opacity: 0, x: -50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ 
+                        duration: 1, 
+                        delay: 1.5,
+                        type: "spring",
+                        stiffness: 100
+                      }}
                       className="mb-8 hero-description"
                     >
-                      <div className="w-16 h-px bg-gray-300 mb-4"></div>
-                      <p className={`text-lg leading-relaxed max-w-lg ${slide.fullscreen ? 'text-gray-100' : 'text-gray-700'}`}>
+                      <motion.div 
+                        className="w-16 h-px bg-gray-300 mb-4"
+                        initial={{ width: 0 }}
+                        animate={{ width: 64 }}
+                        transition={{ duration: 1, delay: 1.8 }}
+                      ></motion.div>
+                      <motion.p 
+                        className={`text-lg leading-relaxed max-w-lg ${slide.fullscreen ? 'text-white drop-shadow-lg' : 'text-gray-700'}`}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ 
+                          duration: 1.2, 
+                          delay: 2,
+                          type: "spring",
+                          stiffness: 80
+                        }}
+                        whileHover={{ 
+                          scale: 1.02,
+                          color: slide.fullscreen ? "#ffffff" : "#000000"
+                        }}
+                      >
                         {slide.description}
-                      </p>
+                      </motion.p>
                     </motion.div>
 
                     {/* CTA Button */}
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, delay: 1.2 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ 
+                        duration: 1, 
+                        delay: 2.2,
+                        type: "spring",
+                        stiffness: 120
+                      }}
                       className="hero-buttons mb-8"
                     >
                       <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="gradient-cta text-white px-8 py-4 font-bold text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-transform duration-300"
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 2.5 }}
+                        whileHover={{ 
+                          scale: 1.05,
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                          y: -2
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                        className="bg-black text-white px-8 py-4 font-bold text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-all duration-300"
                       >
-                        <span className="mr-2">{slide.buttonText}</span>
-                        <ArrowRight className="w-5 h-5" />
+                        <motion.span 
+                          className="mr-2"
+                          whileHover={{ x: 5 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {slide.buttonText}
+                        </motion.span>
+                        <motion.div
+                          whileHover={{ x: 5, rotate: 15 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ArrowRight className="w-5 h-5" />
+                        </motion.div>
                       </motion.button>
                     </motion.div>
 
@@ -193,7 +319,7 @@ const LuxuryHeroSection = () => {
         </Swiper>
       </div>
 
-      {/* Floating Action Buttons */}
+      {/* Floating Action Buttons
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -215,9 +341,9 @@ const LuxuryHeroSection = () => {
         >
           <Shield className="w-6 h-6" />
         </motion.button>
-      </motion.div>
+      </motion.div> */}
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -234,9 +360,9 @@ const LuxuryHeroSection = () => {
             transition={{ duration: 2, repeat: Infinity }}
             className="w-1 h-3 bg-gray-600 rounded-full mt-2"
           />
-        </motion.div>
-      </motion.div>
-    </section>
+    //     </motion.div> */}
+    {/* //   </motion.div> */}
+    // </section>
   )
 }
 

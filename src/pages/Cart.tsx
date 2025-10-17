@@ -23,7 +23,7 @@ const Cart = () => {
         transition={{ duration: 0.5 }}
         className="py-16"
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8">
           <div className="text-center">
             <ShoppingBag className="w-24 h-24 text-gray-300 mx-auto mb-6" />
             <h1 className="text-3xl font-semibold text-gray-900 mb-4">Your cart is empty</h1>
@@ -44,13 +44,13 @@ const Cart = () => {
       transition={{ duration: 0.5 }}
       className="py-8"
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex items-center justify-between mb-8"
+          className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 space-y-4 md:space-y-0"
         >
           <div className="flex items-center space-x-4">
             <Link
@@ -61,7 +61,7 @@ const Cart = () => {
               <span>Continue Shopping</span>
             </Link>
           </div>
-          <h1 className="text-3xl font-chilanka font-normal text-gray-900">
+          <h1 className="text-2xl md:text-3xl font-chilanka font-normal text-gray-900 text-center md:text-right">
             Shopping Cart ({itemCount} items)
           </h1>
         </motion.div>
@@ -80,7 +80,7 @@ const Cart = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="bg-white rounded-lg shadow-sm p-6 border"
+                className="bg-white rounded-lg shadow-sm p-4 md:p-6 border"
               >
                 <div className="flex items-center space-x-4">
                   {/* Product Image */}
@@ -150,7 +150,7 @@ const Cart = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white rounded-lg shadow-sm p-6 border sticky top-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
               
               <div className="space-y-4 mb-6">

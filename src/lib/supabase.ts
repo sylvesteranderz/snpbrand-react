@@ -22,15 +22,19 @@ export const supabase = isSupabaseConfigured
     })
   : null
 
+// Force demo mode for development - set to false to enable Supabase
+const FORCE_DEMO_MODE = true
+
 // Export configuration status
-export const isSupabaseEnabled = isSupabaseConfigured
+export const isSupabaseEnabled = isSupabaseConfigured && !FORCE_DEMO_MODE
 
 // Debug logging
 console.log('Supabase Configuration:', {
   supabaseUrl,
   supabaseAnonKey,
   isSupabaseConfigured,
-  isSupabaseEnabled
+  isSupabaseEnabled,
+  FORCE_DEMO_MODE
 })
 
 // Database types

@@ -19,7 +19,6 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
-  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null)
 
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
@@ -46,7 +45,13 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
-    addToCart(product, quantity, selectedSize, selectedColor)
+    // Check if size is required and selected
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      alert('Please select a size before adding to cart')
+      return
+    }
+    
+    addToCart(product, quantity)
   }
 
   const handleWishlistToggle = () => {
@@ -100,11 +105,11 @@ const ProductDetail = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
           >
             {/* Main Image */}
-            <div className="mb-4">
+            <div className="mb-4 bg-gray-50 rounded-2xl p-4">
               <img
                 src={product.images?.[selectedImage] || product.image}
                 alt={product.name}
-                className="w-full h-96 object-cover rounded-2xl"
+                className="w-full h-96 object-contain rounded-xl"
               />
             </div>
 
@@ -115,18 +120,21 @@ const ProductDetail = () => {
                 spaceBetween={10}
                 slidesPerView={4}
                 navigation
-                onSwiper={setThumbsSwiper}
                 className="thumbnail-swiper"
               >
                 {product.images.map((image, index) => (
                   <SwiperSlide key={index}>
                     <button
                       onClick={() => setSelectedImage(index)}
-                      className={`w-full h-20 object-cover rounded-lg border-2 transition-colors ${
+                      className={`w-full h-20 bg-gray-50 rounded-lg border-2 transition-colors p-1 ${
                         selectedImage === index ? 'border-primary-500' : 'border-gray-300'
                       }`}
                     >
-                      <img src={image} alt={`${product.name} ${index + 1}`} />
+                      <img 
+                        src={image} 
+                        alt={`${product.name} ${index + 1}`} 
+                        className="w-full h-full object-contain rounded-md"
+                      />
                     </button>
                   </SwiperSlide>
                 ))}
@@ -195,13 +203,15 @@ const ProductDetail = () => {
             {/* Size Selection */}
             {product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Size</h3>
-                <div className="flex space-x-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Size <span className="text-red-500">*</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 border rounded-md transition-colors ${
+                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
                         selectedSize === size
                           ? 'border-primary-500 bg-primary-50 text-primary-700'
                           : 'border-gray-300 hover:border-primary-500'
@@ -211,6 +221,9 @@ const ProductDetail = () => {
                     </button>
                   ))}
                 </div>
+                {!selectedSize && (
+                  <p className="text-sm text-red-500 mt-2">Please select a size</p>
+                )}
               </div>
             )}
 
@@ -218,12 +231,12 @@ const ProductDetail = () => {
             {product.colors && product.colors.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Color</h3>
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2">
                   {product.colors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 border rounded-md transition-colors ${
+                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
                         selectedColor === color
                           ? 'border-primary-500 bg-primary-50 text-primary-700'
                           : 'border-gray-300 hover:border-primary-500'
@@ -260,11 +273,13 @@ const ProductDetail = () => {
             <div className="flex space-x-4">
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
-                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!product.inStock || (product.sizes && product.sizes.length > 0 && !selectedSize)}
+                className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-3 gap-2 ${
+                  product.sizes && product.sizes.length > 0 && !selectedSize ? 'opacity-50' : ''
+                }`}
               >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Add to Cart
+                <ShoppingCart className="w-6 h-8" />
+                <span className="font-medium mt-2">Add to Cart</span>
               </button>
               <button
                 onClick={handleWishlistToggle}
