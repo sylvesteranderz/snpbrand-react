@@ -221,7 +221,7 @@ export const useWishlist = (): WishlistContextType => {
       error: null,
       addToWishlist: async () => {},
       removeFromWishlist: async () => {},
-      isInWishlist: () => Promise.resolve(false),
+      isInWishlist: async () => Promise.resolve(false),
       refreshWishlist: async () => {}
     }
   }

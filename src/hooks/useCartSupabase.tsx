@@ -163,7 +163,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const cartItems: CartItem[] = cartData.map((item: any) => ({
         id: item.id,
         product: item.products || item.product,
-        quantity: item.quantity
+        quantity: item.quantity,
+        selectedSize: item.selected_size,
+        selectedColor: item.selected_color
       }))
 
       dispatch({ type: 'SET_CART', payload: cartItems })
