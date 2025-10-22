@@ -150,7 +150,7 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
             </p>
           </div>
           
-          {/* Sort Dropdown */}
+          {/* Sort Dropdown
           <div className="flex items-center space-x-2">
             <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
               <option value="default">Default sorting</option>
@@ -159,7 +159,7 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
               <option value="rating">Rating</option>
               <option value="newest">Newest</option>
             </select>
-          </div>
+          </div> */}
         </motion.div>
 
         {/* Category Description */}

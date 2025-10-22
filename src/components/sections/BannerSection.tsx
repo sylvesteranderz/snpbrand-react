@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 
 interface BannerSectionProps {
   title: string
@@ -65,8 +66,10 @@ const BannerSection = ({
                 whileTap={{ scale: 0.95 }}
                 className="btn-outline-dark inline-flex items-center space-x-2"
               >
+                <Link to="/products"> 
                 <span>{buttonText}</span>
                 <ChevronRight className="w-5 h-5" />
+                </Link>
               </motion.button>
             </motion.div>
           </div>
