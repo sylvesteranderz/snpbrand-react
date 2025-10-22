@@ -282,7 +282,7 @@ const Signup = () => {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          {/* <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h3 className="text-sm font-medium text-blue-800 mb-2">Demo Credentials:</h3>
             <div className="text-xs text-blue-700 space-y-1">
               <p><strong>Customer:</strong> john@example.com / password123</p>
@@ -291,7 +291,7 @@ const Signup = () => {
             <p className="text-xs text-blue-600 mt-2">
               You can use these credentials to test the app, or create a new account above.
             </p>
-          </div>
+          </div> */}
 
           {/* Login Link */}
           <div className="mt-6 text-center">
