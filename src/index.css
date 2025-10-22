@@ -925,3 +925,21 @@
   .hero-content { padding: 1rem; }
   .circle-image-wrapper { height: 360px; }
 }
+
+/* Mobile touch scrolling fix - background safe */
+@media (max-width: 768px) {
+  html, body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Only enable touch scrolling, don't change overflow */
+  .main-swiper {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix iOS Safari viewport without affecting backgrounds */
+  .main-swiper {
+    height: 100vh;
+    height: 100dvh;
+  }
+}

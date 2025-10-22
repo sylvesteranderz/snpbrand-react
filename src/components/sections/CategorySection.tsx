@@ -224,8 +224,8 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
             whileTap={{ scale: 0.95 }}
             className="btn-outline-primary inline-flex items-center space-x-2"
           >
-            <span>View All Products</span>
-            <ChevronRight className="w-5 h-5" />
+            {/* <span>View All Products</span>
+            <ChevronRight className="w-5 h-5" /> */}
           </motion.button>
         </motion.div>
       </div>

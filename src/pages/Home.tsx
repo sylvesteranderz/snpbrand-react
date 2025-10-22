@@ -54,7 +54,7 @@ const Home = () => {
           />
         </ScrollAnimation>
 
-        {/* All Products Grid Section */}
+        {/* All Products Grid Section
         <ScrollAnimation direction="up" delay={0.2}>
           <div className="bg-gray-50 py-12 sm:py-16 overflow-x-hidden all-products-section">
             <ProductGrid
@@ -63,45 +63,47 @@ const Home = () => {
               className="my-0"
             />
           </div>
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
         {/* Banner Section */}
         <ScrollAnimation direction="up" delay={0.2}>
+          <div className="max-w-5xl mx-auto">
           <BannerSection
             title="Clearance sale !!!"
-            subtitle="Upto 40% off"
-            image="/images/banner-img2.png"
+            subtitle="Up to 40% off"
+            image="/images/set.png"
             buttonText="Shop Now"
             className="my-6 sm:my-8"
           />
+          </div>
         </ScrollAnimation>
 
-        {/* Testimonials */}
+        {/* Testimonials
         <ScrollAnimation direction="fade" delay={0.3}>
           <TestimonialSection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
        
 
-        {/* Newsletter */}
+        {/* Newsletter
         <ScrollAnimation direction="fade" delay={0.2}>
           <NewsletterSection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
-        {/* Blog Section */}
+        {/* Blog Section
         <ScrollAnimation direction="up" delay={0.1}>
           <BlogSection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
-        {/* Services */}
+        {/* Services
         <ScrollAnimation direction="fade" delay={0.2}>
           <ServiceSection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
-        {/* Instagram */}
+        {/* Instagram
         <ScrollAnimation direction="up" delay={0.1}>
           <InstagramSection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        </ScrollAnimation> */}
     </motion.div>
   )
 }

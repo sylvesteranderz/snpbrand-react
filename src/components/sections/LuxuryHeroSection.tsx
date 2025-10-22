@@ -32,11 +32,11 @@ const LuxuryHeroSection = () => {
       image: '/images/SlippersBg.jpg',
       mobileImage: '/images/Background2.jpg', // Add mobile-specific image
       buttonText: 'SHOP NOW',
-      features: [
-        { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
+      // features: [
+      //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
         // { id: 2, icon: <Shield className="w-6 h-6" />, text: 'Comfortable Fit' },
         // { id: 3, icon: <Truck className="w-6 h-6" />, text: 'Fast Delivery' }
-      ]
+      // ]
     },
     {
       id: 3,

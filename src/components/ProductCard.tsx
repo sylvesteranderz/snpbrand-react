@@ -15,6 +15,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, className = '' }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false)
   const [inWishlist, setInWishlist] = useState(false)
+  const [showSizes, setShowSizes] = useState(false)
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
 
@@ -42,6 +43,11 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
       addToWishlist(product)
       setInWishlist(true)
     }
+  }
+
+  const handleSizeToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowSizes(!showSizes)
   }
 
   const renderStars = (rating: number) => {
@@ -145,21 +151,28 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           )}
         </div>
 
-        {/* Size Buttons */}
+        {/* Size Toggle Button */}
         {product.sizes && product.sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {product.sizes.slice(0, 4).map((size) => (
-              <button
-                key={size}
-                className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors"
-              >
-                {size}
-              </button>
-            ))}
-            {product.sizes.length > 4 && (
-              <button className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors">
-                +{product.sizes.length - 4}
-              </button>
+          <div className="mt-2">
+            <button
+              onClick={handleSizeToggle}
+              className="text-xs text-gray-500 hover:text-primary-500 transition-colors"
+            >
+              {showSizes ? 'Hide Sizes' : `Sizes (${product.sizes.length})`}
+            </button>
+            
+            {/* Size Buttons - Only show when clicked */}
+            {showSizes && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {product.sizes.map((size) => (
+                  <button
+                    key={size}
+                    className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors"
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         )}
