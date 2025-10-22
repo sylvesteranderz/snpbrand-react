@@ -34,7 +34,8 @@ const AppContent = () => {
     '/order-tracking',
     '/account',
     '/order-confirmation',
-    '/cart'
+    '/cart',
+    '/product'
   ]
   
   // Check if current path should hide footer on mobile

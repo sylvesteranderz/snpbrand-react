@@ -95,7 +95,7 @@ const LuxuryLoader = ({ onComplete }: LuxuryLoaderProps) => {
         >
           <div className="relative">
             <img 
-              src="/images/logo.png" 
+              src="/images/SnPBrandLogo2.png" 
               alt="SnP Brand Logo" 
               className="h-32 w-auto"
             />

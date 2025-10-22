@@ -16,11 +16,11 @@ const LuxuryHeroSection = () => {
       description: 'Style that rises to make every eye fall',
       image: '/images/SnPimage.png',
       buttonText: 'SHOP NOW',
-      features: [
-        { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
+      // features: [
+      //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
         // { id: 2, icon: <Shield className="w-6 h-6" />, text: 'Comfortable Fit' },
         // { id: 3, icon: <Truck className="w-6 h-6" />, text: 'Fast Delivery' }
-      ]
+      // ]
     },
     {
       id: 2,
@@ -46,7 +46,7 @@ const LuxuryHeroSection = () => {
       subtitle: "Feel and walk confidently",
       description: 'Style that rises to make every eye fall',
       image: '/images/FeetBackground.jpg',
-      mobileImage: '/images/FeetBackground.jpg', // Add mobile-specific image
+      mobileImage: '/images/FeetBackground2.jpg', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -101,7 +101,7 @@ const LuxuryHeroSection = () => {
                   </>
                 )}
 
-              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
+              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-12 pb-8 lg:pt-16 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
                 
                 {/* Image */}
                 {!slide.fullscreen && (
@@ -109,7 +109,7 @@ const LuxuryHeroSection = () => {
                     initial={{ opacity: 0, x: 100, scale: 0.8 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     transition={{ duration: 1.2, delay: 0.3 }}
-                    className={`w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2 ${slide.id === 1 ? 'ml-8 lg:ml-0' : ''}`}
+                    className={`w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2 ${slide.id === 1 ? 'ml-8 lg:ml-0 -mt-8 lg:-mt-12' : ''}`}
                   >
                   <div className="relative">
                     <div className="circle-image-wrapper mx-auto relative z-10">
@@ -131,7 +131,7 @@ const LuxuryHeroSection = () => {
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1.2, delay: 0.5 }}
-                  className={`w-full ${slide.fullscreen ? 'lg:w-full' : 'lg:w-2/5'} px-4 lg:px-8 z-50 relative order-2 lg:order-1 ${slide.id === 1 ? 'lg:ml-16 ml-4' : 'text-center'} ${slide.fullscreen ? 'absolute inset-0 flex items-center justify-center' : ''}`}
+                  className={`w-full ${slide.fullscreen ? 'lg:w-full' : 'lg:w-2/5'} px-4 lg:px-8 z-50 relative order-2 lg:order-1 ${slide.id === 1 ? 'lg:ml-16 ml-4 -mt-10 lg:-mt-12"'  : 'text-center'} ${slide.fullscreen ? 'absolute inset-0 flex items-center justify-center' : ''}`}
                 >
                   <div className={`max-w-2xl relative z-50 hero-content ${slide.fullscreen ? 'mx-auto text-center hero-text-overlay' : ''}`}>
                     
@@ -146,7 +146,7 @@ const LuxuryHeroSection = () => {
                         stiffness: 100,
                         damping: 15
                       }}
-                      className={`${slide.fullscreen ? 'text-white text-shadow-lg' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
+                      className={`${slide.fullscreen ? 'text-white text-shadow-lg' : 'text-black'} text-5xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
                     >
                       <motion.span
                         initial={{ opacity: 0, x: -30 }}
@@ -228,7 +228,7 @@ const LuxuryHeroSection = () => {
                         type: "spring",
                         stiffness: 100
                       }}
-                      className="mb-8 hero-description"
+                      className="mb-4 hero-description -mt-2"
                     >
                       <motion.div 
                         className="w-16 h-px bg-gray-300 mb-4"
@@ -302,7 +302,7 @@ const LuxuryHeroSection = () => {
                       transition={{ duration: 0.8, delay: 1.5 }}
                       className="grid grid-cols-1 sm:grid-cols-3 gap-6"
                     >
-                      {slide.features.map((feature) => (
+                      {slide.features?.map((feature) => (
                         <div key={feature.id} className="flex items-center space-x-3">
                           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
                             {feature.icon}
@@ -362,7 +362,7 @@ const LuxuryHeroSection = () => {
           />
     //     </motion.div> */}
     {/* //   </motion.div> */}
-    // </section>
+     </section>
   )
 }
 

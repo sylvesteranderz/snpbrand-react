@@ -98,9 +98,9 @@ const Header = () => {
             >
               <Link to="/" className="flex items-center">
                 <img 
-                  src="/images/logo.png" 
+                  src="/images/SnpBrandLogo2.png" 
                   alt="SnP Brand Logo" 
-                  className="h-12 w-auto"
+                  className="h-20 w-auto"
                 />
               </Link>
             </motion.div>
@@ -337,12 +337,6 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden flex items-center space-x-2">
-              <button 
-                onClick={() => setIsSearchOpen(true)}
-                className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
-              >
-                <Search className="w-6 h-6" />
-              </button>
               <button 
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 relative"

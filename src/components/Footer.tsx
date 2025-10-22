@@ -38,7 +38,7 @@ const Footer = ({ className = '' }: FooterProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <img src="/images/logo.png" alt="SnP Brand Logo" className="h-12 w-auto" />
+            <img src="/images/SnPBrandlogo2.png" alt="SnP Brand Logo" className="h-12 w-auto" />
             <p className="text-gray-600 text-sm leading-relaxed">
               Subscribe to our newsletter to get updates about our grand offers.
             </p>
