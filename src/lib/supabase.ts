@@ -23,7 +23,7 @@ export const supabase = isSupabaseConfigured
   : null
 
 // Force demo mode for development - set to false to enable Supabase
-const FORCE_DEMO_MODE = true
+const FORCE_DEMO_MODE = false
 
 // Export configuration status
 export const isSupabaseEnabled = isSupabaseConfigured && !FORCE_DEMO_MODE
