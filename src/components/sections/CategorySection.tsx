@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ChevronRight, Footprints, Shirt, Grid } from 'lucide-react'
+import { Footprints, Shirt, Grid } from 'lucide-react'
 import ProductCard from '../ProductCard'
 import { products, categories, subcategories } from '../../utils/data'
 

@@ -1,13 +1,7 @@
 import { motion } from 'framer-motion'
 import ProductCarousel from '../components/sections/ProductCarousel'
-import ProductGrid from '../components/sections/ProductGrid'
 import CategorySection from '../components/sections/CategorySection'
 import BannerSection from '../components/sections/BannerSection'
-import TestimonialSection from '../components/sections/TestimonialSection'
-import BlogSection from '../components/sections/BlogSection'
-import ServiceSection from '../components/sections/ServiceSection'
-import InstagramSection from '../components/sections/InstagramSection'
-import NewsletterSection from '../components/sections/NewsletterSection'
 import ScrollAnimation from '../components/ScrollAnimation'
 import LuxuryHeroSection from '../components/sections/LuxuryHeroSection'
 

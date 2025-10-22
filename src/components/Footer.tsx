@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react'
 
 interface FooterProps {
   className?: string
@@ -16,43 +15,16 @@ const Footer = ({ className = '' }: FooterProps) => {
     { name: 'Contact Us', href: '/contact' },
   ]
 
-  const helpCenter = [
-    { name: 'FAQs', href: '/faq' },
-    { name: 'Payment', href: '/payment' },
-    { name: 'Returns & Refunds', href: '/returns' },
-    { name: 'Checkout', href: '/checkout' },
-    { name: 'Delivery Information', href: '/delivery' },
-  ]
-
-  const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#' },
-    { name: 'Twitter', icon: Twitter, href: '#' },
-    { name: 'Pinterest', icon: Instagram, href: '#' },
-    { name: 'Instagram', icon: Instagram, href: '#' },
-    { name: 'YouTube', icon: Youtube, href: '#' },
-  ]
-
   return (
     <footer className={`bg-white border-t ${className}`}>
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
-        
-            <div className="flex space-x-3">
-              {socialLinks.map((social) => {
-                const Icon = social.icon
-                return (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    className="social-icon"
-                    aria-label={social.name}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </a>
-                )
-              })}
-            </div>
+          <div className="space-y-4">
+            <img src="/images/SnPBrandlogo2.png" alt="SnP Brand Logo" className="h-12 w-auto" />
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Subscribe to our newsletter to get updates about our grand offers.
+            </p>
           </div>
 
           {/* Quick Links */}
@@ -71,14 +43,8 @@ const Footer = ({ className = '' }: FooterProps) => {
               ))}
             </ul>
           </div>
-
-         
-          </div>
-
-                 
-          
-        
-    
+        </div>
+      </div>
 
       {/* Bottom Bar */}
       <div className="border-t bg-gray-50">
@@ -87,14 +53,9 @@ const Footer = ({ className = '' }: FooterProps) => {
             <div className="text-sm text-gray-600">
               © {currentYear} SnP Brand. All rights reserved.
             </div>
-          
-            
-              
-      
-            </div>
           </div>
         </div>
-    
+      </div>
     </footer>
   )
 }
