@@ -12,15 +12,7 @@ import {
   Trash2, 
   Plus,
   Search,
-  Filter,
-  Download,
-  Calendar,
-  MapPin,
-  Phone,
-  Mail,
-  CheckCircle,
   Clock,
-  Truck,
   AlertCircle
 } from 'lucide-react'
 import { formatPrice } from '../utils/currency'
@@ -46,17 +38,6 @@ interface Order {
   shippingAddress: string
 }
 
-interface Product {
-  id: string
-  name: string
-  price: number
-  category: string
-  stock: number
-  sales: number
-  status: 'active' | 'inactive'
-  image: string
-}
-
 interface User {
   id: string
   name: string
@@ -69,7 +50,7 @@ interface User {
 }
 
 const AdminDashboard = () => {
-  const { products, deleteProduct, isLoading } = useProducts()
+  const { products, deleteProduct } = useProducts()
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -177,25 +158,6 @@ const AdminDashboard = () => {
         return 'text-gray-600 bg-gray-100'
       default:
         return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return Clock
-      case 'confirmed':
-        return CheckCircle
-      case 'processing':
-        return Package
-      case 'shipped':
-        return Truck
-      case 'delivered':
-        return CheckCircle
-      case 'cancelled':
-        return AlertCircle
-      default:
-        return Clock
     }
   }
 

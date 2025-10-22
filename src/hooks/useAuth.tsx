@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 
 interface User {
   id: string

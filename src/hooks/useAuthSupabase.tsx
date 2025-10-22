@@ -109,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Supabase initialization
       const getInitialSession = async () => {
         try {
-          const { data: { session }, error } = await supabase.auth.getSession()
+          const { data: { session }, error } = await supabase?.auth.getSession() || { data: { session: null }, error: null }
           
           if (error) {
             console.error('Error getting session:', error)

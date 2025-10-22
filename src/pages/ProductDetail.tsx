@@ -19,9 +19,21 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
+  const [inWishlist, setInWishlist] = useState(false)
 
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+
+  // Check wishlist status on mount
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      if (product) {
+        const status = await isInWishlist(product.id)
+        setInWishlist(status)
+      }
+    }
+    checkWishlistStatus()
+  }, [isInWishlist, product])
 
   useEffect(() => {
     const foundProduct = products.find(p => p.id === id)
@@ -54,11 +66,15 @@ const ProductDetail = () => {
     addToCart(product, quantity)
   }
 
-  const handleWishlistToggle = () => {
-    if (isInWishlist(product.id)) {
+  const handleWishlistToggle = async () => {
+    if (!product) return
+    const inWishlistStatus = await isInWishlist(product.id)
+    if (inWishlistStatus) {
       removeFromWishlist(product.id)
+      setInWishlist(false)
     } else {
       addToWishlist(product)
+      setInWishlist(true)
     }
   }
 
@@ -284,7 +300,7 @@ const ProductDetail = () => {
               <button
                 onClick={handleWishlistToggle}
                 className={`px-6 py-3 rounded-md border transition-colors ${
-                  isInWishlist(product.id)
+                  inWishlist
                     ? 'bg-accent-500 text-white border-accent-500'
                     : 'border-gray-300 text-gray-600 hover:bg-accent-500 hover:text-white hover:border-accent-500'
                 }`}

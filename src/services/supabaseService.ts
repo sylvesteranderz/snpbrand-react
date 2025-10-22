@@ -415,7 +415,7 @@ export class CartService {
 }
 
 export class WishlistService {
-  static async getWishlist(userId: string) {
+  static async getWishlist(_userId: string) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return []
@@ -423,7 +423,7 @@ export class WishlistService {
     return []
   }
 
-  static async addToWishlist(userId: string, productId: string) {
+  static async addToWishlist(_userId: string, _productId: string) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return []
@@ -431,13 +431,13 @@ export class WishlistService {
     return []
   }
 
-  static async removeFromWishlist(userId: string, productId: string) {
+  static async removeFromWishlist(_userId: string, _productId: string) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
     }
   }
 
-  static async isInWishlist(userId: string, productId: string): Promise<boolean> {
+  static async isInWishlist(_userId: string, _productId: string): Promise<boolean> {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return false
@@ -447,7 +447,7 @@ export class WishlistService {
 }
 
 export class OrderService {
-  static async createOrder(orderData: any) {
+  static async createOrder(_orderData: any) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return {}
@@ -455,7 +455,7 @@ export class OrderService {
     return {}
   }
 
-  static async getUserOrders(userId: string) {
+  static async getUserOrders(_userId: string) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return []
@@ -471,7 +471,7 @@ export class OrderService {
     return []
   }
 
-  static async updateOrderStatus(orderId: string, status: string) {
+  static async updateOrderStatus(_orderId: string, _status: string) {
     if (isSupabaseEnabled && supabase) {
       // Supabase implementation would go here
       return {}

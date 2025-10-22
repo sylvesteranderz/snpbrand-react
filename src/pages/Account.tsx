@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Package, Heart, Settings, MapPin, Phone, Mail, Calendar, Eye, Download } from 'lucide-react'
+import { User, Package, Heart, Settings, MapPin, Calendar, Eye, Download } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
 

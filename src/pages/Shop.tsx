@@ -5,7 +5,7 @@ import CategorySection from '../components/sections/CategorySection'
 
 const Shop = () => {
   const [searchParams] = useSearchParams()
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [, setSelectedCategory] = useState('all')
 
   useEffect(() => {
     const category = searchParams.get('category')

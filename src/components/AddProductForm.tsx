@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Upload, Plus, Minus } from 'lucide-react'
+import { X,  Plus,  } from 'lucide-react'
 import { useProducts } from '../hooks/useProductsSupabase'
 import { Product } from '../types'
 

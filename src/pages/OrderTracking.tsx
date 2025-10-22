@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft, RefreshCw } from 'lucide-react'
+import { CheckCircle, Package, Truck, Clock, MapPin, ArrowLeft, RefreshCw } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
 
@@ -148,11 +148,6 @@ const OrderTracking = () => {
       default:
         return 'text-gray-600'
     }
-  }
-
-  const getCurrentStatus = () => {
-    if (!order) return 'loading'
-    return order.status[order.status.length - 1]?.status || 'confirmed'
   }
 
   if (loading) {

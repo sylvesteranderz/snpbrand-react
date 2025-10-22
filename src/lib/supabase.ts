@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Check if Supabase is configured
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 // If Supabase is not configured, use mock mode
 const isSupabaseConfigured = supabaseUrl && supabaseAnonKey && 

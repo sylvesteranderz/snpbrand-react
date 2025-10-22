@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Mail } from 'lucide-react'
 
 interface NewsletterSectionProps {
   className?: string

@@ -6,7 +6,7 @@ import { useCart } from '../hooks/useCartSupabase'
 import ProductCard from '../components/ProductCard'
 
 const Wishlist = () => {
-  const { items, removeFromWishlist } = useWishlist()
+  const { items } = useWishlist()
   const { addToCart } = useCart()
 
   if (items.length === 0) {

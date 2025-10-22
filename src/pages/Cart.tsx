@@ -85,15 +85,15 @@ const Cart = () => {
                 <div className="flex items-center space-x-4">
                   {/* Product Image */}
                   <img
-                    src={item.product?.image || item.image || '/images/placeholder.jpg'}
-                    alt={item.product?.name || item.name || 'Product'}
+                    src={item.product?.image || '/images/placeholder.jpg'}
+                    alt={item.product?.name || 'Product'}
                     className="w-20 h-20 object-cover rounded-lg"
                   />
 
                   {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {item.product?.name || item.name || 'Product'}
+                      {item.product?.name || 'Product'}
                     </h3>
                     {item.selectedSize && (
                       <p className="text-sm text-gray-500">Size: {item.selectedSize}</p>
@@ -102,7 +102,7 @@ const Cart = () => {
                       <p className="text-sm text-gray-500">Color: {item.selectedColor}</p>
                     )}
                     <p className="text-lg font-semibold text-primary-500">
-                      {formatPrice(item.product?.price || item.price)}
+                      {formatPrice(item.product?.price || 0)}
                     </p>
                   </div>
 

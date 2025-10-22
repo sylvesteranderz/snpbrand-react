@@ -1,18 +1,15 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { ChevronRight, Star, Shield, Truck, Heart } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Pagination, Autoplay, EffectFade } from 'swiper/modules'
 import TypewriterText from '../TypewriterText'
 import AnimatedBackground from '../AnimatedBackground'
-import ScrollAnimation from '../ScrollAnimation'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
 
 const HeroSection = () => {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [isLoaded, setIsLoaded] = useState(false)
 
   const slides = [
     {
@@ -56,7 +53,7 @@ const HeroSection = () => {
   ]
 
   useEffect(() => {
-    setIsLoaded(true)
+    // Component loaded
   }, [])
 
   return (
@@ -80,7 +77,9 @@ const HeroSection = () => {
             delay: 6000,
             disableOnInteraction: false,
           }}
-          onSlideChange={(swiper) => setCurrentSlide(swiper.activeIndex)}
+          onSlideChange={(_swiper) => {
+            // Handle slide change if needed
+          }}
           className="main-swiper h-screen"
         >
           {slides.map((slide, index) => (

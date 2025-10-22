@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Star, ShoppingCart } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -14,20 +14,33 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, className = '' }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false)
+  const [inWishlist, setInWishlist] = useState(false)
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+
+  // Check wishlist status on mount
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      const status = await isInWishlist(product.id)
+      setInWishlist(status)
+    }
+    checkWishlistStatus()
+  }, [isInWishlist, product.id])
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     addToCart(product)
   }
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
-    if (isInWishlist(product.id)) {
+    const inWishlistStatus = await isInWishlist(product.id)
+    if (inWishlistStatus) {
       removeFromWishlist(product.id)
+      setInWishlist(false)
     } else {
       addToWishlist(product)
+      setInWishlist(true)
     }
   }
 
@@ -92,7 +105,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           <button
             onClick={handleWishlistToggle}
             className={`p-1.5 sm:p-2 rounded-full transition-colors ${
-              isInWishlist(product.id)
+              inWishlist
                 ? 'bg-accent-500 text-white'
                 : 'bg-white text-gray-600 hover:bg-accent-500 hover:text-white'
             }`}
@@ -165,7 +178,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           <button
             onClick={handleWishlistToggle}
             className={`px-2 sm:px-4 py-3 rounded-md border transition-colors ${
-              isInWishlist(product.id)
+              inWishlist
                 ? 'bg-accent-500 text-white border-accent-500'
                 : 'border-gray-300 text-gray-600 hover:bg-accent-500 hover:text-white hover:border-accent-500'
             }`}

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Shield, Truck, ArrowRight, Star } from 'lucide-react'
+import { ArrowRight, Star } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, EffectFade, Parallax } from 'swiper/modules'
 import 'swiper/css'
@@ -30,7 +30,7 @@ const LuxuryHeroSection = () => {
       subtitle: "WALK DON'T HIDE",
       description: 'Style that rises to make every eye fall',
       image: '/images/SlippersBg.jpg',
-      mobileImage: '/images/SlippersBg.jpg', // Add mobile-specific image
+      mobileImage: '/images/Background2.jpg', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -97,11 +97,11 @@ const LuxuryHeroSection = () => {
                       }}
                     />
                     {/* Enhanced dark gradient overlay to improve text contrast */}
-                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/30 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/50 via-black/40 to-transparent" />
                   </>
                 )}
 
-              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-10 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
+              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-20 pb-8 lg:pt-24 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
                 
                 {/* Image */}
                 {!slide.fullscreen && (
@@ -131,9 +131,9 @@ const LuxuryHeroSection = () => {
                   initial={{ opacity: 0, x: -100 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 1.2, delay: 0.5 }}
-                  className={`w-full ${slide.fullscreen ? 'lg:w-full' : 'lg:w-2/5'} px-4 lg:px-8 z-30 relative order-2 lg:order-1 ${slide.id === 1 ? 'lg:ml-16 ml-4' : 'text-center'}`}
+                  className={`w-full ${slide.fullscreen ? 'lg:w-full' : 'lg:w-2/5'} px-4 lg:px-8 z-50 relative order-2 lg:order-1 ${slide.id === 1 ? 'lg:ml-16 ml-4' : 'text-center'} ${slide.fullscreen ? 'absolute inset-0 flex items-center justify-center' : ''}`}
                 >
-                  <div className="max-w-2xl relative z-30 hero-content">
+                  <div className={`max-w-2xl relative z-50 hero-content ${slide.fullscreen ? 'mx-auto text-center hero-text-overlay' : ''}`}>
                     
                     {/* Title */}
                     <motion.div
@@ -146,7 +146,7 @@ const LuxuryHeroSection = () => {
                         stiffness: 100,
                         damping: 15
                       }}
-                      className={`${slide.fullscreen ? 'text-white drop-shadow-2xl' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
+                      className={`${slide.fullscreen ? 'text-white text-shadow-lg' : 'text-black'} text-4xl lg:text-6xl font-bold uppercase tracking-wider mb-2 hero-subtitle`}
                     >
                       <motion.span
                         initial={{ opacity: 0, x: -30 }}
@@ -156,7 +156,7 @@ const LuxuryHeroSection = () => {
                         {slide.title}{' '}
                       </motion.span>
                       <motion.span 
-                        className={`${slide.fullscreen ? 'text-yellow-400 drop-shadow-lg' : 'text-yellow-500'}`}
+                        className={`${slide.fullscreen ? 'text-yellow-400 text-shadow-lg' : 'text-yellow-500'}`}
                         initial={{ opacity: 0, x: 30, scale: 0.5 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         transition={{ 
@@ -185,7 +185,7 @@ const LuxuryHeroSection = () => {
                       className="mb-6 hero-title"
                     >
                       <motion.h1 
-                        className={`text-5xl lg:text-7xl xl:text-8xl font-black leading-tight ${slide.fullscreen ? 'text-white drop-shadow-2xl' : 'text-black'} hero-text`}
+                        className={`text-5xl lg:text-7xl xl:text-8xl font-black leading-tight ${slide.fullscreen ? 'text-white text-shadow-xl' : 'text-black'} hero-text`}
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ 
@@ -237,7 +237,7 @@ const LuxuryHeroSection = () => {
                         transition={{ duration: 1, delay: 1.8 }}
                       ></motion.div>
                       <motion.p 
-                        className={`text-lg leading-relaxed max-w-lg ${slide.fullscreen ? 'text-white drop-shadow-lg' : 'text-gray-700'}`}
+                        className={`text-lg leading-relaxed max-w-lg ${slide.fullscreen ? 'text-white text-shadow-lg' : 'text-gray-700'}`}
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ 
@@ -307,7 +307,7 @@ const LuxuryHeroSection = () => {
                           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
                             {feature.icon}
                           </div>
-                          <span className="text-gray-800 font-medium">{feature.text}</span>
+                          <span className={`font-medium ${slide.fullscreen ? 'text-white text-shadow-md' : 'text-gray-800'}`}>{feature.text}</span>
                         </div>
                       ))}
                     </motion.div>

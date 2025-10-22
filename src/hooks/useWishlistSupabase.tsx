@@ -17,7 +17,7 @@ interface WishlistState {
 interface WishlistContextType extends WishlistState {
   addToWishlist: (product: Product) => Promise<void>
   removeFromWishlist: (productId: string) => Promise<void>
-  isInWishlist: (productId: string) => boolean
+  isInWishlist: (productId: string) => Promise<boolean>
   refreshWishlist: () => Promise<void>
 }
 
@@ -179,8 +179,8 @@ export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }
   }
 
   // Check if item is in wishlist
-  const isInWishlist = (productId: string): boolean => {
-    return state.items.some(item => item.product.id === productId)
+  const isInWishlist = async (productId: string): Promise<boolean> => {
+    return Promise.resolve(state.items.some(item => item.product.id === productId))
   }
 
   // Refresh wishlist
@@ -221,7 +221,7 @@ export const useWishlist = (): WishlistContextType => {
       error: null,
       addToWishlist: async () => {},
       removeFromWishlist: async () => {},
-      isInWishlist: async () => false,
+      isInWishlist: () => Promise.resolve(false),
       refreshWishlist: async () => {}
     }
   }

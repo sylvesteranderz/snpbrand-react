@@ -659,6 +659,17 @@
     width: 100%;
     max-width: 300px;
   }
+  
+  /* Enhanced mobile text visibility */
+  .hero-text-overlay {
+    padding: 2rem 1rem;
+    margin: 1rem;
+  }
+  
+  .hero-text-overlay::before {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+  }
 }
 
   .main-swiper .swiper-pagination {
@@ -851,6 +862,38 @@
   background-position: center center;
   background-size: cover;
   filter: saturate(0.95) contrast(0.95);
+}
+
+/* Enhanced text shadows for hero section */
+.text-shadow-lg {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.text-shadow-md {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7), 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.text-shadow-xl {
+  text-shadow: 0 6px 12px rgba(0, 0, 0, 0.9), 0 3px 6px rgba(0, 0, 0, 0.7), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Hero text visibility enhancements */
+.hero-text-overlay {
+  position: relative;
+  z-index: 50;
+}
+
+.hero-text-overlay::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  z-index: -1;
+  backdrop-filter: blur(2px);
 }
 
 .hero-bg-overlay {

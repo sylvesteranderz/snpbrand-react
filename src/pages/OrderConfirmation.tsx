@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
 

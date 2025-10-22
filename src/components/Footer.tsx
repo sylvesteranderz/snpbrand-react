@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react'
-import { contactInfo } from '../utils/data'
 
 interface FooterProps {
   className?: string

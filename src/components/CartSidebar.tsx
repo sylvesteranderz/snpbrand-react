@@ -59,19 +59,19 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                   {items.map((item) => (
                     <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex items-center space-x-4 p-4 border rounded-lg">
                       <img
-                        src={item.product?.image || item.image || '/images/placeholder.jpg'}
-                        alt={item.product?.name || item.name || 'Product'}
+                        src={item.product?.image || '/images/placeholder.jpg'}
+                        alt={item.product?.name || 'Product'}
                         className="w-16 h-16 object-cover rounded-md"
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">{item.product?.name || item.name || 'Product'}</h3>
+                        <h3 className="text-sm font-medium text-gray-900 truncate">{item.product?.name || 'Product'}</h3>
                         {item.selectedSize && (
                           <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>
                         )}
                         {item.selectedColor && (
                           <p className="text-xs text-gray-500">Color: {item.selectedColor}</p>
                         )}
-                        <p className="text-sm font-medium text-primary-500">{formatPrice(item.product?.price || item.price)}</p>
+                        <p className="text-sm font-medium text-primary-500">{formatPrice(item.product?.price || 0)}</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         <button

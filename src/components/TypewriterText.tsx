@@ -15,7 +15,7 @@ const TypewriterText = ({
   texts, 
   speed = 100, 
   deleteSpeed = 50, 
-  pauseTime = 2000,
+  pauseTime: _pauseTime = 2000,
   className = '',
   highlightWords = [],
   highlightColor = 'text-primary-500'
