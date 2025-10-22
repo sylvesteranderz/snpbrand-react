@@ -2,6 +2,8 @@
 
 A modern, responsive e-commerce website built with React, TypeScript, and Tailwind CSS. This project is a complete migration and improvement of the original HTML/CSS/JavaScript SnP Brand website.
 
+<!-- Deployment fix: TypeScript build errors resolved -->
+
 ## 🚀 Features
 
 ### Modern Tech Stack
