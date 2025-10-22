@@ -80,7 +80,27 @@ export class ProductService {
           throw error
         }
 
-        return data || []
+        // Map database fields to React Product type
+        const mappedProducts: Product[] = (data || []).map((dbProduct: any) => ({
+          id: dbProduct.id,
+          name: dbProduct.name,
+          price: dbProduct.price,
+          originalPrice: dbProduct.original_price,
+          description: dbProduct.description,
+          category: dbProduct.category,
+          image: dbProduct.image_url,
+          rating: dbProduct.rating,
+          reviews: dbProduct.reviews,
+          inStock: dbProduct.in_stock,
+          isNew: dbProduct.is_new,
+          isOnSale: dbProduct.is_on_sale,
+          discount: dbProduct.discount,
+          sizes: dbProduct.sizes || [],
+          colors: dbProduct.colors || [],
+          tags: dbProduct.tags || []
+        }))
+
+        return mappedProducts
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
         return this.getLocalProducts()
@@ -124,7 +144,27 @@ export class ProductService {
           return null
         }
 
-        return data
+        // Map database fields to React Product type
+        const mappedProduct: Product = {
+          id: data.id,
+          name: data.name,
+          price: data.price,
+          originalPrice: data.original_price,
+          description: data.description,
+          category: data.category,
+          image: data.image_url,
+          rating: data.rating,
+          reviews: data.reviews,
+          inStock: data.in_stock,
+          isNew: data.is_new,
+          isOnSale: data.is_on_sale,
+          discount: data.discount,
+          sizes: data.sizes || [],
+          colors: data.colors || [],
+          tags: data.tags || []
+        }
+
+        return mappedProduct
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
       }
@@ -149,7 +189,27 @@ export class ProductService {
           throw error
         }
 
-        return data || []
+        // Map database fields to React Product type
+        const mappedProducts: Product[] = (data || []).map((dbProduct: any) => ({
+          id: dbProduct.id,
+          name: dbProduct.name,
+          price: dbProduct.price,
+          originalPrice: dbProduct.original_price,
+          description: dbProduct.description,
+          category: dbProduct.category,
+          image: dbProduct.image_url,
+          rating: dbProduct.rating,
+          reviews: dbProduct.reviews,
+          inStock: dbProduct.in_stock,
+          isNew: dbProduct.is_new,
+          isOnSale: dbProduct.is_on_sale,
+          discount: dbProduct.discount,
+          sizes: dbProduct.sizes || [],
+          colors: dbProduct.colors || [],
+          tags: dbProduct.tags || []
+        }))
+
+        return mappedProducts
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
       }
@@ -163,9 +223,28 @@ export class ProductService {
   static async addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
     if (isSupabaseEnabled && supabase) {
       try {
+        // Map React Product fields to database fields
+        const dbProductData = {
+          name: productData.name,
+          price: productData.price,
+          original_price: productData.originalPrice,
+          description: productData.description,
+          category: productData.category,
+          image_url: productData.image,
+          rating: productData.rating || 0,
+          reviews: productData.reviews || 0,
+          in_stock: productData.inStock !== undefined ? productData.inStock : true,
+          is_new: productData.isNew || false,
+          is_on_sale: productData.isOnSale || false,
+          discount: productData.discount || 0,
+          sizes: productData.sizes || [],
+          colors: productData.colors || [],
+          tags: productData.tags || []
+        }
+
         const { data, error } = await supabase
           .from('products')
-          .insert([productData])
+          .insert([dbProductData])
           .select()
           .single()
 
@@ -174,7 +253,27 @@ export class ProductService {
           throw error
         }
 
-        return data
+        // Map database response back to React Product type
+        const mappedProduct: Product = {
+          id: data.id,
+          name: data.name,
+          price: data.price,
+          originalPrice: data.original_price,
+          description: data.description,
+          category: data.category,
+          image: data.image_url,
+          rating: data.rating,
+          reviews: data.reviews,
+          inStock: data.in_stock,
+          isNew: data.is_new,
+          isOnSale: data.is_on_sale,
+          discount: data.discount,
+          sizes: data.sizes || [],
+          colors: data.colors || [],
+          tags: data.tags || []
+        }
+
+        return mappedProduct
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
       }
@@ -204,9 +303,27 @@ export class ProductService {
   static async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
     if (isSupabaseEnabled && supabase) {
       try {
+        // Map React Product fields to database fields
+        const dbUpdates: any = {}
+        if (updates.name !== undefined) dbUpdates.name = updates.name
+        if (updates.price !== undefined) dbUpdates.price = updates.price
+        if (updates.originalPrice !== undefined) dbUpdates.original_price = updates.originalPrice
+        if (updates.description !== undefined) dbUpdates.description = updates.description
+        if (updates.category !== undefined) dbUpdates.category = updates.category
+        if (updates.image !== undefined) dbUpdates.image_url = updates.image
+        if (updates.rating !== undefined) dbUpdates.rating = updates.rating
+        if (updates.reviews !== undefined) dbUpdates.reviews = updates.reviews
+        if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock
+        if (updates.isNew !== undefined) dbUpdates.is_new = updates.isNew
+        if (updates.isOnSale !== undefined) dbUpdates.is_on_sale = updates.isOnSale
+        if (updates.discount !== undefined) dbUpdates.discount = updates.discount
+        if (updates.sizes !== undefined) dbUpdates.sizes = updates.sizes
+        if (updates.colors !== undefined) dbUpdates.colors = updates.colors
+        if (updates.tags !== undefined) dbUpdates.tags = updates.tags
+
         const { data, error } = await supabase
           .from('products')
-          .update(updates)
+          .update(dbUpdates)
           .eq('id', id)
           .select()
           .single()
@@ -216,7 +333,27 @@ export class ProductService {
           throw error
         }
 
-        return data
+        // Map database response back to React Product type
+        const mappedProduct: Product = {
+          id: data.id,
+          name: data.name,
+          price: data.price,
+          originalPrice: data.original_price,
+          description: data.description,
+          category: data.category,
+          image: data.image_url,
+          rating: data.rating,
+          reviews: data.reviews,
+          inStock: data.in_stock,
+          isNew: data.is_new,
+          isOnSale: data.is_on_sale,
+          discount: data.discount,
+          sizes: data.sizes || [],
+          colors: data.colors || [],
+          tags: data.tags || []
+        }
+
+        return mappedProduct
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
       }
@@ -271,7 +408,27 @@ export class ProductService {
           throw error
         }
 
-        return data || []
+        // Map database fields to React Product type
+        const mappedProducts: Product[] = (data || []).map((dbProduct: any) => ({
+          id: dbProduct.id,
+          name: dbProduct.name,
+          price: dbProduct.price,
+          originalPrice: dbProduct.original_price,
+          description: dbProduct.description,
+          category: dbProduct.category,
+          image: dbProduct.image_url,
+          rating: dbProduct.rating,
+          reviews: dbProduct.reviews,
+          inStock: dbProduct.in_stock,
+          isNew: dbProduct.is_new,
+          isOnSale: dbProduct.is_on_sale,
+          discount: dbProduct.discount,
+          sizes: dbProduct.sizes || [],
+          colors: dbProduct.colors || [],
+          tags: dbProduct.tags || []
+        }))
+
+        return mappedProducts
       } catch (error) {
         console.error('Supabase error, falling back to localStorage:', error)
       }
