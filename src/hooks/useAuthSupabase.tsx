@@ -350,21 +350,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = async (): Promise<void> => {
     try {
+      console.log('Logout attempt:', { isSupabaseEnabled, supabase: !!supabase })
+      
       if (isSupabaseEnabled && supabase) {
         // Supabase logout
         const { error } = await supabase.auth.signOut()
         
         if (error) {
-          console.error('Logout error:', error)
+          console.error('Supabase logout error:', error)
           dispatch({ type: 'SET_ERROR', payload: error.message })
           return
         }
+        
+        console.log('Supabase logout successful')
       } else {
         // Mock logout
+        console.log('Using mock logout')
         localStorage.removeItem('mock-user')
       }
 
+      // Clear any cart/wishlist data
+      localStorage.removeItem('snpbrand-cart')
+      localStorage.removeItem('snpbrand-wishlist')
+      
       dispatch({ type: 'LOGOUT' })
+      console.log('Logout completed successfully')
+      
+      // Redirect to home page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
+      
     } catch (error) {
       console.error('Logout error:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Logout failed. Please try again.' })

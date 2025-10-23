@@ -44,7 +44,7 @@ const AppContent = () => {
   )
 
   return (
-    <div className="bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white">
       <Header />
       <main className="overflow-x-hidden">
         <Routes>

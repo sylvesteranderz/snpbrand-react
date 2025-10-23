@@ -19,7 +19,7 @@ const Header = () => {
   const location = useLocation()
   const { itemCount: cartCount } = useCart()
   const { items: wishlistItems } = useWishlist()
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   // Debug authentication state
   console.log('Header - Auth State:', { user, isAuthenticated })
@@ -287,14 +287,15 @@ const Header = () => {
                           )}
                           <hr className="my-2 border-gray-700" />
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               setIsProfileOpen(false)
-                              logout()
+                              await logout()
                             }}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left"
+                            disabled={isLoading}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <LogOut className="w-5 h-5" />
-                            <span>Logout</span>
+                            <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
                           </button>
                         </div>
                       </motion.div>
@@ -425,14 +426,15 @@ const Header = () => {
                           )}
                           <hr className="my-2 border-gray-700" />
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               setIsProfileOpen(false)
-                              logout()
+                              await logout()
                             }}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left"
+                            disabled={isLoading}
+                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <LogOut className="w-5 h-5" />
-                            <span>Logout</span>
+                            <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
                           </button>
                         </div>
                       </motion.div>
@@ -557,14 +559,15 @@ const Header = () => {
                           </Link>
                         )}
                         <button
-                          onClick={() => {
-                            logout()
+                          onClick={async () => {
+                            await logout()
                             setIsMenuOpen(false)
                           }}
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 w-full text-left"
+                          disabled={isLoading}
+                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-yellow-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <LogOut className="w-5 h-5" />
-                          <span>Logout</span>
+                          <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
                         </button>
                       </>
                     ) : null}

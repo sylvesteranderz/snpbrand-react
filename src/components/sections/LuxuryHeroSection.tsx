@@ -58,7 +58,7 @@ const LuxuryHeroSection = () => {
 
   return (
     <section className="relative min-h-screen overflow-hidden">
-      {/* Main Content */}
+      <div className="main-swiper h-screen min-h-screen">
       <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
@@ -362,6 +362,8 @@ const LuxuryHeroSection = () => {
           />
     //     </motion.div> */}
     {/* //   </motion.div> */}
+    </div>  {/* Main Content */}
+
      </section>
   )
 }
