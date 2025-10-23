@@ -350,9 +350,9 @@ const Header = () => {
                 )}
               </button>
               
-              {/* Mobile Profile Icon */}
-              {isAuthenticated && (
-                <div className="relative">
+              {/* Mobile Profile/Auth Icon */}
+              <div className="relative">
+                {isAuthenticated ? (
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="p-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
@@ -363,85 +363,132 @@ const Header = () => {
                       </span>
                     </div>
                   </button>
-                  
-                  <AnimatePresence>
-                    {isProfileOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
-                      >
-                        {/* Profile Header */}
-                        <div className="px-4 py-3 border-b border-gray-700">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                              <span className="text-black text-lg font-medium">
-                                {user?.name?.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <div className="font-medium text-white">{user?.name}</div>
-                              <div className="text-sm text-gray-400">{user?.email}</div>
+                ) : (
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="p-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
+                    title="Login or Create Account"
+                  >
+                    <User className="w-6 h-6" />
+                  </button>
+                )}
+                
+                <AnimatePresence>
+                  {isProfileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
+                    >
+                      {isAuthenticated ? (
+                        <>
+                          {/* Profile Header */}
+                          <div className="px-4 py-3 border-b border-gray-700">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                                <span className="text-black text-lg font-medium">
+                                  {user?.name?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium text-white">{user?.name}</div>
+                                <div className="text-sm text-gray-400">{user?.email}</div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Menu Items */}
-                        <div className="py-2">
-                          <Link
-                            to="/account"
-                            onClick={() => setIsProfileOpen(false)}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                          >
-                            <User className="w-5 h-5" />
-                            <span>My Account</span>
-                          </Link>
-                          <Link
-                            to="/orders"
-                            onClick={() => setIsProfileOpen(false)}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                          >
-                            <ShoppingCart className="w-5 h-5" />
-                            <span>My Orders</span>
-                          </Link>
-                          <Link
-                            to="/wishlist"
-                            onClick={() => setIsProfileOpen(false)}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
-                          >
-                            <Heart className="w-5 h-5" />
-                            <span>Wishlist</span>
-                          </Link>
-                          {user?.role === 'admin' && (
+                          
+                          {/* Menu Items */}
+                          <div className="py-2">
                             <Link
-                              to="/admin"
+                              to="/account"
                               onClick={() => setIsProfileOpen(false)}
                               className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
                             >
-                              <Settings className="w-5 h-5" />
-                              <span>Admin Dashboard</span>
+                              <User className="w-5 h-5" />
+                              <span>My Account</span>
                             </Link>
-                          )}
-                          <hr className="my-2 border-gray-700" />
-                          <button
-                            onClick={async () => {
-                              setIsProfileOpen(false)
-                              await logout()
-                            }}
-                            disabled={isLoading}
-                            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <LogOut className="w-5 h-5" />
-                            <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
+                            <Link
+                              to="/orders"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <ShoppingCart className="w-5 h-5" />
+                              <span>My Orders</span>
+                            </Link>
+                            <Link
+                              to="/wishlist"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <Heart className="w-5 h-5" />
+                              <span>Wishlist</span>
+                            </Link>
+                            {user?.role === 'admin' && (
+                              <Link
+                                to="/admin"
+                                onClick={() => setIsProfileOpen(false)}
+                                className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                              >
+                                <Settings className="w-5 h-5" />
+                                <span>Admin Dashboard</span>
+                              </Link>
+                            )}
+                            <hr className="my-2 border-gray-700" />
+                            <button
+                              onClick={async () => {
+                                setIsProfileOpen(false)
+                                await logout()
+                              }}
+                              disabled={isLoading}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <LogOut className="w-5 h-5" />
+                              <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Auth Header */}
+                          <div className="px-4 py-3 border-b border-gray-700">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5 text-gray-300" />
+                              </div>
+                              <div>
+                                <div className="font-medium text-white">Welcome!</div>
+                                <div className="text-sm text-gray-400">Sign in or create account</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Auth Options */}
+                          <div className="py-2">
+                            <Link
+                              to="/login"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <User className="w-5 h-5" />
+                              <span>Login</span>
+                            </Link>
+                            <Link
+                              to="/signup"
+                              onClick={() => setIsProfileOpen(false)}
+                              className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-yellow-500 transition-colors duration-200"
+                            >
+                              <User className="w-5 h-5" />
+                              <span>Create Account</span>
+                            </Link>
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
