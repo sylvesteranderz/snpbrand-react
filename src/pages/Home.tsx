@@ -19,7 +19,7 @@ const Home = () => {
           <ProductCarousel
             title="Best selling products"
             showViewAll={true}
-            className="my-8"
+            className="mt-0 mb-8"
           />
         </ScrollAnimation>
 

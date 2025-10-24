@@ -57,8 +57,8 @@ const LuxuryHeroSection = () => {
   ]
 
   return (
-    <section className="relative min-h-screen overflow-hidden">
-      <div className="main-swiper h-screen min-h-screen">
+    <section className="luxury-hero-section relative min-h-screen overflow-hidden">
+      <div className="main-swiper h-screen min-h-screen overflow-hidden">
       <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
@@ -101,7 +101,7 @@ const LuxuryHeroSection = () => {
                   </>
                 )}
 
-              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-12 pb-8 lg:pt-16 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
+              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-12 pb-4 lg:pt-16 lg:pb-8 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
                 
                 {/* Image */}
                 {!slide.fullscreen && (

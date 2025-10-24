@@ -580,16 +580,16 @@
   height: 100%;
 }
 
-/* Prevent slide bleeding */
-.main-swiper .swiper-slide:not(.swiper-slide-active) {
-  pointer-events: none;
-  visibility: hidden;
+/* Allow all slides to be visible for proper text rendering */
+.main-swiper .swiper-slide {
+  pointer-events: auto;
+  visibility: visible;
 }
 
-  .main-swiper .swiper-slide-active {
-    pointer-events: auto;
-    visibility: visible;
-  }
+.main-swiper .swiper-slide-active {
+  pointer-events: auto;
+  visibility: visible;
+}
 
 /* Mobile Image Layout */
 .circle-image-wrapper {
@@ -890,10 +890,58 @@
   left: -20px;
   right: -20px;
   bottom: -20px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   z-index: -1;
   backdrop-filter: blur(2px);
+}
+
+/* Ensure text is visible on active slides */
+.main-swiper .swiper-slide-active .hero-content {
+  z-index: 100 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.main-swiper .swiper-slide-active .hero-text,
+.main-swiper .swiper-slide-active .hero-title,
+.main-swiper .swiper-slide-active .hero-subtitle,
+.main-swiper .swiper-slide-active .hero-description {
+  z-index: 100 !important;
+  position: relative;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Make sure fullscreen slide text is visible on active slides */
+.main-swiper .swiper-slide-active .hero-text-overlay {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Force text visibility with high contrast for active fullscreen slides only */
+.main-swiper .swiper-slide-active .hero-text-overlay * {
+  color: white !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Make sure the text container is visible on active fullscreen slides only */
+.main-swiper .swiper-slide-active .hero-text-overlay {
+  background: rgba(0,0,0,0.7) !important;
+  padding: 2rem !important;
+  border-radius: 10px !important;
+  border: 2px solid white !important;
+}
+
+/* Ensure debug elements are always visible */
+.main-swiper .swiper-slide .bg-yellow-400,
+.main-swiper .swiper-slide .bg-red-500 {
+  z-index: 999 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .hero-bg-overlay {
@@ -924,14 +972,12 @@
   .hero-subtitle { font-size: 1rem; }
   .hero-content { padding: 1rem; }
   .circle-image-wrapper { height: 360px; }
-}
-
-/* Enhanced mobile scrolling fix */
-@media (max-width: 768px) {
+  
+  /* Enhanced mobile scrolling fix */
   html, body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    height: 100%;
+    height: auto;
     overflow-x: hidden;
   }
   
@@ -941,7 +987,6 @@
     overscroll-behavior: contain;
     height: 100vh;
     height: 100dvh;
-    overflow-y: auto;
     overflow-x: hidden;
   }
   
@@ -952,17 +997,101 @@
     min-height: 100dvh;
   }
   
-  /* Prevent bounce scrolling on iOS */
+  /* Allow normal scrolling on mobile */
   body {
-    position: fixed;
+    position: relative;
     width: 100%;
-    height: 100%;
-    overflow: hidden;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   
   #root {
-    height: 100%;
+    height: auto;
+    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure main content can scroll */
+  main {
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+  
+  /* Fix products section visibility on mobile */
+  .products-carousel,
+  .products-grid {
+    overflow: visible;
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* Ensure product cards are visible */
+  .swiper-slide {
+    overflow: visible;
+  }
+  
+  /* Fix any potential z-index issues */
+  section {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Ensure Swiper carousel works properly on mobile */
+  .swiper {
+    overflow: visible !important;
+  }
+  
+  .swiper-wrapper {
+    overflow: visible !important;
+  }
+  
+  .swiper-slide {
+    overflow: visible !important;
+  }
+  
+  /* Fix container width issues */
+  .container {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Reduce gap between hero and first section */
+  .luxury-hero-section + * {
+    margin-top: 0 !important;
+  }
+  
+  /* Ensure smooth transition from hero to content */
+  section:first-of-type {
+    margin-top: 0;
+  }
+  
+  /* Reduce padding for first product section */
+  .luxury-hero-section + section {
+    padding-top: 1rem !important;
+  }
+  
+  /* Additional gap reduction */
+  .luxury-hero-section {
+    margin-bottom: 0 !important;
+  }
+  
+  /* Ensure first product carousel has minimal spacing */
+  .luxury-hero-section + * section {
+    padding-top: 0.5rem !important;
+  }
+  
+  /* Ensure text is visible on mobile fullscreen slides */
+  .swiper-slide .hero-content {
+    z-index: 100 !important;
+    position: relative;
+  }
+  
+  .swiper-slide .hero-text-overlay {
+    background: rgba(0, 0, 0, 0.6) !important;
+    padding: 1rem !important;
+    border-radius: 10px !important;
   }
 }

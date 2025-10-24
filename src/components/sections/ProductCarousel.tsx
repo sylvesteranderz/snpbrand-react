@@ -34,7 +34,7 @@ const ProductCarousel = ({
     : filteredProducts
 
   return (
-    <section className={`py-12 ${className}`}>
+    <section className={`py-8 ${className}`}>
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <motion.div
@@ -94,6 +94,7 @@ const ProductCarousel = ({
               },
             }}
             className="products-carousel"
+            style={{ overflow: 'visible' }}
           >
             {displayProducts.map((product, index) => (
               <SwiperSlide key={product.id}>
