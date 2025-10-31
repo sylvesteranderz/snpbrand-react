@@ -24,7 +24,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      fullscreen: true,
+      fullscreen: false,
       title: 'SnP BRAND',
       titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
@@ -59,7 +59,7 @@ const LuxuryHeroSection = () => {
   return (
     <section className="luxury-hero-section relative min-h-screen overflow-hidden">
       <div className="main-swiper h-screen min-h-screen overflow-hidden">
-      <div className="relative z-10">
+      <div className="relative z10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
           spaceBetween={0}
