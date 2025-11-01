@@ -24,7 +24,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      fullscreen:'true', 
+      fullscreen: true, 
       title: 'SnP BRAND',
       titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
@@ -57,9 +57,9 @@ const LuxuryHeroSection = () => {
   ]
 
   return (
-    <section className="luxury-hero-section relative min-h-screen overflow-hidden">
-      <div className="main-swiper h-screen min-h-screen overflow-hidden">
-      <div className="relative z10">
+    <section className="luxury-hero-section relative min-h-screen overflow-visible">
+      <div className="main-swiper h-screen min-h-screen overflow-visible">
+      <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
           spaceBetween={0}
@@ -97,7 +97,7 @@ const LuxuryHeroSection = () => {
                       }}
                     />
                     {/* Enhanced dark gradient overlay to improve text contrast */}
-                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/50 via-black/40 to-transparent" />
+                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/50 via-black/40 to-transparent pointer-events-none" />
                   </>
                 )}
 

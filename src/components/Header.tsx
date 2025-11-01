@@ -40,9 +40,12 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Close mobile menu when route changes
+  // Close mobile menu, cart, and search when route changes
   useEffect(() => {
     setIsMenuOpen(false)
+    setIsCartOpen(false)
+    setIsSearchOpen(false)
+    setIsProfileOpen(false)
   }, [location])
 
   // Close profile dropdown when clicking outside
