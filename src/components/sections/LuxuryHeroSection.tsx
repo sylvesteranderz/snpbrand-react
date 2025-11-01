@@ -24,7 +24,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      fullscreen: false,
+      fullscreen:'true', 
       title: 'SnP BRAND',
       titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
