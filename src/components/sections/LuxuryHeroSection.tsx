@@ -58,7 +58,7 @@ const LuxuryHeroSection = () => {
 
   return (
     <section className="luxury-hero-section relative min-h-screen overflow-visible">
-      <div className="main-swiper h-screen min-h-screen overflow-visible">
+      <div className="main-swiper h-screen min-h-screen overflow-hidden">
       <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
