@@ -97,7 +97,7 @@ const LuxuryHeroSection = () => {
                       }}
                     />
                     {/* Enhanced dark gradient overlay to improve text contrast */}
-                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-r from-black/50 via-black/40 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/50 via-black/40 to-transparent pointer-events-none" />
                   </>
                 )}
 
