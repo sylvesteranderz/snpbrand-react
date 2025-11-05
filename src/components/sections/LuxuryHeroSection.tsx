@@ -57,8 +57,8 @@ const LuxuryHeroSection = () => {
   ]
 
   return (
-    <section className="relative min-h-screen overflow-hidden">
-      <div className="main-swiper h-screen min-h-screen">
+    <section className="relative">
+      <div className="main-swiper">
       <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
@@ -71,7 +71,7 @@ const LuxuryHeroSection = () => {
             delay: 6000,
             disableOnInteraction: false,
           }}
-          className="main-swiper h-screen w-full relative"
+          className="main-swiper w-full relative"
         >
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>
@@ -101,7 +101,7 @@ const LuxuryHeroSection = () => {
                   </>
                 )}
 
-              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-12 pb-8 lg:pt-16 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
+              <div className={`flex flex-col lg:flex-row items-center pt-12 pb-8 lg:pt-16 lg:pb-20 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
                 
                 {/* Image */}
                 {!slide.fullscreen && (

@@ -5,13 +5,13 @@
 @layer base {
   html {
     font-family: 'Chilanka', cursive;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
   }
   
   body {
     @apply bg-white text-dark-800 leading-relaxed;
     letter-spacing: 0.01625rem;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
     margin: 0;
     padding: 0;
     height: 100%;
@@ -19,7 +19,7 @@
 
   #root {
     height: 100%;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
   }
 
   * {
@@ -37,7 +37,7 @@
   /* Prevent horizontal scroll on mobile */
   .container {
     max-width: 100%;
-    overflow-x: hidden;
+    /* overflow-x: hidden; */
   }
 
   /* Mobile-specific fixes */
@@ -102,13 +102,13 @@
 
   .products-grid {
     @apply grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6;
-    overflow: visible;
+    /* overflow: visible; */
   }
 
   /* Prevent double scrolling in All Products section */
   .all-products-section {
-    overflow-x: hidden;
-    overflow-y: visible;
+    /* overflow-x: hidden; */
+    /* overflow-y: visible; */
   }
 
   /* Dropdown positioning fixes */
@@ -330,9 +330,9 @@
   }
 
   /* Text Reveal Animation */
-  .text-reveal {
+  /* .text-reveal {
     overflow: hidden;
-  }
+  } */
 
   .text-reveal span {
     display: inline-block;
@@ -403,7 +403,7 @@
   /* Luxury Button Effects */
   .luxury-btn {
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */
     transition: all 0.3s ease;
   }
 
@@ -482,7 +482,7 @@
   .luxury-card {
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */
   }
 
   .luxury-card::before {
@@ -536,7 +536,7 @@
 .main-swiper {
   position: relative;
   z-index: 10;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .main-swiper .swiper-slide {
@@ -583,7 +583,7 @@
 /* Prevent slide bleeding */
 .main-swiper .swiper-slide:not(.swiper-slide-active) {
   pointer-events: none;
-  visibility: hidden;
+  /* visibility: hidden; */
 }
 
   .main-swiper .swiper-slide-active {
