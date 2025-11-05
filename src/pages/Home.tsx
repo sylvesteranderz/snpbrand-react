@@ -4,6 +4,7 @@ import CategorySection from '../components/sections/CategorySection'
 import BannerSection from '../components/sections/BannerSection'
 import ScrollAnimation from '../components/ScrollAnimation'
 import LuxuryHeroSection from '../components/sections/LuxuryHeroSection'
+// import AnimatedOutfitSection from '../components/sections/AnimatedOutfitSection'
 
 const Home = () => {
   return (
@@ -19,7 +20,7 @@ const Home = () => {
           <ProductCarousel
             title="Best selling products"
             showViewAll={true}
-            className="my-8"
+            className="mt-0 mb-8"
           />
         </ScrollAnimation>
 
@@ -27,6 +28,9 @@ const Home = () => {
         {/* <ScrollAnimation direction="up" delay={0.2}> */}
           <CategorySection className="my-6 sm:my-8" />
         {/* </ScrollAnimation> */}
+
+        {/* Animated Outfit Section
+        <AnimatedOutfitSection /> */}
 
         {/* Featured Slippers */}
         {/* <ScrollAnimation direction="left" delay={0.1}> */}
