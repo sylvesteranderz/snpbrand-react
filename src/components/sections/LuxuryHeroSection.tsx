@@ -57,8 +57,8 @@ const LuxuryHeroSection = () => {
   ]
 
   return (
-    <section className="luxury-hero-section relative min-h-screen overflow-visible">
-      <div className="main-swiper h-screen min-h-screen overflow-hidden">
+    <section className="luxury-hero-section relative min-h-screen ">
+      <div className="main-swiper  min-h-screen ">
       <div className="relative z-10">
         <Swiper
           modules={[Autoplay, EffectFade, Parallax]}
@@ -71,7 +71,7 @@ const LuxuryHeroSection = () => {
             delay: 6000,
             disableOnInteraction: false,
           }}
-          className="main-swiper h-screen w-full relative"
+          className="main-swiper w-full relative"
         >
           {slides.map((slide) => (
             <SwiperSlide key={slide.id}>

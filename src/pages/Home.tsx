@@ -25,32 +25,32 @@ const Home = () => {
         </ScrollAnimation>
 
         {/* Category Section */}
-        <ScrollAnimation direction="up" delay={0.2}>
+        {/* <ScrollAnimation direction="up" delay={0.2}> */}
           <CategorySection className="my-6 sm:my-8" />
-        </ScrollAnimation>
+        {/* </ScrollAnimation> */}
 
         {/* Animated Outfit Section
         <AnimatedOutfitSection /> */}
 
         {/* Featured Slippers */}
-        <ScrollAnimation direction="left" delay={0.1}>
+        {/* <ScrollAnimation direction="left" delay={0.1}> */}
           <ProductCarousel
             title="Featured Slippers"
             category="slippers"
             showViewAll={true}
             className="my-8"
           />
-        </ScrollAnimation>
+        {/* </ScrollAnimation> */}
 
         {/* Featured Apparel */}
-        <ScrollAnimation direction="right" delay={0.1}>
+        {/* <ScrollAnimation direction="right" delay={0.1}> */}
           <ProductCarousel
             title="Featured Apparel"
             category="apparel"
             showViewAll={true}
             className="my-8"
           />
-        </ScrollAnimation>
+        {/* </ScrollAnimation> */}
 
         {/* All Products Grid Section
         <ScrollAnimation direction="up" delay={0.2}>
