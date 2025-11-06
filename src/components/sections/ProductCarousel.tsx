@@ -69,7 +69,7 @@ const ProductCarousel = ({
           <Swiper
             modules={[Navigation, Autoplay]}
             spaceBetween={20}
-            slidesPerView={2}
+            slidesPerView={1}
             navigation
             autoplay={{
               delay: 3000,
