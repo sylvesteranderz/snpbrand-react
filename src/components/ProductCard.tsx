@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Star, ShoppingCart } from 'lucide-react'
+import { Heart, Star, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Product } from '../types'
-import { useCart } from '../hooks/useCartSupabase'
 import { useWishlist } from '../hooks/useWishlistSupabase'
 import { formatPrice } from '../utils/currency'
 
@@ -13,10 +12,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, className = '' }: ProductCardProps) => {
-  const [isHovered, setIsHovered] = useState(false)
   const [inWishlist, setInWishlist] = useState(false)
-  const [showSizes, setShowSizes] = useState(false)
-  const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
 
   // Check wishlist status on mount
@@ -28,13 +24,9 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
     checkWishlistStatus()
   }, [isInWishlist, product.id])
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    addToCart(product)
-  }
-
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     const inWishlistStatus = await isInWishlist(product.id)
     if (inWishlistStatus) {
       removeFromWishlist(product.id)
@@ -43,11 +35,6 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
       addToWishlist(product)
       setInWishlist(true)
     }
-  }
-
-  const handleSizeToggle = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setShowSizes(!showSizes)
   }
 
   const renderStars = (rating: number) => {
@@ -64,62 +51,55 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
   return (
     <motion.div
       className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: -5 }}
       transition={{ duration: 0.2 }}
     >
-      {/* Badge */}
-      {product.isNew && (
-        <div className="absolute top-2 left-2 z-10 bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-medium text-gray-700">
-          New
-        </div>
-      )}
-      {product.isOnSale && product.discount && (
-        <div className="absolute top-2 left-2 z-10 bg-accent-500 text-white rounded-md px-2 py-1 text-xs font-medium">
-          -{product.discount}%
-        </div>
-      )}
-      {!product.inStock && (
-        <div className="absolute top-2 left-2 z-10 bg-gray-500 text-white rounded-md px-2 py-1 text-xs font-medium">
-          Sold
-        </div>
-      )}
-      
-      {/* Category Label */}
-      <div className="absolute top-2 right-2 z-10 bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-medium text-gray-700 capitalize">
-        {product.category}
+      {/* Badges - Top Left */}
+      <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+        {product.isNew && (
+          <div className="bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-medium text-gray-700">
+            New
+          </div>
+        )}
+        {product.isOnSale && product.discount && (
+          <div className="bg-accent-500 text-white rounded-md px-2 py-1 text-xs font-medium">
+            -{product.discount}%
+          </div>
+        )}
+        {!product.inStock && (
+          <div className="bg-gray-500 text-white rounded-md px-2 py-1 text-xs font-medium">
+            Sold
+          </div>
+        )}
       </div>
 
       {/* Product Image */}
-      <div className="relative overflow-hidden bg-gray-100">
-        <Link to={`/product/${product.id}`}>
+      <Link to={`/product/${product.id}`}>
+        <div className="relative overflow-hidden bg-gray-100 ">
           <img
             src={product.image}
             alt={product.name}
             className="w-full h-40 sm:h-44 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
           />
-        </Link>
-        
-        {/* Quick Actions */}
-        <motion.div
-          className="absolute top-12 right-2 flex flex-col space-y-2"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: isHovered ? 1 : 0, x: isHovered ? 0 : 20 }}
-          transition={{ duration: 0.2 }}
-        >
+          
+          {/* Wishlist Icon */}
           <button
             onClick={handleWishlistToggle}
-            className={`p-1.5 sm:p-2 rounded-full transition-colors ${
+            className={`absolute top-2 right-2 z-20 p-2 rounded-full transition-all shadow-md ${
               inWishlist
                 ? 'bg-accent-500 text-white'
                 : 'bg-white text-gray-600 hover:bg-accent-500 hover:text-white'
             }`}
           >
-            <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
+            <Heart className={`w-4 h-4 ${inWishlist ? 'fill-current' : ''}`} />
           </button>
-        </motion.div>
-      </div>
+
+          {/* Arrow Icon - Click to view details indicator */}
+          <div className="absolute bottom-2 right-2 p-1.5 rounded-full bg-black/60 backdrop-blur-sm group-hover:bg-black transition-all">
+            <ArrowRight className="w-4 h-4 text-white" />
+          </div>
+        </div>
+      </Link>
 
   {/* Product Info */}
   <div className="mt-3 space-y-2 px-3 pb-3">
@@ -151,54 +131,12 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           )}
         </div>
 
-        {/* Size Toggle Button */}
-        {product.sizes && product.sizes.length > 0 && (
-          <div className="mt-2">
-            <button
-              onClick={handleSizeToggle}
-              className="text-xs text-gray-500 hover:text-primary-500 transition-colors"
-            >
-              {showSizes ? 'Hide Sizes' : `Sizes (${product.sizes.length})`}
-            </button>
-            
-            {/* Size Buttons - Only show when clicked */}
-            {showSizes && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size}
-                    className="px-2 py-1 text-xs border border-gray-300 rounded hover:border-primary-500 hover:text-primary-500 transition-colors"
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Size Info */}
+      
+          <div className="text-xs text-black-500">
+            All sizes available
           </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex space-x-2 pt-2">
-          <button
-            onClick={handleAddToCart}
-            disabled={!product.inStock}
-            className="flex-1 btn-cart disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-          >
-            <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Add to Cart</span>
-            <span className="sm:hidden">Add</span>
-          </button>
-          <button
-            onClick={handleWishlistToggle}
-            className={`px-2 sm:px-4 py-3 rounded-md border transition-colors ${
-              inWishlist
-                ? 'bg-accent-500 text-white border-accent-500'
-                : 'border-gray-300 text-gray-600 hover:bg-accent-500 hover:text-white hover:border-accent-500'
-            }`}
-          >
-            <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
-          </button>
-        </div>
+      
       </div>
     </motion.div>
   )

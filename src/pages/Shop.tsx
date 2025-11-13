@@ -27,14 +27,14 @@ const Shop = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-4"
         >
-          <h1 className="text-4xl lg:text-5xl font-chilanka font-normal text-gray-900 mb-4">
+          {/* <h1 className="text-4xl lg:text-5xl font-chilanka font-normal text-gray-900 mb-4">
             Shop
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Discover our collection of premium slippers and fashionable apparel
-          </p>
+          </p> */}
         </motion.div>
 
         {/* Category Section */}

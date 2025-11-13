@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Star } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, EffectFade, Parallax } from 'swiper/modules'
+import { Link } from 'react-router-dom'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/parallax'
@@ -25,10 +26,10 @@ const LuxuryHeroSection = () => {
     {
       id: 2,
       type: 'outfit',
-      title: 'SnP BRAND',
+      // title: 'SnP BRAND',
       titleHighlight: 'Complete',
       subtitle: "Your Look",
-      description: 'Style from head to toe with SnP Brand',
+      // description: 'Style from head to toe with SnP Brand',
       buttonText: 'SHOP THE COLLECTION',
     },
     {
@@ -87,14 +88,14 @@ const LuxuryHeroSection = () => {
             <SwiperSlide key={slide.id}>
               {slide.type === 'outfit' ? (
                 // Outfit Slide - Enhanced with better mobile support
-                <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center py-6 md:py-12 overflow-hidden">
+                <div className="bg-gradient-to-br from-yellow-50  via-amber-50 to-orange-50 flex items-center py-4 md:py-6 overflow-hidden">
                   <div className="container mx-auto px-4">
                     {/* Title Section */}
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.8 }}
-                      className="text-center mb-4 md:mb-8"
+                      className="text-center mb-2 md:mb-3"
                     >
                       <motion.h2 
                         className="text-3xl sm:text-4xl md:text-6xl font-bold uppercase tracking-wider mb-2"
@@ -164,8 +165,8 @@ const LuxuryHeroSection = () => {
                     </motion.div>
 
                     {/* Animated Outfit Items */}
-                    <div className="flex justify-center items-center mb-4 md:mb-8">
-                      <div className="relative flex flex-col items-center gap-1 md:gap-2 w-full max-w-[280px] sm:max-w-sm md:max-w-md px-4">
+                    <div className="flex justify-center items-center mb-3 md:mb-4">
+                      <div className="relative flex flex-col items-center -space-y-12 md:-space-y-16 w-full max-w-[280px] sm:max-w-sm md:max-w-md px-2">
                         
                         {/* Background decorative elements */}
                         <motion.div
@@ -201,7 +202,7 @@ const LuxuryHeroSection = () => {
                           className="relative w-full"
                         >
                           <img
-                            src="/images/BlackZipup.jpg"
+                            src="/images/BlackZipup1.png"
                             alt="Premium Shirt"
                             className="w-full h-full object-contain"
                             loading="lazy"
@@ -293,37 +294,39 @@ const LuxuryHeroSection = () => {
                       transition={{ duration: 0.8, delay: 2.6 }}
                       className="text-center"
                     >
-                      <motion.button
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        transition={{ 
-                          duration: 0.5, 
-                          delay: 2.8,
-                          type: "spring",
-                          stiffness: 200
-                        }}
-                        whileHover={{ 
-                          scale: 1.05, 
-                          boxShadow: "0 10px 30px rgba(0,0,0,0.3)", 
-                          y: -2 
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-black text-white px-6 py-3 md:px-8 md:py-4 font-bold text-base md:text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-all duration-300 rounded-sm"
-                      >
-                        <motion.span 
-                          className="mr-2"
-                          whileHover={{ x: 5 }}
-                          transition={{ duration: 0.2 }}
+                      <Link to="/shop">
+                        <motion.button
+                          initial={{ scale: 0.9 }}
+                          animate={{ scale: 1 }}
+                          transition={{ 
+                            duration: 0.5, 
+                            delay: 2.8,
+                            type: "spring",
+                            stiffness: 200
+                          }}
+                          whileHover={{ 
+                            scale: 1.05, 
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.3)", 
+                            y: -2 
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          className="bg-black text-white px-6 py-3 md:px-8 md:py-4 font-bold text-base md:text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-all duration-300 rounded-sm"
                         >
-                          {slide.buttonText}
-                        </motion.span>
-                        <motion.div
-                          whileHover={{ x: 5, rotate: 15 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
-                        </motion.div>
-                      </motion.button>
+                          <motion.span 
+                            className="mr-2"
+                            whileHover={{ x: 5 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {slide.buttonText}
+                          </motion.span>
+                          <motion.div
+                            whileHover={{ x: 5, rotate: 15 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                          </motion.div>
+                        </motion.button>
+                      </Link>
                     </motion.div>
                   </div>
                 </div>
@@ -355,16 +358,14 @@ const LuxuryHeroSection = () => {
                       <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/50 via-black/40 to-transparent pointer-events-none" />
                     </>
                   )}
-
-              <div className={`flex flex-col lg:flex-row items-center min-h-screen pt-12 pb-4 lg:pt-16 lg:pb-8 relative z-30 ${slide.id === 1 ? 'lg:justify-start justify-start' : 'justify-center'}`}>
-                
+                <div className={`flex flex-col lg:flex-row items-center ${slide.id === 1 ? 'py-2 lg:py-3' : 'min-h-screen pt-12 pb-4 lg:pt-16 lg:pb-8'} relative z-30 ${slide.id === 1 ? 'justify-center' : 'justify-center'}`}>
                 {/* Image */}
                 {!slide.fullscreen && (
                   <motion.div
                     initial={{ opacity: 0, x: 100, scale: 0.8 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
                     transition={{ duration: 1.2, delay: 0.3 }}
-                    className={`w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2 ${slide.id === 1 ? 'ml-8 lg:ml-0 -mt-8 lg:-mt-12' : ''}`}
+                    className={`w-full lg:w-3/5 px-4 lg:px-8 z-20 relative order-1 lg:order-2 ${slide.id === 1 ? 'ml-8 lg:ml-0 -mt-12 lg:-mt-16' : ''}`}
                   >
                   <div className="relative">
                     <div className="circle-image-wrapper mx-auto relative z-10">
@@ -373,7 +374,7 @@ const LuxuryHeroSection = () => {
                         <img
                           src={slide.image}
                           alt={`${slide.title} product`}
-                          className="circle-image relative z-10 object-contain max-h-[500px] mx-auto"
+                          className="circle-image relative z-10 object-contain max-h-[500px] lg:max-h-[450px] mx-auto"
                         />
                       )}
                     </div>
@@ -522,32 +523,34 @@ const LuxuryHeroSection = () => {
                       }}
                       className="hero-buttons mb-8"
                     >
-                      <motion.button
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 2.5 }}
-                        whileHover={{ 
-                          scale: 1.05,
-                          boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-                          y: -2
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                        className="bg-black text-white px-8 py-4 font-bold text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-all duration-300"
-                      >
-                        <motion.span 
-                          className="mr-2"
-                          whileHover={{ x: 5 }}
-                          transition={{ duration: 0.2 }}
+                      <Link to="/shop">
+                        <motion.button
+                          initial={{ opacity: 0, y: 30 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.8, delay: 2.5 }}
+                          whileHover={{ 
+                            scale: 1.05,
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                            y: -2
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          className="bg-black text-white px-8 py-4 font-bold text-lg uppercase tracking-wider inline-flex items-center justify-center space-x-2 shadow-2xl transition-all duration-300"
                         >
-                          {slide.buttonText}
-                        </motion.span>
-                        <motion.div
-                          whileHover={{ x: 5, rotate: 15 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ArrowRight className="w-5 h-5" />
-                        </motion.div>
-                      </motion.button>
+                          <motion.span 
+                            className="mr-2"
+                            whileHover={{ x: 5 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {slide.buttonText}
+                          </motion.span>
+                          <motion.div
+                            whileHover={{ x: 5, rotate: 15 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <ArrowRight className="w-5 h-5" />
+                          </motion.div>
+                        </motion.button>
+                      </Link>
                     </motion.div>
 
                     {/* Features row */}

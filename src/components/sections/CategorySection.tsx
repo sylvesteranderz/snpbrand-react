@@ -44,7 +44,7 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
   const currentSubcategories = activeCategory !== 'all' ? subcategories[activeCategory as keyof typeof subcategories] || [] : []
 
   return (
-    <section className={`py-16 ${className}`}>
+    <section className={`py-4 ${className}`}>
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <motion.div
@@ -52,7 +52,7 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <h2 className="text-3xl lg:text-4xl font-chilanka font-normal text-gray-900 mb-4">
             Shop by Category

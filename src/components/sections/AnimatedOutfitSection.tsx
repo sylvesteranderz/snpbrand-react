@@ -109,9 +109,9 @@ const AnimatedOutfitSection = () => {
               animate={isInView ? "visible" : "hidden"}
               className="relative w-full"
             >
-              <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden aspect-square">
+              <div className="relative shadow-xl overflow-hidden aspect-square">
                 <img
-                  src="/images/BlackZipup.jpg"
+                  src="/images/BlackZipup1.png"
                   alt="Premium Shirt"
                   className="w-full h-full object-cover"
                   loading="lazy"

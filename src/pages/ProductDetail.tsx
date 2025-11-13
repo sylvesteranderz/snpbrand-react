@@ -63,7 +63,7 @@ const ProductDetail = () => {
       return
     }
     
-    addToCart(product, quantity)
+    addToCart(product, quantity, selectedSize, selectedColor)
   }
 
   const handleWishlistToggle = async () => {
@@ -290,12 +290,12 @@ const ProductDetail = () => {
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock || (product.sizes && product.sizes.length > 0 && !selectedSize)}
-                className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-3 gap-2 ${
+                className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center   gap-2 ${
                   product.sizes && product.sizes.length > 0 && !selectedSize ? 'opacity-50' : ''
                 }`}
               >
-                <ShoppingCart className="w-6 h-8" />
-                <span className="font-medium mt-2">Add to Cart</span>
+                <ShoppingCart className="w-5 h-5 " />
+                <span className="font-medium ">Add to Cart</span>
               </button>
               <button
                 onClick={handleWishlistToggle}

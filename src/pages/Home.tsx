@@ -63,7 +63,7 @@ const Home = () => {
           </div>
         </ScrollAnimation> */}
 
-        {/* Banner Section */}
+        {/* Banner Section
         <ScrollAnimation direction="up" delay={0.2}>
           <div className="max-w-5xl mx-auto">
           <BannerSection
@@ -74,7 +74,7 @@ const Home = () => {
             className="my-6 sm:my-8"
           />
           </div>
-        </ScrollAnimation>
+        </ScrollAnimation> */}
 
         {/* Testimonials
         <ScrollAnimation direction="fade" delay={0.3}>
