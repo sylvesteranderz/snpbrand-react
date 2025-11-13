@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion'
 import ProductCarousel from '../components/sections/ProductCarousel'
 import CategorySection from '../components/sections/CategorySection'
-import BannerSection from '../components/sections/BannerSection'
 import ScrollAnimation from '../components/ScrollAnimation'
 import LuxuryHeroSection from '../components/sections/LuxuryHeroSection'
 import AnimatedOutfitSection from '../components/sections/AnimatedOutfitSection'
+import MedusaTest from '../components/MedusaTest'
 
 const Home = () => {
   return (
@@ -13,6 +13,11 @@ const Home = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+        {/* Medusa Connection Test - Remove this after verification */}
+        <div className="container mx-auto px-4 py-8">
+          <MedusaTest />
+        </div>
+
         {/* Hero Section */}
         <LuxuryHeroSection />
          {/* Best Selling Products */}
