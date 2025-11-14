@@ -5,8 +5,8 @@ import { Star, Heart, ShoppingCart, Plus, Minus, ArrowLeft } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Thumbs, Navigation } from 'swiper/modules'
 import { products } from '../utils/data'
-import { useCart } from '../hooks/useCartSupabase'
-import { useWishlist } from '../hooks/useWishlistSupabase'
+import { useCart } from '../hooks/useCart'
+import { useWishlist } from '../hooks/useWishlist'
 import { formatPrice } from '../utils/currency'
 import 'swiper/css'
 import 'swiper/css/thumbs'
@@ -26,13 +26,10 @@ const ProductDetail = () => {
 
   // Check wishlist status on mount
   useEffect(() => {
-    const checkWishlistStatus = async () => {
-      if (product) {
-        const status = await isInWishlist(product.id)
-        setInWishlist(status)
-      }
+    if (product) {
+      const status = isInWishlist(product.id)
+      setInWishlist(status)
     }
-    checkWishlistStatus()
   }, [isInWishlist, product])
 
   useEffect(() => {
@@ -66,9 +63,9 @@ const ProductDetail = () => {
     addToCart(product, quantity, selectedSize, selectedColor)
   }
 
-  const handleWishlistToggle = async () => {
+  const handleWishlistToggle = () => {
     if (!product) return
-    const inWishlistStatus = await isInWishlist(product.id)
+    const inWishlistStatus = isInWishlist(product.id)
     if (inWishlistStatus) {
       removeFromWishlist(product.id)
       setInWishlist(false)
