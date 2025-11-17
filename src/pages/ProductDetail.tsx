@@ -63,7 +63,7 @@ const ProductDetail = () => {
       return
     }
     
-    addToCart(product, quantity, selectedSize, selectedColor)
+    addToCart(product, quantity || 1, selectedSize, selectedColor)
   }
 
   const handleWishlistToggle = async () => {
