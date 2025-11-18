@@ -123,22 +123,22 @@ export const products: Product[] = [
     // colors: ['Black', 'White', 'Grey'],
     tags: ['sport', 'breathable', 'athletic']
   },
-  // {
-  //   id: '11',
-  //   name: 'Classic Moccasin Slippers',
-  //   price: 24.00,
-  //   image: '/images/item11.jpg',
-  //   images: ['/images/item11.jpg'],
-  //   description: 'Traditional moccasin-style slippers with soft suede upper.',
-  //   category: 'slippers',
-  //   subcategory: 'classic',
-  //   rating: 4.8,
-  //   reviews: 31,
-  //   inStock: true,
-  //   sizes: ['S', 'M', 'L', 'XL'],
-  //   colors: ['Brown', 'Black', 'Tan'],
-  //   tags: ['classic', 'moccasin', 'traditional']
-  // },
+  {
+    id: '11',
+    name: 'Blue Jean Slippers',
+    price: 200,
+    image: '/images/BlueJean.png',
+    images: ['/images/BlueJean.png','/images/BlueJean2.png'],
+    description: 'Casual Jean Slippers to match your denim.',
+    category: 'slippers',
+    subcategory: 'classic',
+    rating: 4.8,
+    reviews: 31,
+    inStock: true,
+    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    // colors: ['Brown', 'Black', 'Tan'],
+    // tags: ['classic', 'moccasin', 'traditional']
+  },
 
   // APPAREL SECTION
   {

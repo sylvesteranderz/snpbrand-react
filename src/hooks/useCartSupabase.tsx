@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Product } from '../types'
 import { CartService } from '../services/supabaseService'
 import { useAuth } from './useAuthSupabase'
+import AddToCartModal from '../components/AddToCartModal'
 
 interface CartItem {
   id: string
@@ -17,14 +18,17 @@ interface CartState {
   totalPrice: number
   isLoading: boolean
   error: string | null
+  showAddedModal: boolean
+  lastAddedItem: CartItem | null
 }
 
 interface CartContextType extends CartState {
-  addToCart: (product: Product, quantity?: number) => Promise<void>
+  addToCart: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => Promise<void>
   removeFromCart: (productId: string) => Promise<void>
   updateQuantity: (productId: string, quantity: number) => Promise<void>
   clearCart: () => Promise<void>
   refreshCart: () => Promise<void>
+  closeAddedModal: () => void
 }
 
 type CartAction =
@@ -35,6 +39,8 @@ type CartAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SHOW_ADDED_MODAL'; payload: CartItem }
+  | { type: 'CLOSE_ADDED_MODAL' }
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   const calculateTotals = (items: CartItem[]) => {
@@ -100,6 +106,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { ...state, isLoading: action.payload }
     case 'SET_ERROR':
       return { ...state, error: action.payload, isLoading: false }
+    case 'SHOW_ADDED_MODAL':
+      return { ...state, showAddedModal: true, lastAddedItem: action.payload }
+    case 'CLOSE_ADDED_MODAL':
+      return { ...state, showAddedModal: false, lastAddedItem: null }
     default:
       return state
   }
@@ -114,7 +124,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     itemCount: 0,
     totalPrice: 0,
     isLoading: false,
-    error: null
+    error: null,
+    showAddedModal: false,
+    lastAddedItem: null
   })
 
   // Load cart when user logs in or on mount
@@ -177,9 +189,17 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   // Add item to cart
-  const addToCart = async (product: Product, quantity: number = 1) => {
+  const addToCart = async (product: Product, quantity: number = 1, selectedSize?: string, selectedColor?: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
+      
+      const newItem: CartItem = {
+        id: user ? `${user.id}-${product.id}` : `local-${product.id}`,
+        product,
+        quantity,
+        selectedSize,
+        selectedColor
+      }
       
       if (user) {
         // Try Supabase first
@@ -192,21 +212,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             dispatch({ type: 'UPDATE_ITEM', payload: { productId: existingItem.id, quantity: newQuantity } })
           } else {
             await CartService.addToCart(user.id, product.id, quantity)
-            const newItem: CartItem = {
-              id: `${user.id}-${product.id}`,
-              product,
-              quantity
-            }
             dispatch({ type: 'ADD_ITEM', payload: newItem })
           }
+          // Show modal after successful add
+          dispatch({ type: 'SHOW_ADDED_MODAL', payload: newItem })
         } catch (error) {
           console.error('Supabase cart error, falling back to localStorage:', error)
           // Fallback to localStorage
-          addToLocalCart(product, quantity)
+          addToLocalCart(product, quantity, selectedSize, selectedColor)
         }
       } else {
         // Use localStorage
-        addToLocalCart(product, quantity)
+        addToLocalCart(product, quantity, selectedSize, selectedColor)
       }
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -215,20 +232,26 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   // Add to local cart
-  const addToLocalCart = (product: Product, quantity: number) => {
+  const addToLocalCart = (product: Product, quantity: number, selectedSize?: string, selectedColor?: string) => {
     const existingItem = state.items.find(item => item.product.id === product.id)
+    
+    const newItem: CartItem = {
+      id: `local-${product.id}`,
+      product,
+      quantity,
+      selectedSize,
+      selectedColor
+    }
     
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity
       dispatch({ type: 'UPDATE_ITEM', payload: { productId: existingItem.id, quantity: newQuantity } })
     } else {
-      const newItem: CartItem = {
-        id: `local-${product.id}`,
-        product,
-        quantity
-      }
       dispatch({ type: 'ADD_ITEM', payload: newItem })
     }
+    
+    // Show modal after successful add
+    dispatch({ type: 'SHOW_ADDED_MODAL', payload: newItem })
   }
 
   // Remove item from cart
@@ -309,6 +332,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await loadCart()
   }
 
+  // Close added modal
+  const closeAddedModal = () => {
+    dispatch({ type: 'CLOSE_ADDED_MODAL' })
+  }
+
   // Save to localStorage whenever cart changes
   useEffect(() => {
     if (state.items.length > 0) {
@@ -322,12 +350,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     removeFromCart,
     updateQuantity,
     clearCart,
-    refreshCart
+    refreshCart,
+    closeAddedModal
   }
 
   return (
     <CartContext.Provider value={value}>
       {children}
+      <AddToCartModal
+        isOpen={state.showAddedModal}
+        onClose={closeAddedModal}
+        product={state.lastAddedItem?.product || null}
+        quantity={state.lastAddedItem?.quantity || 1}
+        selectedSize={state.lastAddedItem?.selectedSize}
+        selectedColor={state.lastAddedItem?.selectedColor}
+      />
     </CartContext.Provider>
   )
 }
@@ -343,11 +380,14 @@ export const useCart = (): CartContextType => {
       totalPrice: 0,
       isLoading: false,
       error: null,
+      showAddedModal: false,
+      lastAddedItem: null,
       addToCart: async () => {},
       removeFromCart: async () => {},
       updateQuantity: async () => {},
       clearCart: async () => {},
-      refreshCart: async () => {}
+      refreshCart: async () => {},
+      closeAddedModal: () => {}
     }
   }
   return context
