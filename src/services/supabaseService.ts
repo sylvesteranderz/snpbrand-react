@@ -448,125 +448,63 @@ export class ProductService {
 export class CartService {
   static async getCart(userId: string) {
     if (isSupabaseEnabled && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('cart_items')
-          .select(`
-            *,
-            products (*)
-          `)
-          .eq('user_id', userId)
-
-        if (error) {
-          console.error('Error fetching cart:', error)
-          throw error
-        }
-
-        return data || []
-      } catch (error) {
-        console.error('Supabase cart error:', error)
-        throw error
-      }
+      // Fetch cart items for the user from Supabase
+      const { data, error } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', userId)
+      if (error) throw error
+      return data
     }
     return []
   }
 
   static async addToCart(userId: string, productId: string, quantity: number = 1) {
     if (isSupabaseEnabled && supabase) {
-      try {
-        // Check if item already exists
-        const { data: existingItem } = await supabase
-          .from('cart_items')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-          .single()
-
-        if (existingItem) {
-          // Update quantity
-          const { error } = await supabase
-            .from('cart_items')
-            .update({ quantity: existingItem.quantity + quantity })
-            .eq('id', existingItem.id)
-
-          if (error) throw error
-        } else {
-          // Add new item
-          const { error } = await supabase
-            .from('cart_items')
-            .insert({
-              user_id: userId,
-              product_id: productId,
-              quantity
-            })
-
-          if (error) throw error
-        }
-
-        return await this.getCart(userId)
-      } catch (error) {
-        console.error('Supabase add to cart error:', error)
-        throw error
-      }
+      // Upsert (insert or update) cart item for the user
+      const { data, error } = await supabase
+        .from('cart_items')
+        .upsert(
+          [{ user_id: userId, product_id: productId, quantity }],
+          { onConflict: 'user_id,product_id' }
+        )
+      if (error) throw error
+      return data
     }
     return []
   }
 
   static async updateCartItemQuantity(userId: string, productId: string, quantity: number) {
     if (isSupabaseEnabled && supabase) {
-      try {
-        if (quantity <= 0) {
-          await this.removeFromCart(userId, productId)
-          return await this.getCart(userId)
-        }
-
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity })
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-
-        if (error) throw error
-
-        return await this.getCart(userId)
-      } catch (error) {
-        console.error('Supabase update cart quantity error:', error)
-        throw error
-      }
+      const { data, error } = await supabase
+        .from('cart_items')
+        .update({ quantity })
+        .eq('user_id', userId)
+        .eq('product_id', productId)
+      if (error) throw error
+      return data
     }
     return []
   }
 
   static async removeFromCart(userId: string, productId: string) {
     if (isSupabaseEnabled && supabase) {
-      try {
-        const { error } = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-
-        if (error) throw error
-      } catch (error) {
-        console.error('Supabase remove from cart error:', error)
-        throw error
-      }
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', userId)
+        .eq('product_id', productId)
+      if (error) throw error
     }
   }
 
   static async clearCart(userId: string) {
     if (isSupabaseEnabled && supabase) {
-      try {
-        const { error } = await supabase
-          .from('cart_items')
-          .delete()
-          .eq('user_id', userId)
-
-        if (error) throw error
-      } catch (error) {
-        console.error('Supabase clear cart error:', error)
-        throw error
-      }
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', userId)
+      if (error) throw error
     }
   }
 }
