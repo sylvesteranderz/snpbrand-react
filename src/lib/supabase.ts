@@ -6,8 +6,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 // If Supabase is not configured, use mock mode
 const isSupabaseConfigured = supabaseUrl && supabaseAnonKey && 
-  supabaseUrl !== 'https://your-project-id.supabase.co' && 
-  supabaseAnonKey !== 'your-anon-key-here' &&
+  supabaseUrl !== 'https://lmobvfdlmcmwoydpfrld.supabase.co' && 
+  supabaseAnonKey !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxtb2J2ZmRsbWNtd295ZHBmcmxkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxNDM3NDYsImV4cCI6MjA3NTcxOTc0Nn0.ZLN8Ukq2AbqX5It6wEK3ieoL7PNHhgMCtRzv9-vjHlM' &&
   supabaseUrl !== 'undefined' &&
   supabaseAnonKey !== 'undefined'
 

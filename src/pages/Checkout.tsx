@@ -7,8 +7,7 @@ import { formatPrice } from '../utils/currency'
 import OrderConfirmation from './OrderConfirmation'
 
 interface FormData {
-  firstName: string
-  lastName: string
+Name: string
   email: string
   phone: string
   address: string
@@ -27,8 +26,8 @@ const Checkout = () => {
   const [orderData, setOrderData] = useState<any>(null)
   
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
+    // firstName: '',
+    Name: '',
     email: '',
     phone: '',
     address: '',
@@ -58,8 +57,7 @@ const Checkout = () => {
     const newErrors: Partial<FormData> = {}
 
     if (step === 1) {
-      if (!formData.firstName.trim()) newErrors.firstName = 'First name is required'
-      if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required'
+      if (!formData.Name.trim()) newErrors.Name = ' Name is required'
       if (!formData.email.trim()) newErrors.email = 'Email is required'
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
       if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
@@ -262,15 +260,15 @@ const Checkout = () => {
                       <input
                         type="text"
                         name="firstName"
-                        value={formData.firstName}
+                        value={formData.Name}
                         onChange={handleInputChange}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.firstName ? 'border-red-500' : 'border-gray-300'
+                          errors.Name ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter your first name"
                       />
-                      {errors.firstName && (
-                        <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+                      {errors.Name && (
+                        <p className="text-red-500 text-sm mt-1">{errors.Name}</p>
                       )}
                     </div>
                     <div>
@@ -280,15 +278,15 @@ const Checkout = () => {
                       <input
                         type="text"
                         name="lastName"
-                        value={formData.lastName}
+                        value={formData.Name}
                         onChange={handleInputChange}
                         className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.lastName ? 'border-red-500' : 'border-gray-300'
+                          errors.Name ? 'border-red-500' : 'border-gray-300'
                         }`}
                         placeholder="Enter your last name"
                       />
-                      {errors.lastName && (
-                        <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+                      {errors.Name && (
+                        <p className="text-red-500 text-sm mt-1">{errors.Name}</p>
                       )}
                     </div>
                     <div>
@@ -640,10 +638,10 @@ const Checkout = () => {
                     <span className="font-medium">{formatPrice(500)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-gray-600">Tax</span>
                   <span className="font-medium">{formatPrice(totalPrice * 0.08)}</span>
-                </div>
+                </div> */}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>

@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, Package, Heart, Settings, MapPin, Calendar, Eye, Download } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
+import { useAuth } from '../hooks/useAuthSupabase'
+import { OrderService, UserProfileService } from '../services/supabaseService'
 
 interface Order {
   id: string
@@ -38,84 +40,68 @@ interface UserProfile {
 }
 
 const Account = () => {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'profile' | 'addresses'>('overview')
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock user data
-  const userProfile: UserProfile = {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Main Street',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-    country: 'United States',
-    joinDate: '2024-01-15',
-    totalOrders: 5,
-    totalSpent: 45000
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.id) {
+        setLoading(true)
+        try {
+          // Fetch user profile
+          const profileData = await UserProfileService.getUserProfile(user.id)
+          if (profileData) {
+            setUserProfile({
+              firstName: profileData.name.split(' ')[0] || '',
+              lastName: profileData.name.split(' ').slice(1).join(' ') || '',
+              email: profileData.email,
+              phone: profileData.phone || '',
+              address: profileData.address || '',
+              city: profileData.city || '',
+              state: profileData.state || '',
+              zipCode: profileData.zip_code || '',
+              country: profileData.country || '',
+              joinDate: profileData.created_at,
+              totalOrders: 0, // Will be updated after fetching orders
+              totalSpent: 0 // Will be updated after fetching orders
+            })
+          }
 
-  // Mock orders data
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-1234567890',
-      date: '2024-12-20',
-      status: 'shipped',
-      total: 9719,
-      paymentMethod: 'paystack',
-      items: [
-        {
-          id: '1',
-          name: 'Premium Leather Slippers',
-          price: 8999,
-          quantity: 1,
-          image: '/api/placeholder/100/100',
-          selectedSize: '42',
-          selectedColor: 'Black'
+          // Fetch orders
+          const ordersData = await OrderService.getUserOrders(user.id)
+          const mappedOrders: Order[] = ordersData.map((order: any) => ({
+            id: order.id,
+            orderNumber: order.order_number,
+            date: order.created_at,
+            status: order.status,
+            total: order.total_amount,
+            paymentMethod: order.payment_method,
+            items: order.items || []
+          }))
+          setOrders(mappedOrders)
+
+          // Update stats
+          if (profileData) {
+            setUserProfile(prev => prev ? ({
+              ...prev,
+              totalOrders: mappedOrders.length,
+              totalSpent: mappedOrders.reduce((sum, order) => sum + order.total, 0)
+            }) : null)
+          }
+
+        } catch (error) {
+          console.error('Error fetching account data:', error)
+        } finally {
+          setLoading(false)
         }
-      ]
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-0987654321',
-      date: '2024-12-15',
-      status: 'delivered',
-      total: 12999,
-      paymentMethod: 'pay_on_delivery',
-      items: [
-        {
-          id: '2',
-          name: 'Comfortable House Slippers',
-          price: 5999,
-          quantity: 2,
-          image: '/api/placeholder/100/100',
-          selectedSize: '40',
-          selectedColor: 'Brown'
-        }
-      ]
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-1122334455',
-      date: '2024-12-10',
-      status: 'delivered',
-      total: 7999,
-      paymentMethod: 'paystack',
-      items: [
-        {
-          id: '3',
-          name: 'Casual Slip-on Slippers',
-          price: 7999,
-          quantity: 1,
-          image: '/api/placeholder/100/100',
-          selectedSize: '41',
-          selectedColor: 'Navy'
-        }
-      ]
+      }
     }
-  ]
+
+    fetchData()
+  }, [user?.id])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -160,7 +146,7 @@ const Account = () => {
             My Account
           </h1>
           <p className="text-gray-600">
-            Welcome back, {userProfile.firstName}! Manage your orders and account settings.
+            Welcome back, {userProfile?.firstName || 'User'}! Manage your orders and account settings.
           </p>
         </motion.div>
 
@@ -180,13 +166,13 @@ const Account = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      {userProfile.firstName} {userProfile.lastName}
+                      {userProfile?.firstName} {userProfile?.lastName}
                     </h3>
-                    <p className="text-sm text-gray-500">{userProfile.email}</p>
+                    <p className="text-sm text-gray-500">{userProfile?.email}</p>
                   </div>
                 </div>
               </div>
-              
+
               <nav className="p-4">
                 <ul className="space-y-2">
                   {tabs.map((tab) => {
@@ -195,11 +181,10 @@ const Account = () => {
                       <li key={tab.id}>
                         <button
                           onClick={() => setActiveTab(tab.id as any)}
-                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
-                            activeTab === tab.id
-                              ? 'bg-primary-50 text-primary-600'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
+                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${activeTab === tab.id
+                            ? 'bg-primary-50 text-primary-600'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                         >
                           <Icon className="w-5 h-5" />
                           <span>{tab.label}</span>
@@ -224,41 +209,42 @@ const Account = () => {
               <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Total Orders */}
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="p-3 bg-blue-100 rounded-full">
                         <Package className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Total Orders</p>
-                        <p className="text-2xl font-semibold text-gray-900">{userProfile.totalOrders}</p>
+                        <p className="text-xl font-semibold text-gray-900">{userProfile?.totalOrders || 0}</p>
                       </div>
                     </div>
                   </div>
-                  
+
+                  {/* Total Spent */}
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <Calendar className="w-6 h-6 text-green-600" />
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Heart className="w-6 h-6 text-green-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Total Spent</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {formatPrice(userProfile.totalSpent)}
-                        </p>
+                        <p className="text-xl font-semibold text-gray-900">{formatPrice(userProfile?.totalSpent || 0)}</p>
                       </div>
                     </div>
                   </div>
-                  
+
+                  {/* Member Since */}
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Heart className="w-6 h-6 text-purple-600" />
+                      <div className="p-3 bg-purple-100 rounded-full">
+                        <Calendar className="w-6 h-6 text-purple-600" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Member Since</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          {new Date(userProfile.joinDate).toLocaleDateString()}
+                        <p className="text-xl font-semibold text-gray-900">
+                          {userProfile?.joinDate ? new Date(userProfile.joinDate).toLocaleDateString() : '-'}
                         </p>
                       </div>
                     </div>
@@ -357,7 +343,7 @@ const Account = () => {
                             </span>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                           {order.items.map((item) => (
                             <div key={item.id} className="flex items-center space-x-4">
@@ -382,7 +368,7 @@ const Account = () => {
                             </div>
                           ))}
                         </div>
-                        
+
                         <div className="mt-4 flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             {order.paymentMethod === 'paystack' ? (
@@ -432,7 +418,7 @@ const Account = () => {
                         </label>
                         <input
                           type="text"
-                          defaultValue={userProfile.firstName}
+                          defaultValue={userProfile?.firstName}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
@@ -442,34 +428,34 @@ const Account = () => {
                         </label>
                         <input
                           type="text"
-                          defaultValue={userProfile.lastName}
+                          defaultValue={userProfile?.lastName}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Email Address
                       </label>
                       <input
                         type="email"
-                        defaultValue={userProfile.email}
+                        defaultValue={userProfile?.email}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Phone Number
                       </label>
                       <input
                         type="tel"
-                        defaultValue={userProfile.phone}
+                        defaultValue={userProfile?.phone}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                     </div>
-                    
+
                     <div className="flex justify-end">
                       <button className="btn-primary">
                         Save Changes
@@ -495,9 +481,9 @@ const Account = () => {
                           <div>
                             <h3 className="font-medium text-gray-900">Default Address</h3>
                             <p className="text-gray-600">
-                              {userProfile.address}<br />
-                              {userProfile.city}, {userProfile.state} {userProfile.zipCode}<br />
-                              {userProfile.country}
+                              {userProfile?.address}<br />
+                              {userProfile?.city}, {userProfile?.state} {userProfile?.zipCode}<br />
+                              {userProfile?.country}
                             </p>
                           </div>
                         </div>
@@ -506,7 +492,7 @@ const Account = () => {
                         </button>
                       </div>
                     </div>
-                    
+
                     <button className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-gray-500 hover:border-primary-500 hover:text-primary-500 transition-colors">
                       <div className="flex items-center justify-center space-x-2">
                         <MapPin className="w-5 h-5" />

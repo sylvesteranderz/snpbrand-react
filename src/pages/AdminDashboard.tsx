@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { 
-  BarChart3, 
-  Package, 
-  Users, 
-  ShoppingCart, 
-  TrendingUp, 
-  DollarSign, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import {
+  BarChart3,
+  Package,
+  Users,
+  ShoppingCart,
+  TrendingUp,
+  DollarSign,
+  Eye,
+  Edit,
+  Trash2,
   Plus,
   Search,
   Clock,
@@ -18,6 +18,8 @@ import {
 import { formatPrice } from '../utils/currency'
 import { useProducts } from '../hooks/useProductsSupabase'
 import AddProductForm from '../components/AddProductForm'
+import { OrderService, UserProfileService } from '../services/supabaseService'
+import { useEffect } from 'react'
 
 interface Order {
   id: string
@@ -55,88 +57,55 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [showAddProductForm, setShowAddProductForm] = useState(false)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock data
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-1234567890',
-      customerName: 'John Doe',
-      customerEmail: 'john.doe@example.com',
-      customerPhone: '+1 (555) 123-4567',
-      date: '2024-12-20',
-      status: 'shipped',
-      total: 9719,
-      items: [
-        { id: '1', name: 'Premium Leather Slippers', quantity: 1, price: 8999 }
-      ],
-      paymentMethod: 'paystack',
-      shippingAddress: '123 Main St, New York, NY 10001'
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-0987654321',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane.smith@example.com',
-      customerPhone: '+1 (555) 987-6543',
-      date: '2024-12-19',
-      status: 'delivered',
-      total: 12999,
-      items: [
-        { id: '2', name: 'Comfortable House Slippers', quantity: 2, price: 5999 }
-      ],
-      paymentMethod: 'pay_on_delivery',
-      shippingAddress: '456 Oak Ave, Los Angeles, CA 90210'
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-1122334455',
-      customerName: 'Mike Johnson',
-      customerEmail: 'mike.johnson@example.com',
-      customerPhone: '+1 (555) 456-7890',
-      date: '2024-12-18',
-      status: 'pending',
-      total: 7999,
-      items: [
-        { id: '3', name: 'Casual Slip-on Slippers', quantity: 1, price: 7999 }
-      ],
-      paymentMethod: 'paystack',
-      shippingAddress: '789 Pine St, Chicago, IL 60601'
-    }
-  ]
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        // Fetch orders
+        const ordersData = await OrderService.getAllOrders()
+        const mappedOrders: Order[] = ordersData.map((order: any) => ({
+          id: order.id,
+          orderNumber: order.order_number,
+          customerName: order.user_profiles?.name || 'Unknown',
+          customerEmail: order.user_profiles?.email || 'Unknown',
+          customerPhone: order.user_profiles?.phone || 'Unknown',
+          date: order.created_at,
+          status: order.status,
+          total: order.total_amount,
+          items: order.items || [],
+          paymentMethod: order.payment_method,
+          shippingAddress: typeof order.shipping_address === 'string'
+            ? order.shipping_address
+            : `${order.shipping_address?.address}, ${order.shipping_address?.city}`
+        }))
+        setOrders(mappedOrders)
 
-  const users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      joinDate: '2024-01-15',
-      totalOrders: 5,
-      totalSpent: 45000,
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      phone: '+1 (555) 987-6543',
-      joinDate: '2024-02-20',
-      totalOrders: 3,
-      totalSpent: 25000,
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike.johnson@example.com',
-      phone: '+1 (555) 456-7890',
-      joinDate: '2024-03-10',
-      totalOrders: 1,
-      totalSpent: 8000,
-      status: 'inactive'
+        // Fetch users
+        const usersData = await UserProfileService.getAllProfiles()
+        const mappedUsers: User[] = usersData.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || 'N/A',
+          joinDate: user.created_at,
+          totalOrders: 0, // TODO: Calculate this
+          totalSpent: 0, // TODO: Calculate this
+          status: 'active' // Default to active
+        }))
+        setUsers(mappedUsers)
+      } catch (error) {
+        console.error('Error fetching admin data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchData()
+  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,8 +132,8 @@ const AdminDashboard = () => {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
+      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -222,7 +191,7 @@ const AdminDashboard = () => {
                 <h3 className="font-semibold text-gray-900">Admin Panel</h3>
                 <p className="text-sm text-gray-500">Store Management</p>
               </div>
-              
+
               <nav className="p-4">
                 <ul className="space-y-2">
                   {tabs.map((tab) => {
@@ -231,11 +200,10 @@ const AdminDashboard = () => {
                       <li key={tab.id}>
                         <button
                           onClick={() => setActiveTab(tab.id as any)}
-                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
-                            activeTab === tab.id
-                              ? 'bg-primary-50 text-primary-600'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
+                          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${activeTab === tab.id
+                            ? 'bg-primary-50 text-primary-600'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                         >
                           <Icon className="w-5 h-5" />
                           <span>{tab.label}</span>
@@ -271,7 +239,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -285,7 +253,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -297,7 +265,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
@@ -309,7 +277,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -321,7 +289,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg shadow-sm p-6 border">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
@@ -479,7 +447,7 @@ const AdminDashboard = () => {
                 <div className="p-6 border-b">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                     <h2 className="text-xl font-semibold text-gray-900">Product Management</h2>
-                    <button 
+                    <button
                       onClick={() => setShowAddProductForm(true)}
                       className="btn-primary flex items-center space-x-2"
                     >
@@ -547,7 +515,7 @@ const AdminDashboard = () => {
                               <button className="text-primary-600 hover:text-primary-900">
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => deleteProduct(product.id)}
                                 className="text-red-600 hover:text-red-900"
                               >

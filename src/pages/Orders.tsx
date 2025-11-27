@@ -1,64 +1,44 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Package, Clock, CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
+import { useAuth } from '../hooks/useAuthSupabase'
+import { OrderService } from '../services/supabaseService'
 
 const Orders = () => {
-  // Mock orders data - in real app, this would come from Supabase
-  const orders = [
-    {
-      id: 'ORD-001',
-      date: '2024-01-15',
-      status: 'delivered',
-      total: 89.99,
-      items: [
-        {
-          id: '1',
-          name: 'Premium Leather Slippers',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100',
-          quantity: 1,
-          price: 89.99
+  const { user } = useAuth()
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (user?.id) {
+        setLoading(true)
+        try {
+          const data = await OrderService.getUserOrders(user.id)
+          // Map Supabase data to component format if needed
+          const mappedOrders = data.map((order: any) => ({
+            id: order.id,
+            orderNumber: order.order_number, // Map order_number to display ID if preferred, or keep id
+            date: order.created_at,
+            status: order.status,
+            total: order.total_amount,
+            items: order.items || []
+          }))
+          setOrders(mappedOrders)
+        } catch (error) {
+          console.error('Error fetching orders:', error)
+        } finally {
+          setLoading(false)
         }
-      ]
-    },
-    {
-      id: 'ORD-002',
-      date: '2024-01-10',
-      status: 'shipped',
-      total: 129.98,
-      items: [
-        {
-          id: '2',
-          name: 'Casual Cotton T-Shirt',
-          image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100',
-          quantity: 2,
-          price: 29.99
-        },
-        {
-          id: '3',
-          name: 'Designer Handbag',
-          image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=100',
-          quantity: 1,
-          price: 199.99
-        }
-      ]
-    },
-    {
-      id: 'ORD-003',
-      date: '2024-01-05',
-      status: 'processing',
-      total: 59.98,
-      items: [
-        {
-          id: '4',
-          name: 'Running Shoes',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100',
-          quantity: 1,
-          price: 59.98
-        }
-      ]
+      } else {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchOrders()
+  }, [user?.id])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -163,7 +143,7 @@ const Orders = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Order #{order.id}
+                      Order #{order.orderNumber}
                     </h3>
                     <p className="text-sm text-gray-500">
                       Placed on {new Date(order.date).toLocaleDateString()}

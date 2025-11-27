@@ -75,26 +75,6 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-// Mock users for demo purposes
-const mockUsers = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@example.com',
-    phone: '+1234567890',
-    role: 'admin' as const,
-    password: 'password123'
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+1234567891',
-    role: 'customer' as const,
-    password: 'password123'
-  }
-]
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
@@ -110,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const getInitialSession = async () => {
         try {
           const { data: { session }, error } = await supabase?.auth.getSession() || { data: { session: null }, error: null }
-          
+
           if (error) {
             console.error('Error getting session:', error)
             dispatch({ type: 'SET_ERROR', payload: error.message })
@@ -133,8 +113,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('Auth state changed:', event, session?.user?.id)
-          
           if (session?.user) {
             await loadUserProfile(session.user.id)
           } else {
@@ -147,18 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         subscription.unsubscribe()
       }
     } else {
-      // Mock mode - check localStorage for saved user
-      console.log('Supabase not configured, using mock authentication')
-      const savedUser = localStorage.getItem('mock-user')
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser)
-          dispatch({ type: 'SET_USER', payload: user })
-        } catch (error) {
-          console.error('Error parsing saved user:', error)
-          localStorage.removeItem('mock-user')
-        }
-      }
+      console.error('Supabase not configured')
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }, [])
@@ -167,19 +134,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Load user profile from database
   const loadUserProfile = async (userId: string) => {
     try {
-      console.log('Loading user profile for:', userId)
       const profile = await UserProfileService.getUserProfile(userId)
-      console.log('User profile result:', profile)
-      
+
       if (profile) {
-        console.log('Profile found, setting user:', profile)
         dispatch({ type: 'SET_USER', payload: profile })
       } else {
-        console.log('No profile found, creating one...')
         // If no profile exists, create one
         const { data: { user } } = await supabase!.auth.getUser()
         if (user) {
-          console.log('Creating user profile for:', user)
           await createUserProfile(user)
         }
       }
@@ -187,10 +149,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error loading user profile:', error)
       // If profile loading fails, create a basic profile from auth user
       try {
-        console.log('Profile loading failed, creating basic profile...')
         const { data: { user } } = await supabase!.auth.getUser()
         if (user) {
-          console.log('Creating basic user profile for:', user)
           await createUserProfile(user)
         }
       } catch (fallbackError) {
@@ -203,7 +163,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Create user profile
   const createUserProfile = async (user: User) => {
     try {
-      console.log('Creating user profile with data:', user)
       const profile = await UserProfileService.createUserProfile({
         id: user.id,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
@@ -211,23 +170,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         phone: user.user_metadata?.phone || '',
         role: 'customer'
       })
-      console.log('User profile created:', profile)
       dispatch({ type: 'SET_USER', payload: profile })
     } catch (error) {
       console.error('Error creating user profile:', error)
-      // If database creation fails, create a basic profile in memory
-      console.log('Database creation failed, creating basic profile in memory...')
-      const basicProfile = {
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        role: 'customer' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      console.log('Basic profile created:', basicProfile)
-      dispatch({ type: 'SET_USER', payload: basicProfile })
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to create user profile' })
     }
   }
 
@@ -236,8 +182,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'SET_ERROR', payload: null })
-
-      console.log('Login attempt:', { email, isSupabaseEnabled, supabase: !!supabase })
 
       if (isSupabaseEnabled && supabase && supabase.auth) {
         // Supabase login
@@ -256,39 +200,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return true
         }
         return false
-      } else {
-        // Mock login - Fallback when Supabase is not available
-        console.log('Using mock authentication (Supabase not available)')
-        console.log('Available mock users:', mockUsers.map(u => ({ email: u.email, password: u.password })))
-        
-        // Trim whitespace from inputs
-        const trimmedEmail = email.trim()
-        const trimmedPassword = password.trim()
-        console.log('Trimmed inputs:', { email: trimmedEmail, password: trimmedPassword })
-        
-        const user = mockUsers.find(u => u.email === trimmedEmail && u.password === trimmedPassword)
-        console.log('Found user:', user)
-        
-        if (user) {
-          const userProfile: UserProfile = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-          localStorage.setItem('mock-user', JSON.stringify(userProfile))
-          dispatch({ type: 'SET_USER', payload: userProfile })
-          console.log('Login successful, user profile set:', userProfile)
-          return true
-        } else {
-          console.log('No matching user found for:', { email: trimmedEmail, password: trimmedPassword })
-          dispatch({ type: 'SET_ERROR', payload: 'Invalid email or password' })
-          return false
-        }
       }
+      return false
     } catch (error) {
       console.error('Login error:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Login failed. Please try again.' })
@@ -321,25 +234,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         if (data.user) {
-          console.log('User created successfully. Please check your email for verification.')
           return true
         }
         return false
-      } else {
-        // Mock signup
-        const newUser: UserProfile = {
-          id: Date.now().toString(),
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        localStorage.setItem('mock-user', JSON.stringify(newUser))
-        dispatch({ type: 'SET_USER', payload: newUser })
-        return true
       }
+      return false
     } catch (error) {
       console.error('Signup error:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Signup failed. Please try again.' })
@@ -350,37 +249,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = async (): Promise<void> => {
     try {
-      console.log('Logout attempt:', { isSupabaseEnabled, supabase: !!supabase })
-      
       if (isSupabaseEnabled && supabase) {
         // Supabase logout
         const { error } = await supabase.auth.signOut()
-        
+
         if (error) {
           console.error('Supabase logout error:', error)
           dispatch({ type: 'SET_ERROR', payload: error.message })
           return
         }
-        
-        console.log('Supabase logout successful')
-      } else {
-        // Mock logout
-        console.log('Using mock logout')
-        localStorage.removeItem('mock-user')
       }
 
       // Clear any cart/wishlist data
       localStorage.removeItem('snpbrand-cart')
       localStorage.removeItem('snpbrand-wishlist')
-      
+
       dispatch({ type: 'LOGOUT' })
-      console.log('Logout completed successfully')
-      
+
       // Redirect to home page
       if (typeof window !== 'undefined') {
         window.location.href = '/'
       }
-      
+
     } catch (error) {
       console.error('Logout error:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Logout failed. Please try again.' })
@@ -393,14 +283,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       if (isSupabaseEnabled && supabase) {
         const updatedProfile = await UserProfileService.updateUserProfile(state.user.id, updates)
-        dispatch({ type: 'SET_USER', payload: updatedProfile })
-      } else {
-        // Mock update
-        const updatedProfile = { ...state.user, ...updates }
-        localStorage.setItem('mock-user', JSON.stringify(updatedProfile))
         dispatch({ type: 'SET_USER', payload: updatedProfile })
       }
     } catch (error) {
