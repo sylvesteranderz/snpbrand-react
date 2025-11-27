@@ -44,12 +44,10 @@ const Account = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'profile' | 'addresses'>('overview')
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?.id) {
-        setLoading(true)
         try {
           // Fetch user profile
           const profileData = await UserProfileService.getUserProfile(user.id)
@@ -94,8 +92,6 @@ const Account = () => {
 
         } catch (error) {
           console.error('Error fetching account data:', error)
-        } finally {
-          setLoading(false)
         }
       }
     }

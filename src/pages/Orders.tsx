@@ -26,12 +26,10 @@ interface Order {
 const Orders = () => {
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchOrders = async () => {
       if (user?.id) {
-        setLoading(true)
         try {
           const data = await OrderService.getUserOrders(user.id)
           // Map Supabase data to component format if needed
@@ -46,11 +44,7 @@ const Orders = () => {
           setOrders(mappedOrders)
         } catch (error) {
           console.error('Error fetching orders:', error)
-        } finally {
-          setLoading(false)
         }
-      } else {
-        setLoading(false)
       }
     }
 

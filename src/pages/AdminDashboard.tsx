@@ -59,11 +59,9 @@ const AdminDashboard = () => {
   const [showAddProductForm, setShowAddProductForm] = useState(false)
   const [orders, setOrders] = useState<Order[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true)
       try {
         // Fetch orders
         const ordersData = await OrderService.getAllOrders()
@@ -99,8 +97,6 @@ const AdminDashboard = () => {
         setUsers(mappedUsers)
       } catch (error) {
         console.error('Error fetching admin data:', error)
-      } finally {
-        setLoading(false)
       }
     }
 
