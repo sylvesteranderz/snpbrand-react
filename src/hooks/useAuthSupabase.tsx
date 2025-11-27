@@ -230,19 +230,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           dispatch({ type: 'SET_ERROR', payload: error.message })
-          return false
+          throw error
         }
 
         if (data.user) {
           return true
         }
-        return false
+        throw new Error('Signup successful but no user returned')
       }
-      return false
+      throw new Error('Supabase is not enabled')
     } catch (error) {
       console.error('Signup error:', error)
-      dispatch({ type: 'SET_ERROR', payload: 'Signup failed. Please try again.' })
-      return false
+      const message = error instanceof Error ? error.message : 'Signup failed. Please try again.'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      throw error
     }
   }
 

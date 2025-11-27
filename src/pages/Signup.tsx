@@ -54,19 +54,15 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) return
 
     setIsLoading(true)
     setError('')
 
     try {
-      const success = await signup(formData)
-      if (success) {
-        navigate('/')
-      } else {
-        setError('Failed to create account. Please try again.')
-      }
+      await signup(formData)
+      navigate('/')
     } catch (error: any) {
       setError(error.message || 'An error occurred. Please try again.')
     } finally {
@@ -96,7 +92,7 @@ const Signup = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
           </Link>
-          
+
           <h2 className="text-3xl font-chilanka font-normal text-gray-900 mb-2">
             Create Account
           </h2>
