@@ -6,9 +6,26 @@ import { formatPrice } from '../utils/currency'
 import { useAuth } from '../hooks/useAuthSupabase'
 import { OrderService } from '../services/supabaseService'
 
+interface OrderItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  image: string
+}
+
+interface Order {
+  id: string
+  orderNumber: string
+  date: string
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  total: number
+  items: OrderItem[]
+}
+
 const Orders = () => {
   const { user } = useAuth()
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,7 +35,7 @@ const Orders = () => {
         try {
           const data = await OrderService.getUserOrders(user.id)
           // Map Supabase data to component format if needed
-          const mappedOrders = data.map((order: any) => ({
+          const mappedOrders: Order[] = data.map((order: any) => ({
             id: order.id,
             orderNumber: order.order_number, // Map order_number to display ID if preferred, or keep id
             date: order.created_at,
