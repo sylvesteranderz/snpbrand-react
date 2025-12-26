@@ -171,7 +171,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       const cartData = await CartService.getCart(user.id)
-      
+
       const cartItems: CartItem[] = cartData.map((item: any) => ({
         id: item.id,
         product: item.products || item.product,
@@ -192,7 +192,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addToCart = async (product: Product, quantity: number = 1, selectedSize?: string, selectedColor?: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       const newItem: CartItem = {
         id: user ? `${user.id}-${product.id}` : `local-${product.id}`,
         product,
@@ -200,12 +200,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedSize,
         selectedColor
       }
-      
+
       if (user) {
         // Try Supabase first
         try {
           const existingItem = state.items.find(item => item.product.id === product.id)
-          
+
           if (existingItem) {
             const newQuantity = existingItem.quantity + quantity
             await CartService.updateCartItemQuantity(user.id, product.id, newQuantity)
@@ -216,6 +216,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
           // Show modal after successful add
           dispatch({ type: 'SHOW_ADDED_MODAL', payload: newItem })
+          // Refresh cart from server to ensure sync
+          await loadCart()
         } catch (error) {
           console.error('Supabase cart error, falling back to localStorage:', error)
           // Fallback to localStorage
@@ -234,7 +236,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Add to local cart
   const addToLocalCart = (product: Product, quantity: number, selectedSize?: string, selectedColor?: string) => {
     const existingItem = state.items.find(item => item.product.id === product.id)
-    
+
     const newItem: CartItem = {
       id: `local-${product.id}`,
       product,
@@ -242,14 +244,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       selectedSize,
       selectedColor
     }
-    
+
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity
       dispatch({ type: 'UPDATE_ITEM', payload: { productId: existingItem.id, quantity: newQuantity } })
     } else {
       dispatch({ type: 'ADD_ITEM', payload: newItem })
     }
-    
+
     // Show modal after successful add
     dispatch({ type: 'SHOW_ADDED_MODAL', payload: newItem })
   }
@@ -258,11 +260,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const removeFromCart = async (productId: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       // Find the actual product ID from the cart item
       const cartItem = state.items.find(item => item.id === productId || item.product.id === productId)
       const actualProductId = cartItem?.product.id || productId
-      
+
       if (user && actualProductId) {
         try {
           await CartService.removeFromCart(user.id, actualProductId)
@@ -270,7 +272,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error('Supabase remove error, using localStorage:', error)
         }
       }
-      
+
       dispatch({ type: 'REMOVE_ITEM', payload: productId })
     } catch (error) {
       console.error('Error removing from cart:', error)
@@ -282,7 +284,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateQuantity = async (productId: string, quantity: number) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       if (quantity <= 0) {
         await removeFromCart(productId)
         return
@@ -299,7 +301,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error('Supabase update error, using localStorage:', error)
         }
       }
-      
+
       dispatch({ type: 'UPDATE_ITEM', payload: { productId, quantity } })
     } catch (error) {
       console.error('Error updating quantity:', error)
@@ -311,7 +313,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearCart = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       if (user) {
         try {
           await CartService.clearCart(user.id)
@@ -319,7 +321,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           console.error('Supabase clear error, using localStorage:', error)
         }
       }
-      
+
       dispatch({ type: 'CLEAR_CART' })
     } catch (error) {
       console.error('Error clearing cart:', error)
@@ -382,12 +384,12 @@ export const useCart = (): CartContextType => {
       error: null,
       showAddedModal: false,
       lastAddedItem: null,
-      addToCart: async () => {},
-      removeFromCart: async () => {},
-      updateQuantity: async () => {},
-      clearCart: async () => {},
-      refreshCart: async () => {},
-      closeAddedModal: () => {}
+      addToCart: async () => { },
+      removeFromCart: async () => { },
+      updateQuantity: async () => { },
+      clearCart: async () => { },
+      refreshCart: async () => { },
+      closeAddedModal: () => { }
     }
   }
   return context

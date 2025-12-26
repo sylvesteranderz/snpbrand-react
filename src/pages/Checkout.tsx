@@ -3,7 +3,9 @@ import { motion } from 'framer-motion'
 import { CreditCard, MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCartSupabase'
+import { useAuth } from '../hooks/useAuthSupabase'
 import { formatPrice } from '../utils/currency'
+import { OrderService } from '../services/supabaseService'
 import OrderConfirmation from './OrderConfirmation'
 
 interface FormData {
@@ -21,16 +23,17 @@ interface FormData {
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [orderData, setOrderData] = useState<any>(null)
-  
+
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     address: '',
     city: '',
     state: '',
@@ -40,6 +43,7 @@ const Checkout = () => {
   })
 
   const [errors, setErrors] = useState<Partial<FormData>>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -48,6 +52,7 @@ const Checkout = () => {
     if (errors[name as keyof FormData]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
+    setSubmitError(null)
   }
 
   const handlePaymentMethodChange = (method: 'paystack' | 'pay_on_delivery') => {
@@ -68,9 +73,9 @@ const Checkout = () => {
     if (step === 2) {
       if (!formData.address.trim()) newErrors.address = 'Address is required'
       if (!formData.city.trim()) newErrors.city = 'City is required'
-      if (!formData.state.trim()) newErrors.state = 'State is required'
-      if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required'
-      if (!formData.country.trim()) newErrors.country = 'Country is required'
+      // if (!formData.state.trim()) newErrors.state = 'State is required'
+      // if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required'
+      // if (!formData.country.trim()) newErrors.country = 'Country is required'
     }
 
     if (step === 3) {
@@ -97,11 +102,17 @@ const Checkout = () => {
   const handleSubmit = async () => {
     if (!validateStep(3)) return
 
+    if (!user) {
+      setSubmitError('You must be logged in to place an order.')
+      return
+    }
+
     setIsProcessing(true)
-    
+    setSubmitError(null)
+
     // Generate order number
     const orderNumber = `ORD-${Date.now()}`
-    
+
     // Calculate estimated delivery (3-5 business days)
     const deliveryDate = new Date()
     deliveryDate.setDate(deliveryDate.getDate() + 5)
@@ -111,28 +122,56 @@ const Checkout = () => {
       month: 'long',
       day: 'numeric'
     })
-    
-    // Create order data
-    const order = {
-      orderNumber,
-      customerInfo: formData,
-      items: items,
-      paymentMethod: formData.paymentMethod,
-      total: totalPrice + (totalPrice * 0.08) + (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0),
-      estimatedDelivery
+
+    // Prepare order data for Supabase RPC
+    const totalAmount = totalPrice + (totalPrice * 0.08) + (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
+
+    const orderPayload = {
+      user_id: user.id,
+      order_number: orderNumber,
+      total_amount: totalAmount,
+      status: 'pending',
+      payment_method: formData.paymentMethod,
+      shipping_address: {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip_code: formData.zipCode,
+        country: formData.country
+      },
+      items: items
     }
-    
-    // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsProcessing(false)
-    setOrderData(order)
-    setIsComplete(true)
-    
-    // Clear cart after successful order
-    setTimeout(() => {
-      clearCart()
-    }, 3000)
+
+    try {
+      // Create order in database using Supabase RPC
+      await OrderService.createOrder(orderPayload)
+
+      // Order created successfully
+      const successOrderData = {
+        orderNumber,
+        customerInfo: formData,
+        items: items,
+        paymentMethod: formData.paymentMethod,
+        total: totalAmount,
+        estimatedDelivery
+      }
+
+      setOrderData(successOrderData)
+      setIsComplete(true)
+
+      // Clear cart
+      await clearCart()
+
+    } catch (error: any) {
+      console.error('Checkout error:', error)
+      setSubmitError(error.message || 'Failed to place order. Please try again.')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (items.length === 0 && !isComplete) {
@@ -207,28 +246,26 @@ const Checkout = () => {
               const Icon = step.icon
               const isActive = currentStep === step.number
               const isCompleted = currentStep > step.number
-              
+
               // Only show current step and completed steps
               if (!isActive && !isCompleted) return null
-              
+
               return (
                 <div key={step.number} className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${
-                    isCompleted 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : isActive 
-                        ? 'bg-primary-500 border-primary-500 text-white' 
-                        : 'border-gray-300 text-gray-400'
-                  }`}>
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${isCompleted
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : isActive
+                      ? 'bg-primary-500 border-primary-500 text-white'
+                      : 'border-gray-300 text-gray-400'
+                    }`}>
                     {isCompleted ? (
                       <CheckCircle className="w-5 h-5" />
                     ) : (
                       <Icon className="w-5 h-5" />
                     )}
                   </div>
-                  <span className={`ml-2 font-medium ${
-                    isActive ? 'text-primary-500' : 'text-gray-500'
-                  }`}>
+                  <span className={`ml-2 font-medium ${isActive ? 'text-primary-500' : 'text-gray-500'
+                    }`}>
                     {step.title}
                   </span>
                 </div>
@@ -246,6 +283,12 @@ const Checkout = () => {
             className="lg:col-span-2"
           >
             <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border">
+              {submitError && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+                  <p className="text-red-600 text-center">{submitError}</p>
+                </div>
+              )}
+
               {/* Step 1: Personal Information */}
               {currentStep === 1 && (
                 <motion.div
@@ -264,9 +307,8 @@ const Checkout = () => {
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.firstName ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.firstName ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Enter your first name"
                       />
                       {errors.firstName && (
@@ -275,16 +317,15 @@ const Checkout = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Last Name *
+                        Last Name
                       </label>
                       <input
                         type="text"
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.lastName ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.lastName ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Enter your last name"
                       />
                       {errors.lastName && (
@@ -300,9 +341,8 @@ const Checkout = () => {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.email ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.email ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Enter your email"
                       />
                       {errors.email && (
@@ -318,9 +358,8 @@ const Checkout = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.phone ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Enter your phone number"
                       />
                       {errors.phone && (
@@ -342,16 +381,15 @@ const Checkout = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Street Address *
+                        Street Address
                       </label>
                       <input
                         type="text"
                         name="address"
                         value={formData.address}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.address ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.address ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Enter your street address"
                       />
                       {errors.address && (
@@ -361,77 +399,73 @@ const Checkout = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          City *
+                          City
                         </label>
                         <input
                           type="text"
                           name="city"
                           value={formData.city}
                           onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.city ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.city ? 'border-red-500' : 'border-gray-300'
+                            }`}
                           placeholder="City"
                         />
                         {errors.city && (
                           <p className="text-red-500 text-sm mt-1">{errors.city}</p>
                         )}
                       </div>
-                      <div>
+                      {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          State *
+                          State
                         </label>
                         <input
                           type="text"
                           name="state"
                           value={formData.state}
                           onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.state ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.state ? 'border-red-500' : 'border-gray-300'
+                            }`}
                           placeholder="State"
                         />
                         {errors.state && (
                           <p className="text-red-500 text-sm mt-1">{errors.state}</p>
                         )}
-                      </div>
-                      <div>
+                      </div> */}
+                      {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          ZIP Code *
+                          ZIP Code
                         </label>
                         <input
                           type="text"
                           name="zipCode"
                           value={formData.zipCode}
                           onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                            errors.zipCode ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.zipCode ? 'border-red-500' : 'border-gray-300'
+                            }`}
                           placeholder="ZIP Code"
                         />
                         {errors.zipCode && (
                           <p className="text-red-500 text-sm mt-1">{errors.zipCode}</p>
                         )}
-                      </div>
+                      </div> */}
                     </div>
-                    <div>
+                    {/* <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country *
+                        Country
                       </label>
                       <input
                         type="text"
                         name="country"
                         value={formData.country}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                          errors.country ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.country ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder="Country"
                       />
                       {errors.country && (
                         <p className="text-red-500 text-sm mt-1">{errors.country}</p>
                       )}
-                    </div>
+                    </div> */}
                   </div>
                 </motion.div>
               )}
@@ -444,25 +478,23 @@ const Checkout = () => {
                   transition={{ duration: 0.4 }}
                 >
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Method</h2>
-                  
+
                   {/* Payment Method Selection */}
                   <div className="space-y-4 mb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Paystack Option */}
-                      <div 
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                          formData.paymentMethod === 'paystack' 
-                            ? 'border-primary-500 bg-primary-50' 
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                      <div
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'paystack'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                          }`}
                         onClick={() => handlePaymentMethodChange('paystack')}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-4 h-4 rounded-full border-2 ${
-                            formData.paymentMethod === 'paystack' 
-                              ? 'border-primary-500 bg-primary-500' 
-                              : 'border-gray-300'
-                          }`}>
+                          <div className={`w-4 h-4 rounded-full border-2 ${formData.paymentMethod === 'paystack'
+                            ? 'border-primary-500 bg-primary-500'
+                            : 'border-gray-300'
+                            }`}>
                             {formData.paymentMethod === 'paystack' && (
                               <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
                             )}
@@ -476,20 +508,18 @@ const Checkout = () => {
                       </div>
 
                       {/* Pay on Delivery Option */}
-                      <div 
-                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                          formData.paymentMethod === 'pay_on_delivery' 
-                            ? 'border-primary-500 bg-primary-50' 
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
+                      <div
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${formData.paymentMethod === 'pay_on_delivery'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                          }`}
                         onClick={() => handlePaymentMethodChange('pay_on_delivery')}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-4 h-4 rounded-full border-2 ${
-                            formData.paymentMethod === 'pay_on_delivery' 
-                              ? 'border-primary-500 bg-primary-500' 
-                              : 'border-gray-300'
-                          }`}>
+                          <div className={`w-4 h-4 rounded-full border-2 ${formData.paymentMethod === 'pay_on_delivery'
+                            ? 'border-primary-500 bg-primary-500'
+                            : 'border-gray-300'
+                            }`}>
                             {formData.paymentMethod === 'pay_on_delivery' && (
                               <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
                             )}
@@ -512,7 +542,7 @@ const Checkout = () => {
                         <div>
                           <h4 className="font-medium text-blue-900 mb-1">Secure Online Payment</h4>
                           <p className="text-sm text-blue-700">
-                            Your payment will be processed securely through Paystack. 
+                            Your payment will be processed securely through Paystack.
                             You can pay with your card, bank transfer, or mobile money.
                           </p>
                         </div>
@@ -527,7 +557,7 @@ const Checkout = () => {
                         <div>
                           <h4 className="font-medium text-green-900 mb-1">Pay on Delivery</h4>
                           <p className="text-sm text-green-700">
-                            Pay cash or card when your order is delivered. 
+                            Pay cash or card when your order is delivered.
                             A small delivery fee may apply.
                           </p>
                         </div>
@@ -542,15 +572,14 @@ const Checkout = () => {
                 <button
                   onClick={handlePrevious}
                   disabled={currentStep === 1}
-                  className={`px-6 py-2 border rounded-md transition-colors ${
-                    currentStep === 1
-                      ? 'border-gray-300 text-gray-400 cursor-not-allowed'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`px-6 py-2 border rounded-md transition-colors ${currentStep === 1
+                    ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   Previous
                 </button>
-                
+
                 {currentStep < 3 ? (
                   <button
                     onClick={handleNext}
@@ -601,7 +630,7 @@ const Checkout = () => {
           >
             <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-              
+
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {items.map((item) => (
@@ -640,17 +669,17 @@ const Checkout = () => {
                     <span className="font-medium">{formatPrice(500)}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                {/* <div className="flex justify-between">
                   <span className="text-gray-600">Tax</span>
                   <span className="font-medium">{formatPrice(totalPrice * 0.08)}</span>
-                </div>
+                </div> */}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
                   <span>
                     {formatPrice(
-                      totalPrice + 
-                      (totalPrice * 0.08) + 
+                      totalPrice +
+                      (totalPrice * 0.08) +
                       (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
                     )}
                   </span>

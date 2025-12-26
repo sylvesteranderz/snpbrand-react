@@ -169,7 +169,7 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     return products.find(product => product.id === id) || null
   }
@@ -214,7 +214,7 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     return products.filter(product => product.category === category)
   }
@@ -278,7 +278,7 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     const newProduct: Product = {
       ...productData,
@@ -293,7 +293,7 @@ export class ProductService {
       colors: productData.colors || ['Default'],
       tags: productData.tags || []
     }
-    
+
     products.unshift(newProduct)
     this.saveLocalProducts(products)
     return newProduct
@@ -358,7 +358,7 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     const index = products.findIndex(product => product.id === id)
     if (index !== -1) {
@@ -387,7 +387,7 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     const filteredProducts = products.filter(product => product.id !== id)
     this.saveLocalProducts(filteredProducts)
@@ -433,10 +433,10 @@ export class ProductService {
         console.error('Supabase error, falling back to localStorage:', error)
       }
     }
-    
+
     const products = this.getLocalProducts()
     const queryLower = query.toLowerCase()
-    return products.filter(product => 
+    return products.filter(product =>
       product.name.toLowerCase().includes(queryLower) ||
       product.description?.toLowerCase().includes(queryLower) ||
       product.tags?.some(tag => tag.toLowerCase().includes(queryLower))
@@ -505,7 +505,7 @@ export class CartService {
 
         return await this.getCart(userId)
       } catch (error) {
-        console.error('Supabase add to cart error:', error)
+        console.error('Supabase add to cart error:', error, JSON.stringify(error, null, 2))
         throw error
       }
     }
@@ -604,10 +604,36 @@ export class WishlistService {
 }
 
 export class OrderService {
-  static async createOrder(_orderData: any) {
+  static async createOrder(orderData: any) {
     if (isSupabaseEnabled && supabase) {
-      // Supabase implementation would go here
-      return {}
+      try {
+        const { user_id, order_number, total_amount, status, payment_method, shipping_address, items } = orderData
+
+        // Call the PostgreSQL function
+        const { data, error } = await supabase.rpc('place_order', {
+          p_user_id: user_id,
+          p_order_number: order_number,
+          p_total_amount: total_amount,
+          p_status: status || 'pending',
+          p_payment_method: payment_method,
+          p_shipping_address: shipping_address,
+          p_items: items.map((item: any) => ({
+            product_id: item.product.id,
+            quantity: item.quantity,
+            price: item.product.price
+          }))
+        })
+
+        if (error) {
+          console.error('Error placing order:', error)
+          throw error
+        }
+
+        return data
+      } catch (error) {
+        console.error('Supabase create order error:', error)
+        throw error
+      }
     }
     return {}
   }
@@ -641,7 +667,7 @@ export class UserProfileService {
   static async getUserProfile(userId: string) {
     console.log('UserProfileService.getUserProfile called with:', userId)
     console.log('isSupabaseEnabled:', isSupabaseEnabled, 'supabase:', !!supabase)
-    
+
     if (isSupabaseEnabled && supabase) {
       try {
         console.log('Attempting to fetch user profile from Supabase...')
@@ -675,7 +701,7 @@ export class UserProfileService {
         console.log('Attempting to create user profile in Supabase...')
         const { data, error } = await supabase
           .from('user_profiles')
-          .insert([profileData])
+          .upsert([profileData])
           .select()
           .single()
 
