@@ -160,7 +160,7 @@ export const products: Product[] = [
   {
     id: '6',
     name: 'SnP Criss Black',
-    price: 25.00,
+    price: 250.00,
     image: '/images/SnPCrissBlack.jpg',
     images: ['/images/SnPCrissBlack.jpg'],
     description: 'Custom made zip-up for casual wear with woven fabric.',
@@ -266,7 +266,7 @@ export const blogPosts: BlogPost[] = [
     author: 'SnP ',
     date: '2024-02-20',
     category: 'Care',
-    tags: ['animals', 'help', 'community']
+    tags: ['', '', '']
   },
   {
     id: '2',
@@ -276,8 +276,8 @@ export const blogPosts: BlogPost[] = [
     image: '/images/blog2.jpg',
     author: 'SnP Team',
     date: '2024-02-21',
-    category: 'Pet Care',
-    tags: ['pets', 'hunger', 'care']
+    category: '',
+    tags: ['', '', '']
   },
 //   {
 //     id: '3',

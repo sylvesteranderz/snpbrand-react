@@ -124,7 +124,7 @@ const Checkout = () => {
     })
 
     // Prepare order data for Supabase RPC
-    const totalAmount = totalPrice + (totalPrice * 0.08) + (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
+    const totalAmount = totalPrice + (totalPrice * 0.08) // + (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
 
     const orderPayload = {
       user_id: user.id,
@@ -666,7 +666,7 @@ const Checkout = () => {
                 {formData.paymentMethod === 'pay_on_delivery' && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Delivery Fee</span>
-                    <span className="font-medium">{formatPrice(500)}</span>
+                    <span className="font-medium text-gray-500 italic">Will be calculated</span>
                   </div>
                 )}
                 {/* <div className="flex justify-between">
@@ -679,8 +679,8 @@ const Checkout = () => {
                   <span>
                     {formatPrice(
                       totalPrice +
-                      (totalPrice * 0.08) +
-                      (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
+                      (totalPrice * 0.08)
+                      // + (formData.paymentMethod === 'pay_on_delivery' ? 500 : 0)
                     )}
                   </span>
                 </div>
