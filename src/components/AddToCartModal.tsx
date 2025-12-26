@@ -94,7 +94,7 @@ const AddToCartModal = ({
                     <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">
                       {product.name}
                     </h3>
-                    
+
                     <div className="space-y-0.5 text-xs text-gray-600">
                       {selectedSize && (
                         <p>
@@ -128,7 +128,7 @@ const AddToCartModal = ({
                   </button>
                   <button
                     onClick={handleViewCart}
-                    className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-accent-500 text-white rounded-lg text-sm font-medium hover:bg-accent-600 transition-colors flex items-center justify-center gap-2"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     <span>View Cart</span>
@@ -144,4 +144,3 @@ const AddToCartModal = ({
 }
 
 export default AddToCartModal
-
