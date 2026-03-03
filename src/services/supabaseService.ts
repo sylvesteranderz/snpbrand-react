@@ -34,7 +34,8 @@ export class ProductService {
           discount: dbProduct.discount,
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
-          tags: dbProduct.tags || []
+          tags: dbProduct.tags || [],
+          images: dbProduct.images || []
         }))
 
         return mappedProducts
@@ -78,7 +79,8 @@ export class ProductService {
           discount: data.discount,
           sizes: data.sizes || [],
           colors: data.colors || [],
-          tags: data.tags || []
+          tags: data.tags || [],
+          images: data.images || []
         }
 
         return mappedProduct
@@ -122,7 +124,8 @@ export class ProductService {
           discount: dbProduct.discount,
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
-          tags: dbProduct.tags || []
+          tags: dbProduct.tags || [],
+          images: dbProduct.images || []
         }))
 
         return mappedProducts
@@ -312,7 +315,8 @@ export class ProductService {
           discount: dbProduct.discount,
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
-          tags: dbProduct.tags || []
+          tags: dbProduct.tags || [],
+          images: dbProduct.images || []
         }))
 
         return mappedProducts
@@ -630,7 +634,7 @@ export class OrderService {
 
         // If not found by ID, try order_number
         if (!data) {
-           const result = await supabase
+          const result = await supabase
             .from('orders')
             .select(`
               *,
@@ -647,9 +651,9 @@ export class OrderService {
             `)
             .eq('order_number', orderId)
             .single()
-           
-           data = result.data
-           error = result.error
+
+          data = result.data
+          error = result.error
         }
 
         if (error) throw error

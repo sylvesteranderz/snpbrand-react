@@ -41,9 +41,8 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-3 h-3 sm:w-4 sm:h-4 ${
-          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-        }`}
+        className={`w-3 h-3 sm:w-4 sm:h-4 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+          }`}
       />
     ))
   }
@@ -77,19 +76,18 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
       <Link to={`/product/${product.id}`}>
         <div className="relative overflow-hidden bg-gray-100 ">
           <img
-            src={product.image}
+            src={product.images && product.images.length > 0 ? product.images[0] : product.image}
             alt={product.name}
             className="w-full h-40 sm:h-44 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          
+
           {/* Wishlist Icon */}
           <button
             onClick={handleWishlistToggle}
-            className={`absolute top-2 right-2 z-20 p-2 rounded-full transition-all shadow-md ${
-              inWishlist
+            className={`absolute top-2 right-2 z-20 p-2 rounded-full transition-all shadow-md ${inWishlist
                 ? 'bg-accent-500 text-white'
                 : 'bg-white text-gray-600 hover:bg-accent-500 hover:text-white'
-            }`}
+              }`}
           >
             <Heart className={`w-4 h-4 ${inWishlist ? 'fill-current' : ''}`} />
           </button>
@@ -101,8 +99,8 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
         </div>
       </Link>
 
-  {/* Product Info */}
-  <div className="mt-3 space-y-2 px-3 pb-3">
+      {/* Product Info */}
+      <div className="mt-3 space-y-2 px-3 pb-3">
         <Link to={`/product/${product.id}`}>
           <h3 className="text-sm sm:text-base font-medium text-gray-900 group-hover:text-primary-500 transition-colors line-clamp-2">
             {product.name}
@@ -132,11 +130,11 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
         </div>
 
         {/* Size Info */}
-      
-          <div className="text-xs text-black-500">
-            All sizes available
-          </div>
-      
+
+        <div className="text-xs text-black-500">
+          All sizes available
+        </div>
+
       </div>
     </motion.div>
   )

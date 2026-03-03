@@ -22,7 +22,7 @@ const Header = () => {
   const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   // Debug authentication state
-  console.log('Header - Auth State:', { user, isAuthenticated })
+  // console.log('Header - Auth State:', { user, isAuthenticated })
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -83,26 +83,25 @@ const Header = () => {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 overflow-visible ${
-        isScrolled 
-          ? 'bg-black/95 backdrop-blur-md shadow-lg' 
+      <header className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 overflow-visible ${isScrolled
+          ? 'bg-black/95 backdrop-blur-md shadow-lg'
           : 'bg-black shadow-sm'
-      }`}>
-      
+        }`}>
+
 
         {/* Main Header */}
         <div className="container mx-auto px-4 py-3 overflow-visible">
           <div className="flex items-center justify-between overflow-visible">
             {/* Logo */}
-            <motion.div 
+            <motion.div
               className="flex-shrink-0"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
               <Link to="/" className="flex items-center">
-                <img 
-                  src="/images/SnpBrandLogo2.png" 
-                  alt="SnP Brand Logo" 
+                <img
+                  src="/images/SnpBrandLogo2.png"
+                  alt="SnP Brand Logo"
                   className="h-20 w-auto"
                 />
               </Link>
@@ -117,8 +116,8 @@ const Header = () => {
                     placeholder="Search..."
                     className="flex-1 bg-transparent text-sm outline-none placeholder-gray-400 text-white"
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors"
                     onClick={() => setIsSearchOpen(true)}
                   >
@@ -136,11 +135,10 @@ const Header = () => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`relative font-medium transition-colors duration-200 ${
-                      isActive(item.href)
+                    className={`relative font-medium transition-colors duration-200 ${isActive(item.href)
                         ? 'text-yellow-500'
                         : 'text-gray-300 hover:text-yellow-500'
-                    }`}
+                      }`}
                   >
                     {item.name}
                     {isActive(item.href) && (
@@ -152,7 +150,7 @@ const Header = () => {
                     )}
                   </Link>
                 ))}
-                
+
                 {/* Category Dropdown */}
                 <div className="relative dropdown-container">
                   <button
@@ -163,7 +161,7 @@ const Header = () => {
                     <span>Categories</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
-                  
+
                   <AnimatePresence>
                     {activeDropdown === 'categories' && (
                       <motion.div
@@ -197,21 +195,21 @@ const Header = () => {
                 <></>
               ) : (
                 <>
-                  <Link 
-                    to="/login" 
+                  <Link
+                    to="/login"
                     className="px-4 py-2 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 text-sm font-medium"
                   >
                     Sign In
                   </Link>
-                  <Link 
-                    to="/signup" 
+                  <Link
+                    to="/signup"
                     className="px-4 py-2 bg-yellow-500 text-black hover:bg-yellow-400 rounded-full transition-all duration-200 text-sm font-medium"
                   >
                     Sign Up
                   </Link>
                 </>
               )}
-              
+
               {/* Profile Dropdown - Desktop */}
               {isAuthenticated && (
                 <div className="relative dropdown-container profile-dropdown">
@@ -227,7 +225,7 @@ const Header = () => {
                     <span className="text-sm hidden md:block">{user?.name || 'User'}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
-                  
+
                   <AnimatePresence>
                     {isProfileOpen && (
                       <motion.div
@@ -251,7 +249,7 @@ const Header = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Menu Items */}
                         <div className="py-2">
                           <Link
@@ -306,14 +304,14 @@ const Header = () => {
                   </AnimatePresence>
                 </div>
               )}
-              
-              <Link 
-                to="/wishlist" 
+
+              <Link
+                to="/wishlist"
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 relative"
               >
                 <Heart className="w-6 h-6" />
                 {wishlistItems.length > 0 && (
-                  <motion.span 
+                  <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
@@ -322,13 +320,13 @@ const Header = () => {
                   </motion.span>
                 )}
               </Link>
-              <button 
+              <button
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 relative"
               >
                 <ShoppingCart className="w-6 h-6" />
                 {cartCount > 0 && (
-                  <motion.span 
+                  <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
@@ -341,7 +339,7 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <div className="lg:hidden flex items-center space-x-2">
-              <button 
+              <button
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200 relative"
               >
@@ -352,7 +350,7 @@ const Header = () => {
                   </span>
                 )}
               </button>
-              
+
               {/* Mobile Profile/Auth Icon */}
               <div className="relative">
                 {isAuthenticated ? (
@@ -375,7 +373,7 @@ const Header = () => {
                     <User className="w-6 h-6" />
                   </button>
                 )}
-                
+
                 <AnimatePresence>
                   {isProfileOpen && (
                     <motion.div
@@ -401,7 +399,7 @@ const Header = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Menu Items */}
                           <div className="py-2">
                             <Link
@@ -466,7 +464,7 @@ const Header = () => {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Auth Options */}
                           <div className="py-2">
                             <Link
@@ -492,7 +490,7 @@ const Header = () => {
                   )}
                 </AnimatePresence>
               </div>
-              
+
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-3 text-gray-300 hover:text-yellow-500 hover:bg-yellow-500/10 rounded-full transition-all duration-200"
@@ -537,23 +535,22 @@ const Header = () => {
                       </Link>
                     </div>
                   )}
-                  
+
                   {/* Navigation Links */}
                   {navigation.map((item) => (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`block py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
-                        isActive(item.href)
+                      className={`block py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${isActive(item.href)
                           ? 'text-yellow-500 bg-yellow-500/10'
                           : 'text-gray-300 hover:text-yellow-500 hover:bg-gray-800'
-                      }`}
+                        }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {item.name}
                     </Link>
                   ))}
-                  
+
                   {/* Mobile Categories - Only show when logged in */}
                   {isAuthenticated && (
                     <div className="pt-4 border-t border-gray-700">
@@ -574,7 +571,7 @@ const Header = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Mobile Account Links */}
                   <div className="pt-4 border-t border-gray-700">
                     {isAuthenticated ? (

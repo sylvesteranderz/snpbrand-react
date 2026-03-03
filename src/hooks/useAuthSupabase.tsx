@@ -26,6 +26,8 @@ interface AuthContextType extends AuthState {
   signup: (formData: { name: string; email: string; phone: string; password: string; confirmPassword: string }) => Promise<boolean>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  resendVerificationEmail: (email: string) => Promise<void>
 }
 
 type AuthAction =
@@ -89,6 +91,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Supabase initialization
       const getInitialSession = async () => {
         try {
+          // Manual hash handling for OAuth redirects
+          const hash = window.location.hash
+          if (hash && hash.includes('access_token')) {
+            console.log('Detected session in URL hash, attempting manual setSession')
+            // Parse hash manually if needed, but lets try supabase.auth.getSession() first which normally handles it.
+            // If the hash persists, it means getSession didn't strip it or didn't pick it up.
+
+            // Extract tokens manually
+            const params = new URLSearchParams(hash.replace(/^#/, ''))
+            const access_token = params.get('access_token')
+            const refresh_token = params.get('refresh_token')
+
+            if (access_token && refresh_token) {
+              const { data, error } = await supabase.auth.setSession({
+                access_token,
+                refresh_token
+              })
+              if (!error && data.session) {
+                console.log('Manual setSession success')
+                // await loadUserProfile(data.session.user.id) // Let the listener handle it or call it here
+                // Clear hash
+                window.history.replaceState(null, '', window.location.pathname)
+              }
+            }
+          }
+
           const { data: { session }, error } = await supabase?.auth.getSession() || { data: { session: null }, error: null }
 
           if (error) {
@@ -112,10 +140,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (_event, session) => {
+        async (event, session) => {
+          console.log('Auth state change:', event, session?.user?.email)
+
           if (session?.user) {
+            console.log('Session found, loading profile...')
             await loadUserProfile(session.user.id)
           } else {
+            console.log('No session, logging out...')
             dispatch({ type: 'LOGOUT' })
           }
         }
@@ -134,11 +166,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Load user profile from database
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('Loading user profile for:', userId)
       const profile = await UserProfileService.getUserProfile(userId)
 
       if (profile) {
+        console.log('Profile found:', profile)
         dispatch({ type: 'SET_USER', payload: profile })
       } else {
+        console.log('No profile found, creating one...')
         // If no profile exists, create one
         const { data: { user } } = await supabase!.auth.getUser()
         if (user) {
@@ -192,7 +227,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           dispatch({ type: 'SET_ERROR', payload: error.message })
-          return false
+          throw error
         }
 
         if (data.user) {
@@ -204,8 +239,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false
     } catch (error) {
       console.error('Login error:', error)
-      dispatch({ type: 'SET_ERROR', payload: 'Login failed. Please try again.' })
-      return false
+      const message = error instanceof Error ? error.message : 'Login failed. Please try again.'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      throw error
     }
   }
 
@@ -221,6 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: formData.email,
           password: formData.password,
           options: {
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
               name: formData.name,
               phone: formData.phone
@@ -295,12 +332,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+
+
+  // Google Sign In
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+
+      if (isSupabaseEnabled && supabase) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            // queryParams removed to avoid FedCM/popup conflicts
+          },
+        })
+
+        if (error) {
+          dispatch({ type: 'SET_ERROR', payload: error.message })
+          throw error
+        }
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error)
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to sign in with Google' })
+    }
+  }
+
+  // Resend verification email
+  const resendVerificationEmail = async (email: string): Promise<void> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+
+      if (isSupabaseEnabled && supabase) {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        })
+
+        if (error) {
+          throw error
+        }
+
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
+    } catch (error: any) {
+      console.error('Resend verification error:', error)
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to resend verification email' })
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     ...state,
     login,
     signup,
     logout,
-    updateProfile
+    updateProfile,
+    signInWithGoogle,
+    resendVerificationEmail
   }
 
   return (

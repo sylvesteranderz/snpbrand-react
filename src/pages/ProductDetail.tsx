@@ -4,17 +4,21 @@ import { motion } from 'framer-motion'
 import { Star, Heart, ShoppingCart, Plus, Minus, ArrowLeft } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Thumbs, Navigation } from 'swiper/modules'
-import { products } from '../utils/data'
 import { useCart } from '../hooks/useCartSupabase'
 import { useWishlist } from '../hooks/useWishlistSupabase'
+import { useProducts } from '../hooks/useProductsSupabase'
 import { formatPrice } from '../utils/currency'
+import { Product } from '../types'
+import { ProductService } from '../services/supabaseService'
 import 'swiper/css'
 import 'swiper/css/thumbs'
 import 'swiper/css/navigation'
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const [product, setProduct] = useState(products.find(p => p.id === id))
+  const { products } = useProducts()
+  const [product, setProduct] = useState<Product | undefined>(undefined)
+  // const [isLoading, setIsLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
@@ -24,6 +28,33 @@ const ProductDetail = () => {
   const { addToCart } = useCart()
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
 
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      if (!id) return;
+
+
+      // Try to find in existing products context first
+      let found = products.find(p => p.id === id);
+
+      // If not found (maybe direct link entry), try fetching specifically
+      if (!found) {
+        try {
+          const fetched = await ProductService.getProductById(id);
+          if (fetched) found = fetched;
+        } catch (error) {
+          console.error("Failed to fetch product", error);
+        }
+      }
+
+      setProduct(found);
+      if (found?.images) setSelectedImage(0);
+
+    };
+
+    fetchProduct();
+  }, [id, products]);
+
   // Check wishlist status on mount
   useEffect(() => {
     const checkWishlistStatus = async () => {
@@ -32,16 +63,10 @@ const ProductDetail = () => {
         setInWishlist(status)
       }
     }
-    checkWishlistStatus()
-  }, [isInWishlist, product])
-
-  useEffect(() => {
-    const foundProduct = products.find(p => p.id === id)
-    setProduct(foundProduct)
-    if (foundProduct?.images) {
-      setSelectedImage(0)
+    if (product) {
+      checkWishlistStatus()
     }
-  }, [id])
+  }, [isInWishlist, product])
 
   if (!product) {
     return (
@@ -62,7 +87,7 @@ const ProductDetail = () => {
       alert('Please select a size before adding to cart')
       return
     }
-    
+
     addToCart(product, quantity || 1, selectedSize, selectedColor)
   }
 
@@ -82,9 +107,8 @@ const ProductDetail = () => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-5 h-5 ${
-          i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-        }`}
+        className={`w-5 h-5 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+          }`}
       />
     ))
   }
@@ -123,7 +147,7 @@ const ProductDetail = () => {
             {/* Main Image */}
             <div className="mb-4 bg-gray-50 rounded-2xl p-4">
               <img
-                src={product.images?.[selectedImage] || product.image}
+                src={product.images && product.images.length > 0 ? product.images[selectedImage] : product.image}
                 alt={product.name}
                 className="w-full h-96 object-contain rounded-xl"
               />
@@ -142,13 +166,12 @@ const ProductDetail = () => {
                   <SwiperSlide key={index}>
                     <button
                       onClick={() => setSelectedImage(index)}
-                      className={`w-full h-20 bg-gray-50 rounded-lg border-2 transition-colors p-1 ${
-                        selectedImage === index ? 'border-primary-500' : 'border-gray-300'
-                      }`}
+                      className={`w-full h-20 bg-gray-50 rounded-lg border-2 transition-colors p-1 ${selectedImage === index ? 'border-primary-500' : 'border-gray-300'
+                        }`}
                     >
-                      <img 
-                        src={image} 
-                        alt={`${product.name} ${index + 1}`} 
+                      <img
+                        src={image}
+                        alt={`${product.name} ${index + 1}`}
                         className="w-full h-full object-contain rounded-md"
                       />
                     </button>
@@ -227,11 +250,10 @@ const ProductDetail = () => {
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
-                        selectedSize === size
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-300 hover:border-primary-500'
-                      }`}
+                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${selectedSize === size
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-300 hover:border-primary-500'
+                        }`}
                     >
                       {size}
                     </button>
@@ -252,11 +274,10 @@ const ProductDetail = () => {
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
-                        selectedColor === color
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-300 hover:border-primary-500'
-                      }`}
+                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${selectedColor === color
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-300 hover:border-primary-500'
+                        }`}
                     >
                       {color}
                     </button>
@@ -290,20 +311,18 @@ const ProductDetail = () => {
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock || (product.sizes && product.sizes.length > 0 && !selectedSize)}
-                className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center   gap-2 ${
-                  product.sizes && product.sizes.length > 0 && !selectedSize ? 'opacity-50' : ''
-                }`}
+                className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center   gap-2 ${product.sizes && product.sizes.length > 0 && !selectedSize ? 'opacity-50' : ''
+                  }`}
               >
                 <ShoppingCart className="w-5 h-5 " />
                 <span className="font-medium ">Add to Cart</span>
               </button>
               <button
                 onClick={handleWishlistToggle}
-                className={`px-6 py-3 rounded-md border transition-colors ${
-                  inWishlist
-                    ? 'bg-accent-500 text-white border-accent-500'
-                    : 'border-gray-300 text-gray-600 hover:bg-accent-500 hover:text-white hover:border-accent-500'
-                }`}
+                className={`px-6 py-3 rounded-md border transition-colors ${inWishlist
+                  ? 'bg-accent-500 text-white border-accent-500'
+                  : 'border-gray-300 text-gray-600 hover:bg-accent-500 hover:text-white hover:border-accent-500'
+                  }`}
               >
                 <Heart className="w-5 h-5" />
               </button>

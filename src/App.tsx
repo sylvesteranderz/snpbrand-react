@@ -18,6 +18,8 @@ import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import AnimatedSlipperDemo from './pages/AnimatedSlipperDemo'
 import ProtectedRoute from './components/ProtectedRoute'
+import GoogleOneTap from './components/GoogleOneTap'
+import VerificationPending from './pages/VerificationPending'
 import { CartProvider } from './hooks/useCartSupabase'
 import { WishlistProvider } from './hooks/useWishlistSupabase'
 import { AuthProvider } from './hooks/useAuthSupabase'
@@ -26,7 +28,7 @@ import { ProductProvider } from './hooks/useProductsSupabase'
 // Component to handle footer visibility
 const AppContent = () => {
   const location = useLocation()
-  
+
   // Pages where footer should be hidden on mobile
   const hideFooterOnMobile = [
     '/checkout',
@@ -37,14 +39,15 @@ const AppContent = () => {
     '/cart',
     '/product'
   ]
-  
+
   // Check if current path should hide footer on mobile
-  const shouldHideFooterOnMobile = hideFooterOnMobile.some(path => 
+  const shouldHideFooterOnMobile = hideFooterOnMobile.some(path =>
     location.pathname.startsWith(path)
   )
 
   return (
     <div className="min-h-screen bg-white">
+      <GoogleOneTap />
       <Header />
       <main>
         <Routes>
@@ -59,13 +62,14 @@ const AppContent = () => {
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route 
-            path="/admin" 
+          <Route path="/verification-pending" element={<VerificationPending />} />
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/blog" element={<Blog />} />
@@ -84,10 +88,10 @@ function App() {
       <ProductProvider>
         <CartProvider>
           <WishlistProvider>
-          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <ScrollToTop />
-            <AppContent />
-          </Router>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <ScrollToTop />
+              <AppContent />
+            </Router>
           </WishlistProvider>
         </CartProvider>
       </ProductProvider>

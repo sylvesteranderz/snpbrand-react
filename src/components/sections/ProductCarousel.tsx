@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { motion } from 'framer-motion'
 import ProductCard from '../ProductCard'
-import { products } from '../../utils/data'
+import { useProducts } from '../../hooks/useProductsSupabase'
 import 'swiper/css'
 import 'swiper/css/navigation'
 
@@ -15,23 +15,46 @@ interface ProductCarouselProps {
   limit?: number
 }
 
-const ProductCarousel = ({ 
-  title, 
-  category, 
-  showViewAll = false, 
+const ProductCarousel = ({
+  title,
+  category,
+  showViewAll = false,
   className = '',
   limit
 }: ProductCarouselProps) => {
-  
+  const { products, isLoading } = useProducts()
+
   // Filter products by category if specified
-  const filteredProducts = category 
+  const filteredProducts = category
     ? products.filter(product => product.category === category)
     : products
 
   // Apply limit if specified
-  const displayProducts = limit 
+  const displayProducts = limit
     ? filteredProducts.slice(0, limit)
     : filteredProducts
+
+  if (isLoading) {
+    return (
+      <section className={`py-8 ${className}`}>
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-8">
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+            {showViewAll && <div className="h-10 w-24 bg-gray-200 rounded animate-pulse"></div>}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (displayProducts.length === 0) {
+    return null
+  }
 
   return (
     <section className={`py-8 ${className}`}>
@@ -76,7 +99,7 @@ const ProductCarousel = ({
               disableOnInteraction: false,
             }}
             breakpoints={{
-              0:{
+              0: {
                 slidesPerView: 2,
                 spaceBetween: 16,
               },

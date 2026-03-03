@@ -30,38 +30,38 @@ interface OrderConfirmationProps {
   estimatedDelivery: string
 }
 
-const OrderConfirmation = ({ 
-  orderNumber, 
-  customerInfo, 
-  items, 
-  paymentMethod, 
+const OrderConfirmation = ({
+  orderNumber,
+  customerInfo,
+  items,
+  paymentMethod,
   total,
-  estimatedDelivery 
+  estimatedDelivery
 }: OrderConfirmationProps) => {
   const steps = [
-    { 
-      icon: CheckCircle, 
-      title: 'Order Confirmed', 
+    {
+      icon: CheckCircle,
+      title: 'Order Confirmed',
       description: 'Your order has been received',
-      completed: true 
+      completed: true
     },
-    { 
-      icon: Package, 
-      title: 'Processing', 
+    {
+      icon: Package,
+      title: 'Processing',
       description: 'We\'re preparing your order',
-      completed: false 
+      completed: false
     },
-    { 
-      icon: Truck, 
-      title: 'Shipped', 
+    {
+      icon: Truck,
+      title: 'Shipped',
       description: 'Your order is on the way',
-      completed: false 
+      completed: false
     },
-    { 
-      icon: CheckCircle, 
-      title: 'Delivered', 
+    {
+      icon: CheckCircle,
+      title: 'Delivered',
       description: 'Order delivered successfully',
-      completed: false 
+      completed: false
     }
   ]
 
@@ -152,17 +152,15 @@ const OrderConfirmation = ({
                   const Icon = step.icon
                   return (
                     <div key={index} className="flex items-center space-x-4">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        step.completed 
-                          ? 'bg-green-500 border-green-500 text-white' 
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step.completed
+                          ? 'bg-green-500 border-green-500 text-white'
                           : 'border-gray-300 text-gray-400'
-                      }`}>
+                        }`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h3 className={`font-medium ${
-                          step.completed ? 'text-green-600' : 'text-gray-500'
-                        }`}>
+                        <h3 className={`font-medium ${step.completed ? 'text-green-600' : 'text-gray-500'
+                          }`}>
                           {step.title}
                         </h3>
                         <p className="text-sm text-gray-500">{step.description}</p>
@@ -229,7 +227,7 @@ const OrderConfirmation = ({
           >
             <div className="bg-white rounded-lg shadow-sm p-6 border sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-              
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
@@ -273,19 +271,19 @@ const OrderConfirmation = ({
               </div>
 
               <div className="space-y-3">
-                <Link 
+                <Link
                   to={`/order-tracking/${orderNumber}`}
                   className="w-full btn-primary block text-center"
                 >
                   Track Order
                 </Link>
-                <Link 
+                <Link
                   to="/shop"
                   className="w-full btn-outline-primary block text-center"
                 >
                   Continue Shopping
                 </Link>
-                <Link 
+                <Link
                   to="/account/orders"
                   className="w-full btn-outline-dark block text-center"
                 >
