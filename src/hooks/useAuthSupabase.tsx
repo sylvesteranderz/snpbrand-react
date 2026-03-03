@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const access_token = params.get('access_token')
             const refresh_token = params.get('refresh_token')
 
-            if (access_token && refresh_token) {
+            if (access_token && refresh_token && supabase) {
               const { data, error } = await supabase.auth.setSession({
                 access_token,
                 refresh_token
