@@ -5,21 +5,17 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 // If Supabase is not configured, use mock mode
-const isSupabaseConfigured = supabaseUrl && supabaseAnonKey && 
-  supabaseUrl !== 'https://your-project-id.supabase.co' && 
-  supabaseAnonKey !== 'your-anon-key-here' &&
-  supabaseUrl !== 'undefined' &&
-  supabaseAnonKey !== 'undefined'
+const isSupabaseConfigured = supabaseUrl && supabaseAnonKey
 
 // Create Supabase client (will be null if not configured)
-export const supabase = isSupabaseConfigured 
+export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
-    })
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
   : null
 
 // Force demo mode for development - set to false to enable Supabase
@@ -29,13 +25,13 @@ const FORCE_DEMO_MODE = false
 export const isSupabaseEnabled = isSupabaseConfigured && !FORCE_DEMO_MODE
 
 // Debug logging
-console.log('Supabase Configuration:', {
-  supabaseUrl,
-  supabaseAnonKey,
-  isSupabaseConfigured,
-  isSupabaseEnabled,
-  FORCE_DEMO_MODE
-})
+// console.log('Supabase Configuration:', {
+//   supabaseUrl,
+//   supabaseAnonKey,
+//   isSupabaseConfigured,
+//   isSupabaseEnabled,
+//   FORCE_DEMO_MODE
+// })
 
 // Database types
 export interface Database {

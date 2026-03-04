@@ -90,7 +90,11 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       const newProduct = await ProductService.addProduct(productData)
-      dispatch({ type: 'ADD_PRODUCT', payload: newProduct })
+      if (newProduct) {
+        dispatch({ type: 'ADD_PRODUCT', payload: newProduct })
+      } else {
+        throw new Error('Failed to create product')
+      }
     } catch (error) {
       console.error('Error adding product:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to add product' })
@@ -103,7 +107,11 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       const updatedProduct = await ProductService.updateProduct(id, updates)
-      dispatch({ type: 'UPDATE_PRODUCT', payload: { id, updates: updatedProduct } })
+      if (updatedProduct) {
+        dispatch({ type: 'UPDATE_PRODUCT', payload: { id, updates: updatedProduct } })
+      } else {
+        throw new Error('Failed to update product')
+      }
     } catch (error) {
       console.error('Error updating product:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to update product' })

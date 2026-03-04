@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { CheckCircle, Package, Truck, Clock, MapPin, ArrowLeft, RefreshCw } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { formatPrice } from '../utils/currency'
+import { OrderService } from '../services/supabaseService'
 
 interface OrderStatus {
   id: string
@@ -48,75 +49,96 @@ const OrderTracking = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
-  // Mock order data - in real app, this would come from API
-  const mockOrderData: OrderData = {
-    orderNumber: orderNumber || 'ORD-1234567890',
-    customerInfo: {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'United States'
-    },
-    items: [
-      {
-        id: '1',
-        name: 'Premium Leather Slippers',
-        price: 8999,
-        quantity: 1,
-        image: '/api/placeholder/100/100',
-        selectedSize: '42',
-        selectedColor: 'Black'
+  const fetchOrder = async () => {
+    if (!orderNumber) return
+
+    setLoading(true)
+    try {
+      const data = await OrderService.getOrderById(orderNumber)
+
+      if (data) {
+        // Synthesize status history based on current status
+        const statusHistory: OrderStatus[] = []
+        const baseDate = new Date(data.created_at)
+
+        // Always add confirmed
+        statusHistory.push({
+          id: '1',
+          status: 'confirmed',
+          timestamp: data.created_at,
+          description: 'Order confirmed and payment received'
+        })
+
+        if (['processing', 'shipped', 'delivered'].includes(data.status)) {
+          statusHistory.push({
+            id: '2',
+            status: 'processing',
+            timestamp: new Date(baseDate.getTime() + 86400000).toISOString(), // +1 day
+            location: 'Warehouse',
+            description: 'Order is being prepared for shipment'
+          })
+        }
+
+        if (['shipped', 'delivered'].includes(data.status)) {
+          statusHistory.push({
+            id: '3',
+            status: 'shipped',
+            timestamp: new Date(baseDate.getTime() + 172800000).toISOString(), // +2 days
+            location: 'Distribution Center',
+            description: 'Order has been shipped'
+          })
+        }
+
+        if (data.status === 'delivered') {
+          statusHistory.push({
+            id: '4',
+            status: 'delivered',
+            timestamp: new Date(baseDate.getTime() + 432000000).toISOString(), // +5 days
+            location: 'Delivery Address',
+            description: 'Order has been delivered'
+          })
+        }
+
+        const mappedOrder: OrderData = {
+          orderNumber: data.order_number,
+          customerInfo: {
+            firstName: data.user_profiles?.name?.split(' ')[0] || 'Guest',
+            lastName: data.user_profiles?.name?.split(' ').slice(1).join(' ') || '',
+            email: data.user_profiles?.email || '',
+            phone: data.user_profiles?.phone || '',
+            address: data.shipping_address || '',
+            city: data.user_profiles?.city || '',
+            state: data.user_profiles?.state || '',
+            zipCode: data.user_profiles?.zip_code || '',
+            country: data.user_profiles?.country || ''
+          },
+          items: data.items || [],
+          paymentMethod: data.payment_method,
+          total: data.total_amount,
+          estimatedDelivery: new Date(baseDate.getTime() + 604800000).toLocaleDateString(), // +7 days
+          status: statusHistory,
+          trackingNumber: data.status === 'shipped' || data.status === 'delivered' ? `TRK${data.order_number}` : undefined,
+          carrier: 'FedEx'
+        }
+        setOrder(mappedOrder)
+      } else {
+        setOrder(null)
       }
-    ],
-    paymentMethod: 'paystack',
-    total: 9719,
-    estimatedDelivery: 'December 25, 2024',
-    trackingNumber: 'TRK123456789',
-    carrier: 'FedEx',
-    status: [
-      {
-        id: '1',
-        status: 'confirmed',
-        timestamp: '2024-12-20T10:00:00Z',
-        description: 'Order confirmed and payment received'
-      },
-      {
-        id: '2',
-        status: 'processing',
-        timestamp: '2024-12-20T14:30:00Z',
-        location: 'Warehouse A',
-        description: 'Order is being prepared for shipment'
-      },
-      {
-        id: '3',
-        status: 'shipped',
-        timestamp: '2024-12-21T09:15:00Z',
-        location: 'Distribution Center',
-        description: 'Order has been shipped'
-      }
-    ]
+    } catch (error) {
+      console.error('Error fetching order:', error)
+      setOrder(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    // Simulate API call
-    const fetchOrder = async () => {
-      setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setOrder(mockOrderData)
-      setLoading(false)
-    }
-
     fetchOrder()
   }, [orderNumber])
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await fetchOrder()
     setRefreshing(false)
   }
 
@@ -240,13 +262,13 @@ const OrderTracking = () => {
                   <p className="text-sm text-gray-500">Estimated Delivery: {order.estimatedDelivery}</p>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 {order.status.map((status, index) => {
                   const Icon = getStatusIcon(status.status)
                   const isLast = index === order.status.length - 1
                   const isCompleted = index < order.status.length - 1 || status.status === 'delivered'
-                  
+
                   return (
                     <motion.div
                       key={status.id}
@@ -255,18 +277,16 @@ const OrderTracking = () => {
                       transition={{ duration: 0.4, delay: index * 0.1 }}
                       className="flex items-start space-x-4"
                     >
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                        isCompleted 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : 'border-gray-300 text-gray-400'
-                      }`}>
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${isCompleted
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'border-gray-300 text-gray-400'
+                        }`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <h3 className={`font-medium capitalize ${
-                            isCompleted ? 'text-green-600' : getStatusColor(status.status)
-                          }`}>
+                          <h3 className={`font-medium capitalize ${isCompleted ? 'text-green-600' : getStatusColor(status.status)
+                            }`}>
                             {status.status}
                           </h3>
                           {isLast && (
@@ -364,7 +384,7 @@ const OrderTracking = () => {
           >
             <div className="bg-white rounded-lg shadow-sm p-6 border sticky top-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-              
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
@@ -408,13 +428,13 @@ const OrderTracking = () => {
               </div>
 
               <div className="space-y-3">
-                <Link 
+                <Link
                   to="/shop"
                   className="w-full btn-primary block text-center"
                 >
                   Continue Shopping
                 </Link>
-                <Link 
+                <Link
                   to="/account/orders"
                   className="w-full btn-outline-primary block text-center"
                 >

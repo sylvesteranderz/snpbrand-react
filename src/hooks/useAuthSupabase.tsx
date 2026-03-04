@@ -26,6 +26,8 @@ interface AuthContextType extends AuthState {
   signup: (formData: { name: string; email: string; phone: string; password: string; confirmPassword: string }) => Promise<boolean>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>
+  signInWithGoogle: () => Promise<void>
+  resendVerificationEmail: (email: string) => Promise<void>
 }
 
 type AuthAction =
@@ -75,26 +77,6 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-// Mock users for demo purposes
-const mockUsers = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@example.com',
-    phone: '+1234567890',
-    role: 'admin' as const,
-    password: 'password123'
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+1234567891',
-    role: 'customer' as const,
-    password: 'password123'
-  }
-]
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     user: null,
@@ -109,8 +91,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Supabase initialization
       const getInitialSession = async () => {
         try {
+          // Manual hash handling for OAuth redirects
+          const hash = window.location.hash
+          if (hash && hash.includes('access_token')) {
+            console.log('Detected session in URL hash, attempting manual setSession')
+            // Parse hash manually if needed, but lets try supabase.auth.getSession() first which normally handles it.
+            // If the hash persists, it means getSession didn't strip it or didn't pick it up.
+
+            // Extract tokens manually
+            const params = new URLSearchParams(hash.replace(/^#/, ''))
+            const access_token = params.get('access_token')
+            const refresh_token = params.get('refresh_token')
+
+            if (access_token && refresh_token && supabase) {
+              const { data, error } = await supabase.auth.setSession({
+                access_token,
+                refresh_token
+              })
+              if (!error && data.session) {
+                console.log('Manual setSession success')
+                // await loadUserProfile(data.session.user.id) // Let the listener handle it or call it here
+                // Clear hash
+                window.history.replaceState(null, '', window.location.pathname)
+              }
+            }
+          }
+
           const { data: { session }, error } = await supabase?.auth.getSession() || { data: { session: null }, error: null }
-          
+
           if (error) {
             console.error('Error getting session:', error)
             dispatch({ type: 'SET_ERROR', payload: error.message })
@@ -133,11 +141,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Listen for auth changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
-          console.log('Auth state changed:', event, session?.user?.id)
-          
+          console.log('Auth state change:', event, session?.user?.email)
+
           if (session?.user) {
+            console.log('Session found, loading profile...')
             await loadUserProfile(session.user.id)
           } else {
+            console.log('No session, logging out...')
             dispatch({ type: 'LOGOUT' })
           }
         }
@@ -147,18 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         subscription.unsubscribe()
       }
     } else {
-      // Mock mode - check localStorage for saved user
-      console.log('Supabase not configured, using mock authentication')
-      const savedUser = localStorage.getItem('mock-user')
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser)
-          dispatch({ type: 'SET_USER', payload: user })
-        } catch (error) {
-          console.error('Error parsing saved user:', error)
-          localStorage.removeItem('mock-user')
-        }
-      }
+      console.error('Supabase not configured')
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }, [])
@@ -169,17 +168,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('Loading user profile for:', userId)
       const profile = await UserProfileService.getUserProfile(userId)
-      console.log('User profile result:', profile)
-      
+
       if (profile) {
-        console.log('Profile found, setting user:', profile)
+        console.log('Profile found:', profile)
         dispatch({ type: 'SET_USER', payload: profile })
       } else {
         console.log('No profile found, creating one...')
         // If no profile exists, create one
         const { data: { user } } = await supabase!.auth.getUser()
         if (user) {
-          console.log('Creating user profile for:', user)
           await createUserProfile(user)
         }
       }
@@ -187,10 +184,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error loading user profile:', error)
       // If profile loading fails, create a basic profile from auth user
       try {
-        console.log('Profile loading failed, creating basic profile...')
         const { data: { user } } = await supabase!.auth.getUser()
         if (user) {
-          console.log('Creating basic user profile for:', user)
           await createUserProfile(user)
         }
       } catch (fallbackError) {
@@ -203,7 +198,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Create user profile
   const createUserProfile = async (user: User) => {
     try {
-      console.log('Creating user profile with data:', user)
       const profile = await UserProfileService.createUserProfile({
         id: user.id,
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
@@ -211,23 +205,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         phone: user.user_metadata?.phone || '',
         role: 'customer'
       })
-      console.log('User profile created:', profile)
       dispatch({ type: 'SET_USER', payload: profile })
     } catch (error) {
       console.error('Error creating user profile:', error)
-      // If database creation fails, create a basic profile in memory
-      console.log('Database creation failed, creating basic profile in memory...')
-      const basicProfile = {
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        role: 'customer' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      console.log('Basic profile created:', basicProfile)
-      dispatch({ type: 'SET_USER', payload: basicProfile })
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to create user profile' })
     }
   }
 
@@ -236,8 +217,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       dispatch({ type: 'SET_ERROR', payload: null })
-
-      console.log('Login attempt:', { email, isSupabaseEnabled, supabase: !!supabase })
 
       if (isSupabaseEnabled && supabase && supabase.auth) {
         // Supabase login
@@ -248,7 +227,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           dispatch({ type: 'SET_ERROR', payload: error.message })
-          return false
+          throw error
         }
 
         if (data.user) {
@@ -256,43 +235,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return true
         }
         return false
-      } else {
-        // Mock login - Fallback when Supabase is not available
-        console.log('Using mock authentication (Supabase not available)')
-        console.log('Available mock users:', mockUsers.map(u => ({ email: u.email, password: u.password })))
-        
-        // Trim whitespace from inputs
-        const trimmedEmail = email.trim()
-        const trimmedPassword = password.trim()
-        console.log('Trimmed inputs:', { email: trimmedEmail, password: trimmedPassword })
-        
-        const user = mockUsers.find(u => u.email === trimmedEmail && u.password === trimmedPassword)
-        console.log('Found user:', user)
-        
-        if (user) {
-          const userProfile: UserProfile = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-          localStorage.setItem('mock-user', JSON.stringify(userProfile))
-          dispatch({ type: 'SET_USER', payload: userProfile })
-          console.log('Login successful, user profile set:', userProfile)
-          return true
-        } else {
-          console.log('No matching user found for:', { email: trimmedEmail, password: trimmedPassword })
-          dispatch({ type: 'SET_ERROR', payload: 'Invalid email or password' })
-          return false
-        }
       }
+      return false
     } catch (error) {
       console.error('Login error:', error)
-      dispatch({ type: 'SET_ERROR', payload: 'Login failed. Please try again.' })
-      return false
+      const message = error instanceof Error ? error.message : 'Login failed. Please try again.'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      throw error
     }
   }
 
@@ -308,6 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: formData.email,
           password: formData.password,
           options: {
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
               name: formData.name,
               phone: formData.phone
@@ -317,70 +267,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error) {
           dispatch({ type: 'SET_ERROR', payload: error.message })
-          return false
+          throw error
         }
 
         if (data.user) {
-          console.log('User created successfully. Please check your email for verification.')
           return true
         }
-        return false
-      } else {
-        // Mock signup
-        const newUser: UserProfile = {
-          id: Date.now().toString(),
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          role: 'customer',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        localStorage.setItem('mock-user', JSON.stringify(newUser))
-        dispatch({ type: 'SET_USER', payload: newUser })
-        return true
+        throw new Error('Signup successful but no user returned')
       }
+      throw new Error('Supabase is not enabled')
     } catch (error) {
       console.error('Signup error:', error)
-      dispatch({ type: 'SET_ERROR', payload: 'Signup failed. Please try again.' })
-      return false
+      const message = error instanceof Error ? error.message : 'Signup failed. Please try again.'
+      dispatch({ type: 'SET_ERROR', payload: message })
+      throw error
     }
   }
 
   // Logout function
   const logout = async (): Promise<void> => {
     try {
-      console.log('Logout attempt:', { isSupabaseEnabled, supabase: !!supabase })
-      
       if (isSupabaseEnabled && supabase) {
         // Supabase logout
         const { error } = await supabase.auth.signOut()
-        
+
         if (error) {
           console.error('Supabase logout error:', error)
           dispatch({ type: 'SET_ERROR', payload: error.message })
           return
         }
-        
-        console.log('Supabase logout successful')
-      } else {
-        // Mock logout
-        console.log('Using mock logout')
-        localStorage.removeItem('mock-user')
       }
 
       // Clear any cart/wishlist data
       localStorage.removeItem('snpbrand-cart')
       localStorage.removeItem('snpbrand-wishlist')
-      
+
       dispatch({ type: 'LOGOUT' })
-      console.log('Logout completed successfully')
-      
+
       // Redirect to home page
       if (typeof window !== 'undefined') {
         window.location.href = '/'
       }
-      
+
     } catch (error) {
       console.error('Logout error:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Logout failed. Please try again.' })
@@ -393,14 +321,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
+
       if (isSupabaseEnabled && supabase) {
         const updatedProfile = await UserProfileService.updateUserProfile(state.user.id, updates)
-        dispatch({ type: 'SET_USER', payload: updatedProfile })
-      } else {
-        // Mock update
-        const updatedProfile = { ...state.user, ...updates }
-        localStorage.setItem('mock-user', JSON.stringify(updatedProfile))
         dispatch({ type: 'SET_USER', payload: updatedProfile })
       }
     } catch (error) {
@@ -409,12 +332,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+
+
+  // Google Sign In
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+
+      if (isSupabaseEnabled && supabase) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            // queryParams removed to avoid FedCM/popup conflicts
+          },
+        })
+
+        if (error) {
+          dispatch({ type: 'SET_ERROR', payload: error.message })
+          throw error
+        }
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error)
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to sign in with Google' })
+    }
+  }
+
+  // Resend verification email
+  const resendVerificationEmail = async (email: string): Promise<void> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true })
+
+      if (isSupabaseEnabled && supabase) {
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        })
+
+        if (error) {
+          throw error
+        }
+
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
+    } catch (error: any) {
+      console.error('Resend verification error:', error)
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Failed to resend verification email' })
+      throw error
+    }
+  }
+
   const value: AuthContextType = {
     ...state,
     login,
     signup,
     logout,
-    updateProfile
+    updateProfile,
+    signInWithGoogle,
+    resendVerificationEmail
   }
 
   return (
