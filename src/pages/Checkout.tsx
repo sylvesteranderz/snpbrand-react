@@ -7,6 +7,9 @@ import { useAuth } from '../hooks/useAuthSupabase'
 import { OrderService } from '../services/supabaseService'
 import { formatPrice } from '../utils/currency'
 import OrderConfirmation from './OrderConfirmation'
+import { usePaystackPayment } from 'react-paystack'
+import { PAYSTACK_CONFIG } from '../config/paystack'
+import { supabase } from '../lib/supabase'
 
 interface FormData {
   firstName: string
@@ -27,6 +30,7 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [orderData, setOrderData] = useState<any>(null)
+  const [orderNumber] = useState(`ORD-${Date.now()}`)
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -96,8 +100,26 @@ const Checkout = () => {
     setCurrentStep(prev => prev - 1)
   }
 
-  /* import useAuth */
   const { user } = useAuth()
+
+  const subtotal = totalPrice
+  const tax = 0 // subtotal * 0.08 (disabled in UI currently)
+  const shipping = formData.paymentMethod === 'pay_on_delivery' ? 500 : 0
+  const total = subtotal + tax + shipping
+
+  const paystackConfig = {
+    publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
+    email: formData.email || 'guest@example.com',
+    amount: Math.round(total * 100), // in pesewas
+    currency: PAYSTACK_CONFIG.CURRENCY,
+    metadata: {
+      custom_fields: [
+        { display_name: "Order Number", variable_name: "order_number", value: orderNumber }
+      ]
+    }
+  }
+
+  const initializePayment = usePaystackPayment(paystackConfig)
 
   const handleSubmit = async () => {
     if (!validateStep(3)) return
@@ -105,14 +127,8 @@ const Checkout = () => {
     setIsProcessing(true)
 
     try {
-      // Generate order number
-      const orderNumber = `ORD-${Date.now()}`
-
       // Calculate totals
-      const subtotal = totalPrice
-      const tax = 0 // subtotal * 0.08 (disabled in UI currently)
-      const shipping = formData.paymentMethod === 'pay_on_delivery' ? 500 : 0
-      const total = subtotal + tax + shipping
+      // Variables hoisted outside handleSubmit for paystack config
 
       // Create snapshot of items
       const orderItems = items.map(item => ({
@@ -136,6 +152,13 @@ const Checkout = () => {
         user_id: user?.id || null, // Null for guest checkout
         order_number: orderNumber,
         customer_info: submissionData, // Stored as JSONB
+        shipping_address: {
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country
+        },
         items: orderItems, // Stored as JSONB snapshot
         payment_method: formData.paymentMethod,
         payment_status: 'pending',
@@ -145,9 +168,9 @@ const Checkout = () => {
       }
 
       // Submit to Supabase
-      const { error } = await OrderService.createOrder(orderPayload)
+      const createdOrder = await OrderService.createOrder(orderPayload)
 
-      if (error) throw error
+      if (!createdOrder) throw new Error("Order creation failed")
 
       // Calculate estimated delivery for UI
       const deliveryDate = new Date()
@@ -168,17 +191,45 @@ const Checkout = () => {
         estimatedDelivery
       }
 
-      setOrderData(uiOrderData)
-      setIsComplete(true)
-
-      // Clear cart after successful order
-      clearCart()
+      if (formData.paymentMethod === 'paystack') {
+        initializePayment({
+          onSuccess: (referenceData: any) => {
+            // Verify payment on backend
+            if (!supabase) {
+              console.error('Supabase client is not available');
+              alert('Payment received but verification failed (System Error). Please contact support.');
+              setIsProcessing(false);
+              return;
+            }
+            supabase.functions.invoke('verify-payment', {
+              body: { reference: referenceData.reference, order_id: createdOrder.id }
+            }).then(({ error: verifyError }) => {
+              if (verifyError) {
+                console.error('Verification failed:', verifyError);
+                alert('Payment received but verification failed. Please contact support.');
+                setIsProcessing(false);
+              } else {
+                setOrderData(uiOrderData)
+                setIsComplete(true)
+                clearCart()
+              }
+            });
+          },
+          onClose: () => {
+            alert('Payment cancelled by user.');
+            setIsProcessing(false);
+          }
+        });
+      } else {
+        setOrderData(uiOrderData)
+        setIsComplete(true)
+        clearCart()
+      }
 
     } catch (err) {
       console.error('Checkout failed:', err)
       // Display error to user (you might want to add an error state/toast here)
       alert('Failed to place order. Please try again.')
-    } finally {
       setIsProcessing(false)
     }
   }

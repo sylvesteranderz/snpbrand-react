@@ -62,7 +62,7 @@ const Signup = () => {
 
     try {
       await signup(formData)
-      navigate('/verification-pending')
+      navigate('/verification-pending', { state: { email: formData.email } })
     } catch (error: any) {
       setError(error.message || 'An error occurred. Please try again.')
     } finally {
