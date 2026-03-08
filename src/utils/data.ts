@@ -1,4 +1,4 @@
-import { Product, BlogPost, Testimonial, Service } from '../types'
+import { Product, BlogPost, Testimonial, Service } from '@/types'
 
 export const products: Product[] = [
   // SLIPPERS SECTION

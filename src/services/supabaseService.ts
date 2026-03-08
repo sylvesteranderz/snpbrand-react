@@ -1,5 +1,5 @@
-import { supabase, isSupabaseEnabled } from '../lib/supabase'
-import { Product } from '../types'
+import { supabase, isSupabaseEnabled } from '@/lib/supabase'
+import { Product } from '@/types'
 
 // Product Service
 export class ProductService {
