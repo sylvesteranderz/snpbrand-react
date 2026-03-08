@@ -566,27 +566,29 @@ const Checkout = () => {
                         }`}
                       onClick={() => handlePaymentMethodChange('paystack')}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${formData.paymentMethod === 'paystack'
-                          ? 'border-primary-500 bg-primary-500'
-                          : 'border-gray-300'
-                          }`}>
-                          {formData.paymentMethod === 'paystack' && (
-                            <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
-                          )}
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                        <div className="flex items-start sm:items-center space-x-3">
+                          <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-1 sm:mt-0 ${formData.paymentMethod === 'paystack'
+                            ? 'border-primary-500 bg-primary-500'
+                            : 'border-gray-300'
+                            }`}>
+                            {formData.paymentMethod === 'paystack' && (
+                              <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
+                            )}
+                          </div>
+
+                          <div>
+                            <h3 className="font-medium text-gray-900">Pay Online</h3>
+                            <div className="text-sm text-gray-500">
+                              Secure payment with Bank Card or Mobile Money (Momo)
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-3 bg-white p-2 rounded-lg border border-gray-200 w-fit ml-7 md:ml-0">
                           <img src="/images/payment/card.png" alt="Card Payment" className="h-8 w-auto object-contain" />
                           <img src="/images/payment/telecel.png" alt="Telecel Cash" className="h-8 w-auto object-contain" />
                           <img src="/images/payment/mtn.jpg" alt="MTN Mobile Money" className="h-8 w-auto object-contain rounded-md" />
-                        </div>
-
-                        <div>
-                          <h3 className="font-medium text-gray-900">Pay Online</h3>
-                          <div className="flex items-center text-sm text-gray-500">
-                            Secure payment with Bank Card or Mobile Money (Momo)
-                          </div>
                         </div>
                       </div>
                     </div>
