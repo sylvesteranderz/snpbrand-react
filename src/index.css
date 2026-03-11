@@ -937,7 +937,7 @@
 }
 
 /* Ensure debug elements are always visible */
-.main-swiper .swiper-slide .bg-yellow-400,
+.main-swiper .swiper-slide .bg-primary-400,
 .main-swiper .swiper-slide .bg-red-500 {
   z-index: 999 !important;
   opacity: 1 !important;

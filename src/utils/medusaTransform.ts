@@ -1,5 +1,5 @@
 import type { StoreProduct } from '@medusajs/types'
-import type { Product } from '../types'
+import type { Product } from '@/types'
 
 /**
  * Transform Medusa product to our app's Product interface

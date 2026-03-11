@@ -8,12 +8,24 @@ export default {
     extend: {
       colors: {
         primary: {
+          50: '#fef9f0',
+          100: '#fdf0d9',
+          200: '#fbe1b3',
+          300: '#f9d28d',
+          400: '#f7c367',
+          500: '#DEAD6F', // Main primary color (Gold)
+          600: '#c2995c',
+          700: '#a67d49',
+          800: '#8a6136',
+          900: '#6e4523',
+        },
+        price: {
           50: '#f0f4f7',
           100: '#d9e4ed',
           200: '#b3c9db',
           300: '#8daec9',
           400: '#6995b1',
-          500: '#6995b1', // Main primary color
+          500: '#6995b1', // Original blue price color
           600: '#5a7a96',
           700: '#4b5f7b',
           800: '#3c4460',

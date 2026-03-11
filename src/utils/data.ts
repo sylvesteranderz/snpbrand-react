@@ -1,4 +1,4 @@
-import { Product, BlogPost, Testimonial, Service } from '../types'
+import { Product, BlogPost, Testimonial, Service } from '@/types'
 
 export const products: Product[] = [
   // SLIPPERS SECTION
@@ -15,7 +15,7 @@ export const products: Product[] = [
     reviews: 24,
     inStock: true,
     isNew: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Green', 'Black', 'Brown'],
     tags: ['comfort', 'style', 'casual']
   },
@@ -31,7 +31,7 @@ export const products: Product[] = [
     rating: 5.0,
     reviews: 18,
     inStock: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Black', 'Tan'],
     tags: ['leather', 'premium', 'durable']
   },
@@ -50,7 +50,7 @@ export const products: Product[] = [
     inStock: true,
     isOnSale: true,
     discount: 10,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Black', 'Brown', 'Navy'],
     tags: ['premium', 'comfort', 'durable']
   },
@@ -68,7 +68,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviews: 28,
     inStock: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Grey', 'Black'],
     tags: ['comfort', 'home', 'soft']
   },
@@ -87,7 +87,7 @@ export const products: Product[] = [
     inStock: true,
     isOnSale: true,
     discount: 14,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Black', 'Brown', 'Tan'],
     tags: ['luxury', 'elegant', 'premium']
   },
@@ -103,7 +103,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviews: 22,
     inStock: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Grey', 'Pink', 'Blue'],
     tags: ['warm', 'fuzzy', 'winter']
   },
@@ -119,7 +119,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviews: 16,
     inStock: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Black', 'White', 'Grey'],
     tags: ['sport', 'breathable', 'athletic']
   },
@@ -135,7 +135,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviews: 31,
     inStock: true,
-    sizes: ['37', '38', '39', '40','41','42','43','44','45','46','47'],
+    sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Black', 'Tan'],
     // tags: ['classic', 'moccasin', 'traditional']
   },
@@ -153,7 +153,7 @@ export const products: Product[] = [
     rating: 4.5,
     reviews: 15,
     inStock: true,
-    sizes: ['S', 'M', 'L', 'XL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['White', 'Black', 'Brown'],
     tags: ['basic', 'cotton', 'casual']
   },
@@ -169,7 +169,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviews: 21,
     inStock: true,
-    sizes: [ 'M', 'L', 'XL', 'XXL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Blue', 'Grey', 'Black'],
     tags: ['casual', 'aesthetic', 'comfortable']
   },
@@ -185,7 +185,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviews: 19,
     inStock: true,
-    sizes: [ 'M', 'L', 'XL', 'XXL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Black', 'Grey', 'Navy'],
     tags: ['Casual', 'cozy', 'comfortable']
   },
@@ -202,7 +202,7 @@ export const products: Product[] = [
     rating: 4.4,
     reviews: 17,
     inStock: true,
-    sizes: [ 'L', 'XL', 'XXL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Khaki', 'Black', 'Olive'],
     // tags: ['cargo', 'durable', 'practical']
   },
@@ -218,7 +218,7 @@ export const products: Product[] = [
     rating: 4.6,
     reviews: 23,
     inStock: true,
-    sizes: ['L', 'XL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['White', 'Navy', 'Red'],
     // tags: ['polo', 'classic', 'professional']
   },
@@ -234,7 +234,7 @@ export const products: Product[] = [
     rating: 4.5,
     reviews: 20,
     inStock: true,
-    sizes: ['L', 'XL'],
+    sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Black', 'Grey', 'Navy'],
     // tags: ['jogger', 'comfortable', 'casual']
   },
@@ -250,7 +250,7 @@ export const products: Product[] = [
   //   rating: 4.3,
   //   reviews: 14,
   //   inStock: true,
-  //   sizes: ['S', 'M', 'L', 'XL'],
+  //   sizes: ['M', 'L', 'XL', 'XXL'],
   //   colors: ['White', 'Black', 'Grey'],
   //   tags: ['tank', 'basic', 'cotton']
   // }
