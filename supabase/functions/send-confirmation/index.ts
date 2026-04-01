@@ -19,10 +19,16 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Slippers Store <onboarding@resend.dev>', // Change to your verified domain later
+        from: 'Slippers Store <orders@snpbrand.com>', // Verified domain
         to: [email],
         subject: `Order Confirmation #${orderId}`,
-        html: `<strong>Hi ${customerName}!</strong><p>Your order for slippers is confirmed.</p>`,
+        template: {
+          id: 'confirm-signup',
+          variables: {
+            customerName: customerName,
+            orderId: String(orderId)
+          }
+        }
       }),
     })
 

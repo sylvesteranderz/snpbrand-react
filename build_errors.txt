@@ -1,0 +1,2 @@
+src/App.tsx(1,63): error TS6133: 'Navigate' is declared but its value is never read.
+src/App.tsx(27,1): error TS6133: 'useAuth' is declared but its value is never read.

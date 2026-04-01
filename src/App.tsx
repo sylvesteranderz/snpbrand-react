@@ -24,6 +24,29 @@ import { CartProvider } from '@/features/cart/hooks/useCartSupabase'
 import { WishlistProvider } from '@/features/wishlist/hooks/useWishlistSupabase'
 import { AuthProvider } from '@/features/auth/hooks/useAuthSupabase'
 import { ProductProvider } from '@/features/products/hooks/useProductsSupabase'
+// import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
+import POSPage from '@/features/pos/pages/POSPage'
+import POSAdminDashboard from '@/features/pos/pages/POSAdminDashboard'
+
+const POSRoute = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>
+  // const { user, isAuthenticated } = useAuth()
+  // const location = useLocation() 
+
+  // if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />
+  // if (user?.role !== 'admin' && (user as any)?.role !== 'cashier') return <Navigate to="/" replace />
+  // return <>{children}</>
+}
+
+const POSAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  return <>{children}</>
+  // const { user, isAuthenticated } = useAuth()
+  // const location = useLocation()
+
+  // if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />
+  // if (user?.role !== 'admin') return <Navigate to="/pos" replace />
+  // return <>{children}</>
+}
 
 // Component to handle footer visibility
 const AppContent = () => {
@@ -75,6 +98,8 @@ const AppContent = () => {
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
+          <Route path="/pos" element={<POSRoute><POSPage /></POSRoute>} />
+          <Route path="/pos-admin" element={<POSAdminRoute><POSAdminDashboard /></POSAdminRoute>} />
         </Routes>
       </main>
       <Footer className={shouldHideFooterOnMobile ? 'hidden md:block' : ''} />
