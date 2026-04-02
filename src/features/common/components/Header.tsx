@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Search, User, Heart, ShoppingCart, Menu, X, ChevronDown, Footprints, Shirt, Grid, Settings, LogOut } from 'lucide-react'
+import { Search, Heart, ShoppingCart, Menu, X, ChevronDown, Footprints, Shirt, Grid } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useWishlist } from '@/features/wishlist/hooks/useWishlistSupabase'
-import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
+// import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 import CartSidebar from '@/features/cart/components/CartSidebar'
 import SearchSidebar from '@/features/common/components/SearchSidebar'
 import { categories } from '@/utils/data'
@@ -19,7 +19,7 @@ const Header = () => {
   const location = useLocation()
   const { itemCount: cartCount } = useCart()
   const { items: wishlistItems } = useWishlist()
-  const { user, isAuthenticated, logout, isLoading } = useAuth()
+  // const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   // Debug authentication state
   // console.log('Header - Auth State:', { user, isAuthenticated })
@@ -191,7 +191,7 @@ const Header = () => {
                   </AnimatePresence>
                 </div>
               </div>
-              {isAuthenticated ? (
+              {/* {isAuthenticated ? (
                 <></>
               ) : (
                 <>
@@ -208,10 +208,10 @@ const Header = () => {
                     Sign Up
                   </Link>
                 </>
-              )}
+              )} */}
 
               {/* Profile Dropdown - Desktop */}
-              {isAuthenticated && (
+              {/* {isAuthenticated && (
                 <div className="relative dropdown-container profile-dropdown">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -235,7 +235,6 @@ const Header = () => {
                         transition={{ duration: 0.2 }}
                         className="absolute top-full right-0 mt-2 w-64 bg-gray-900 rounded-lg shadow-xl border border-gray-700 py-2 z-50"
                       >
-                        {/* Profile Header */}
                         <div className="px-4 py-3 border-b border-gray-700">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
@@ -250,7 +249,6 @@ const Header = () => {
                           </div>
                         </div>
 
-                        {/* Menu Items */}
                         <div className="py-2">
                           <Link
                             to="/account"
@@ -303,7 +301,7 @@ const Header = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              )}
+              )} */}
 
               <Link
                 to="/wishlist"
@@ -352,7 +350,7 @@ const Header = () => {
               </button>
 
               {/* Mobile Profile/Auth Icon */}
-              <div className="relative">
+              {/* <div className="relative">
                 {isAuthenticated ? (
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -385,7 +383,6 @@ const Header = () => {
                     >
                       {isAuthenticated ? (
                         <>
-                          {/* Profile Header */}
                           <div className="px-4 py-3 border-b border-gray-700">
                             <div className="flex items-center space-x-3">
                               <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
@@ -400,7 +397,6 @@ const Header = () => {
                             </div>
                           </div>
 
-                          {/* Menu Items */}
                           <div className="py-2">
                             <Link
                               to="/account"
@@ -452,7 +448,6 @@ const Header = () => {
                         </>
                       ) : (
                         <>
-                          {/* Auth Header */}
                           <div className="px-4 py-3 border-b border-gray-700">
                             <div className="flex items-center space-x-3">
                               <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
@@ -465,7 +460,6 @@ const Header = () => {
                             </div>
                           </div>
 
-                          {/* Auth Options */}
                           <div className="py-2">
                             <Link
                               to="/login"
@@ -489,7 +483,7 @@ const Header = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </div> */}
 
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -515,7 +509,7 @@ const Header = () => {
               <div className="container mx-auto px-4 py-6">
                 <nav className="space-y-4">
                   {/* Authentication Links - Top Priority */}
-                  {!isAuthenticated && (
+                  {/* {!isAuthenticated && (
                     <div className="pb-4 border-b border-gray-700">
                       <Link
                         to="/login"
@@ -534,7 +528,7 @@ const Header = () => {
                         <span>Sign Up</span>
                       </Link>
                     </div>
-                  )}
+                  )} */}
 
                   {/* Navigation Links */}
                   {navigation.map((item) => (
@@ -551,30 +545,28 @@ const Header = () => {
                     </Link>
                   ))}
 
-                  {/* Mobile Categories - Only show when logged in */}
-                  {isAuthenticated && (
-                    <div className="pt-4 border-t border-gray-700">
-                      <div className="text-sm font-medium text-gray-400 mb-3 px-4">Categories</div>
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          to={`/shop?category=${category.id}`}
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          {getCategoryIcon(category.id)}
-                          <div className="flex-1">
-                            <div className="font-medium">{category.name}</div>
-                            <div className="text-sm text-gray-500">{category.count} items</div>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  {/* Mobile Categories - Always visible */}
+                  <div className="pt-4 border-t border-gray-700">
+                    <div className="text-sm font-medium text-gray-400 mb-3 px-4">Categories</div>
+                    {categories.map((category) => (
+                      <Link
+                        key={category.id}
+                        to={`/shop?category=${category.id}`}
+                        className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {getCategoryIcon(category.id)}
+                        <div className="flex-1">
+                          <div className="font-medium">{category.name}</div>
+                          <div className="text-sm text-gray-500">{category.count} items</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
 
                   {/* Mobile Account Links */}
                   <div className="pt-4 border-t border-gray-700">
-                    {isAuthenticated ? (
+                    {/* {isAuthenticated ? (
                       <>
                         <div className="flex items-center space-x-3 py-3 px-4 text-gray-300">
                           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
@@ -617,7 +609,7 @@ const Header = () => {
                           <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
                         </button>
                       </>
-                    ) : null}
+                    ) : null} */}
                     <Link
                       to="/wishlist"
                       className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
