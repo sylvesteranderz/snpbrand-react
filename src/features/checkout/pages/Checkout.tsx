@@ -208,7 +208,7 @@ const Checkout = () => {
               setIsProcessing(false);
               return;
             }
-                  supabase.functions.invoke('verify-payment', {
+            supabase.functions.invoke('verify-payment', {
               body: { reference: referenceData.reference, order_id: createdOrder.id }
             }).then(({ error: verifyError }) => {
               if (verifyError) {
@@ -217,7 +217,7 @@ const Checkout = () => {
                 setIsProcessing(false);
               } else {
                 // ✅ Payment verified — send confirmation email
-                supabase?.functions.invoke('send-order-email', {
+                supabase?.functions.invoke('send-confirmation', {
                   body: {
                     orderNumber,
                     customerName: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -669,10 +669,10 @@ const Checkout = () => {
                     ) : (
                       <>
                         {/* {formData.paymentMethod === 'paystack' ? ( */}
-                          <>
-                            <Wallet className="w-4 h-4" />
-                            <span>Pay Now</span>
-                          </>
+                        <>
+                          <Wallet className="w-4 h-4" />
+                          <span>Pay Now</span>
+                        </>
                         {/* ) : (
                           <>
                             <Truck className="w-4 h-4" />
@@ -739,10 +739,10 @@ const Checkout = () => {
               <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
                   {/* {formData.paymentMethod === 'paystack' ? ( */}
-                    <>
-                      <Wallet className="w-4 h-4 text-primary-500" />
-                      <span className="text-sm font-medium text-gray-700">Pay Online</span>
-                    </>
+                  <>
+                    <Wallet className="w-4 h-4 text-primary-500" />
+                    <span className="text-sm font-medium text-gray-700">Pay Online</span>
+                  </>
                   {/* ) : (
                     <>
                       <Truck className="w-4 h-4 text-primary-500" />

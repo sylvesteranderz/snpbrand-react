@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CheckCircle, Package, Truck, Clock, MapPin, Phone, Mail } from 'lucide-react'
+import { CheckCircle, Truck, Clock, MapPin, Phone, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '@/utils/currency'
 
@@ -40,6 +40,7 @@ const OrderConfirmation = ({
   subtotal,
   estimatedDelivery
 }: OrderConfirmationProps) => {
+  /* Commented out as Order Tracking is disabled
   const steps = [
     {
       icon: CheckCircle,
@@ -66,6 +67,7 @@ const OrderConfirmation = ({
       completed: false
     }
   ]
+  */
 
   return (
     <motion.div
@@ -145,7 +147,7 @@ const OrderConfirmation = ({
               </div>
             </div>
 
-            {/* Order Tracking */}
+            {/* Order Tracking (Commented out for now)
             <div className="bg-white rounded-lg shadow-sm p-6 border">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Tracking</h2>
               <div className="space-y-4">
@@ -174,6 +176,7 @@ const OrderConfirmation = ({
                 })}
               </div>
             </div>
+            */}
 
             {/* Delivery Information */}
             <div className="bg-white rounded-lg shadow-sm p-6 border">
@@ -264,12 +267,14 @@ const OrderConfirmation = ({
               </div>
 
               <div className="space-y-3">
+                {/* 
                 <Link
                   to={`/order-tracking/${orderNumber}`}
                   className="w-full btn-primary block text-center"
                 >
                   Track Order
                 </Link>
+                */}
                 <Link
                   to="/shop"
                   className="w-full btn-outline-primary block text-center"

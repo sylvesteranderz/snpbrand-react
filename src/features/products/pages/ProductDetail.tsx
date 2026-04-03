@@ -22,7 +22,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
-  const [selectedColor, setSelectedColor] = useState('')
+  const [selectedColor] = useState('')
   const [inWishlist, setInWishlist] = useState(false)
 
   const { addToCart } = useCart()
@@ -251,19 +251,18 @@ const ProductDetail = () => {
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => {
                     const isSizeOutOfStock = product.size_stock && product.size_stock[size] === 0;
-                    
+
                     return (
                       <button
                         key={size}
                         onClick={() => !isSizeOutOfStock && setSelectedSize(size)}
                         disabled={isSizeOutOfStock}
-                        className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
-                          isSizeOutOfStock 
+                        className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${isSizeOutOfStock
                             ? 'opacity-40 line-through cursor-not-allowed text-gray-400 bg-gray-100 border-gray-300'
                             : selectedSize === size
                               ? 'border-primary-500 bg-primary-50 text-primary-700'
                               : 'border-gray-300 hover:border-primary-500'
-                        }`}
+                          }`}
                       >
                         {size}
                       </button>
@@ -276,8 +275,8 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
+            {/* {/* Color Selection */}
+            {/* {product.colors && product.colors.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Color</h3>
                 <div className="flex flex-wrap gap-2">
@@ -295,7 +294,7 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Quantity */}
             <div>
