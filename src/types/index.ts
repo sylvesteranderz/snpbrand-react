@@ -18,6 +18,7 @@ export interface Product {
   colors?: string[]
   tags?: string[]
   imagePosition?: string
+  size_stock?: Record<string, number>
 }
 
 export interface CartItem extends Product {

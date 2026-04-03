@@ -47,6 +47,10 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
     ))
   }
 
+  const isActuallyOutOfStock = product.size_stock && Object.keys(product.size_stock).length > 0
+    ? Object.values(product.size_stock).every(v => v === 0)
+    : !product.inStock;
+
   return (
     <motion.div
       className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full`}
@@ -65,7 +69,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
             -{product.discount}%
           </div>
         )}
-        {!product.inStock && (
+        {isActuallyOutOfStock && (
           <div className="bg-gray-500 text-white rounded-md px-2 py-1 text-xs font-medium">
             Sold
           </div>
