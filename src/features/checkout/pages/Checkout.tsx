@@ -20,7 +20,7 @@ interface FormData {
   city: string
   deliveryMethod: 'delivery' | 'pickup'
   campus: string
-  paymentMethod: 'paystack' | 'pay_on_delivery'
+  paymentMethod: 'paystack' // | 'pay_on_delivery'
 }
 
 const Checkout = () => {
@@ -57,7 +57,7 @@ const Checkout = () => {
     }
   }
 
-  const handlePaymentMethodChange = (method: 'paystack' | 'pay_on_delivery') => {
+  const handlePaymentMethodChange = (method: 'paystack' /* | 'pay_on_delivery' */) => {
     setFormData(prev => ({ ...prev, paymentMethod: method }))
   }
 
@@ -208,7 +208,7 @@ const Checkout = () => {
               setIsProcessing(false);
               return;
             }
-            supabase.functions.invoke('verify-payment', {
+                  supabase.functions.invoke('verify-payment', {
               body: { reference: referenceData.reference, order_id: createdOrder.id }
             }).then(({ error: verifyError }) => {
               if (verifyError) {
@@ -216,6 +216,27 @@ const Checkout = () => {
                 alert('Payment received but verification failed. Please contact support.');
                 setIsProcessing(false);
               } else {
+                // ✅ Payment verified — send confirmation email
+                supabase?.functions.invoke('send-order-email', {
+                  body: {
+                    orderNumber,
+                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                    email: formData.email,
+                    items: orderItems,
+                    total,
+                    deliveryMethod: formData.deliveryMethod,
+                    address: formData.deliveryMethod === 'delivery'
+                      ? `${formData.address}, ${formData.city}`
+                      : null,
+                    campus: formData.deliveryMethod === 'pickup'
+                      ? formData.campus
+                      : null,
+                    estimatedDelivery: uiOrderData.estimatedDelivery
+                  }
+                }).catch((emailErr) => {
+                  console.error('Email failed silently:', emailErr)
+                })
+
                 setOrderData(uiOrderData)
                 setIsComplete(true)
                 clearCart()
@@ -227,11 +248,11 @@ const Checkout = () => {
             setIsProcessing(false);
           }
         });
-      } else {
+      } /* else {
         setOrderData(uiOrderData)
         setIsComplete(true)
         clearCart()
-      }
+      } */
 
     } catch (err) {
       console.error('Checkout failed:', err)
@@ -647,17 +668,17 @@ const Checkout = () => {
                       </>
                     ) : (
                       <>
-                        {formData.paymentMethod === 'paystack' ? (
+                        {/* {formData.paymentMethod === 'paystack' ? ( */}
                           <>
                             <Wallet className="w-4 h-4" />
                             <span>Pay Now</span>
                           </>
-                        ) : (
+                        {/* ) : (
                           <>
                             <Truck className="w-4 h-4" />
                             <span>Place Order</span>
                           </>
-                        )}
+                        )} */}
                       </>
                     )}
                   </button>
@@ -715,20 +736,19 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Payment Method Display */}
               <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  {formData.paymentMethod === 'paystack' ? (
+                  {/* {formData.paymentMethod === 'paystack' ? ( */}
                     <>
                       <Wallet className="w-4 h-4 text-primary-500" />
                       <span className="text-sm font-medium text-gray-700">Pay Online</span>
                     </>
-                  ) : (
+                  {/* ) : (
                     <>
                       <Truck className="w-4 h-4 text-primary-500" />
                       <span className="text-sm font-medium text-gray-700">Pay on Delivery</span>
                     </>
-                  )}
+                  )} */}
                 </div>
               </div>
 

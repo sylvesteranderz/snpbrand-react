@@ -113,6 +113,10 @@ const ProductDetail = () => {
     ))
   }
 
+  const isActuallyOutOfStock = product.size_stock && Object.keys(product.size_stock).length > 0
+    ? Object.values(product.size_stock).every(v => v === 0)
+    : !product.inStock;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -200,7 +204,7 @@ const ProductDetail = () => {
                   Sale
                 </span>
               )}
-              {!product.inStock && (
+              {isActuallyOutOfStock && (
                 <span className="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
                   Out of Stock
                 </span>
@@ -239,24 +243,32 @@ const ProductDetail = () => {
             </p>
 
             {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
+            {product.sizes && product.sizes.length > 0 && (!product.size_stock || !Object.values(product.size_stock || {}).every(v => v === 0)) && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
                   Size <span className="text-red-500">*</span>
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${selectedSize === size
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-300 hover:border-primary-500'
+                  {product.sizes.map((size) => {
+                    const isSizeOutOfStock = product.size_stock && product.size_stock[size] === 0;
+                    
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => !isSizeOutOfStock && setSelectedSize(size)}
+                        disabled={isSizeOutOfStock}
+                        className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${
+                          isSizeOutOfStock 
+                            ? 'opacity-40 line-through cursor-not-allowed text-gray-400 bg-gray-100 border-gray-300'
+                            : selectedSize === size
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-gray-300 hover:border-primary-500'
                         }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                      >
+                        {size}
+                      </button>
+                    )
+                  })}
                 </div>
                 {!selectedSize && (
                   <p className="text-sm text-red-500 mt-2">Please select a size</p>
@@ -309,7 +321,7 @@ const ProductDetail = () => {
             <div className="flex space-x-4">
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock || (product.sizes && product.sizes.length > 0 && !selectedSize)}
+                disabled={isActuallyOutOfStock || (product.sizes && product.sizes.length > 0 && !selectedSize)}
                 className={`flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center   gap-2 ${product.sizes && product.sizes.length > 0 && !selectedSize ? 'opacity-50' : ''
                   }`}
               >
