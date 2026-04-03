@@ -40,6 +40,7 @@ const OrderConfirmation = ({
   subtotal,
   estimatedDelivery
 }: OrderConfirmationProps) => {
+  /* Commented out as Order Tracking is disabled
   const steps = [
     {
       icon: CheckCircle,
@@ -66,6 +67,7 @@ const OrderConfirmation = ({
       completed: false
     }
   ]
+  */
 
   return (
     <motion.div

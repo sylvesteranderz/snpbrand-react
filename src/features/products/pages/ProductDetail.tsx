@@ -22,7 +22,7 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedSize, setSelectedSize] = useState('')
-  const [selectedColor, setSelectedColor] = useState('')
+  const [selectedColor] = useState('')
   const [inWishlist, setInWishlist] = useState(false)
 
   const { addToCart } = useCart()
