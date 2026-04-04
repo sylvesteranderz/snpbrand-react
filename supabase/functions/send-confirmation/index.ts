@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 // Using the newly verified domain!
 const FROM_EMAIL = 'noreply@orders.snpbrand.com'
+const ADMIN_EMAIL = 'Sylvesteranderson726t@gmail.com'
 
 serve(async (req) => {
   const corsHeaders = {
@@ -174,23 +175,92 @@ serve(async (req) => {
 </html>
     `
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: `SnpBrand Orders <${FROM_EMAIL}>`,
-        to: [email],
-        subject: `Order Confirmed — ${orderNumber}`,
-        html
-      })
-    })
+    const adminHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, sans-serif; line-height: 1.5; color: #333; }
+    .box { border: 1px solid #eee; padding: 16px; border-radius: 8px; margin-bottom: 16px; background: #fff; }
+    .label { font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
+    .val { font-size: 16px; font-weight: 600; margin-top: 0; }
+  </style>
+</head>
+<body style="background: #f9f9f9; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto;">
+    <h2 style="color: #1a1a1a; margin-top: 0;">🚀 New Order Received!</h2>
+    <div class="box">
+      <div class="label">Order Number</div>
+      <p class="val">${orderNumber}</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 12px 0;">
+      
+      <div class="label">Customer Info</div>
+      <p style="margin:0 0 4px;"><strong>Name:</strong> ${customerName}</p>
+      <p style="margin:0 0 8px;"><strong>Email:</strong> ${email}</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 12px 0;">
 
-    if (!res.ok) {
-      const error = await res.text()
-      throw new Error(`Resend error: ${error}`)
+      <div class="label">Delivery Method</div>
+      <p style="margin:0;">${deliveryMethod === 'pickup' ? `📍 Campus Pickup: ${campus}` : `📦 Home Delivery: ${address}`}</p>
+    </div>
+
+    <div class="box">
+      <div class="label">Items Ordered</div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 16px;">
+        ${items.map((item: any) => `
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #eee;">
+              <strong>${item.quantity}x ${item.name}</strong><br/>
+              <span style="font-size:13px; color:#666;">Size: ${item.selected_size || item.selectedSize || 'N/A'}</span>
+            </td>
+            <td style="text-align: right; font-weight: 600; padding: 10px 0; border-bottom: 1px solid #eee;">
+              GH₵ ${(item.price * item.quantity).toFixed(2)}
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+      <div style="text-align: right; font-size: 18px;">
+        <span style="color: #888; font-size: 14px; margin-right: 8px;">Total Value:</span><strong style="color: #1a1a1a;">GH₵ ${total.toFixed(2)}</strong>
+      </div>
+    </div>
+    
+    <p style="font-size: 13px; color: #888; text-align: center;">View full details in the Supabase Dashboard.</p>
+  </div>
+</body>
+</html>
+    `
+
+    const [customerRes, adminRes] = await Promise.all([
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: `SnpBrand Orders <${FROM_EMAIL}>`,
+          to: [email],
+          subject: `Order Confirmed — ${orderNumber}`,
+          html: html
+        })
+      }),
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: `SnpBrand System <${FROM_EMAIL}>`,
+          to: [ADMIN_EMAIL],
+          subject: `🚨 NEW ORDER: ${orderNumber} - GH₵ ${total.toFixed(2)}`,
+          html: adminHtml
+        })
+      })
+    ])
+
+    if (!customerRes.ok || !adminRes.ok) {
+      const errorMsg = !customerRes.ok ? await customerRes.text() : await adminRes.text()
+      throw new Error(`Resend error: ${errorMsg}`)
     }
 
     return new Response(JSON.stringify({ success: true }), {

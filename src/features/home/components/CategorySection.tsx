@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Footprints, Shirt, Grid } from 'lucide-react'
+import { Footprints, Shirt, Grid, ChevronRight } from 'lucide-react'
 import ProductCard from '@/features/products/components/ProductCard'
 import { categories, subcategories } from '@/utils/data'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
@@ -12,6 +12,7 @@ interface CategorySectionProps {
 
 const CategorySection = ({ className = '' }: CategorySectionProps) => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('all')
   const [activeSubcategory, setActiveSubcategory] = useState('all')
   const { products, isLoading } = useProducts()
@@ -247,10 +248,11 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/shop')}
             className="btn-outline-primary inline-flex items-center space-x-2"
           >
-            {/* <span>View All Products</span>
-            <ChevronRight className="w-5 h-5" /> */}
+            <span>View All Products</span>
+            <ChevronRight className="w-5 h-5" />
           </motion.button>
         </motion.div>
       </div>
