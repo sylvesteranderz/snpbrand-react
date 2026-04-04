@@ -258,10 +258,10 @@ const ProductDetail = () => {
                         onClick={() => !isSizeOutOfStock && setSelectedSize(size)}
                         disabled={isSizeOutOfStock}
                         className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${isSizeOutOfStock
-                            ? 'opacity-40 line-through cursor-not-allowed text-gray-400 bg-gray-100 border-gray-300'
-                            : selectedSize === size
-                              ? 'border-primary-500 bg-primary-50 text-primary-700'
-                              : 'border-gray-300 hover:border-primary-500'
+                          ? 'opacity-40 line-through cursor-not-allowed text-gray-400 bg-gray-100 border-gray-300'
+                          : selectedSize === size
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-300 hover:border-primary-500'
                           }`}
                       >
                         {size}

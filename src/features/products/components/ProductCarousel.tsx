@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
@@ -23,6 +24,7 @@ const ProductCarousel = ({
   limit
 }: ProductCarouselProps) => {
   const { products, isLoading } = useProducts()
+  const navigate = useNavigate()
 
   // Filter products by category if specified
   const filteredProducts = category
@@ -74,6 +76,7 @@ const ProductCarousel = ({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate(category ? `/shop?category=${category}` : '/shop')}
               className="btn-outline-primary inline-flex items-center space-x-2"
             >
               <span>View All</span>

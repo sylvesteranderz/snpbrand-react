@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import ProductCard from '@/features/products/components/ProductCard'
@@ -22,6 +23,7 @@ const ProductGrid = ({
 }: ProductGridProps) => {
   const { products } = useProducts()
   const [activeFilter, setActiveFilter] = useState('all')
+  const navigate = useNavigate()
 
   // Filter products by category and active filter
   const filteredProducts = products.filter(product => {
@@ -50,6 +52,7 @@ const ProductGrid = ({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate(category ? `/shop?category=${category}` : '/shop')}
               className="btn-outline-primary inline-flex items-center space-x-2"
             >
               <span>View All</span>

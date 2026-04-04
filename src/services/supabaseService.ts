@@ -1,6 +1,34 @@
 import { supabase, isSupabaseEnabled } from '@/lib/supabase'
 import { Product } from '@/types'
 
+const parseImages = (dbImages: any, mainImage?: string): string[] => {
+  let parsed: string[] = [];
+  if (Array.isArray(dbImages)) {
+    parsed = dbImages;
+  } else if (typeof dbImages === 'string') {
+    try {
+      const trimmed = dbImages.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        // Handle postgres array strings e.g. "{url1.png,url2.png}"
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+          parsed = trimmed.slice(1, -1).split(',').map(s => s.trim().replace(/^"|"$/g, '')).filter(Boolean);
+        } else {
+          parsed = JSON.parse(trimmed);
+        }
+      } else {
+        parsed = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('Failed to parse product images:', e);
+    }
+  }
+  if (!Array.isArray(parsed)) parsed = [];
+  if (mainImage && !parsed.includes(mainImage)) {
+    parsed = [mainImage, ...parsed];
+  }
+  return parsed.filter(Boolean);
+};
+
 // Product Service
 export class ProductService {
   // Get all products
@@ -24,8 +52,8 @@ export class ProductService {
           price: dbProduct.price,
           originalPrice: dbProduct.original_price,
           description: dbProduct.description,
-          category: dbProduct.category,
-          image: dbProduct.image_url,
+          category: (dbProduct.category || '').toLowerCase(),
+          image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
           inStock: dbProduct.in_stock,
@@ -35,7 +63,7 @@ export class ProductService {
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
           tags: dbProduct.tags || [],
-          images: dbProduct.images || []
+          images: parseImages(dbProduct.image_url)
         }))
 
         return mappedProducts
@@ -69,8 +97,8 @@ export class ProductService {
           price: data.price,
           originalPrice: data.original_price,
           description: data.description,
-          category: data.category,
-          image: data.image_url,
+          category: (data.category || '').toLowerCase(),
+          image: Array.isArray(data.image_url) ? data.image_url[0] : data.image_url,
           rating: data.rating,
           reviews: data.reviews,
           inStock: data.in_stock,
@@ -80,7 +108,7 @@ export class ProductService {
           sizes: data.sizes || [],
           colors: data.colors || [],
           tags: data.tags || [],
-          images: data.images || []
+          images: parseImages(data.image_url)
         }
 
         return mappedProduct
@@ -114,8 +142,8 @@ export class ProductService {
           price: dbProduct.price,
           originalPrice: dbProduct.original_price,
           description: dbProduct.description,
-          category: dbProduct.category,
-          image: dbProduct.image_url,
+          category: (dbProduct.category || '').toLowerCase(),
+          image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
           inStock: dbProduct.in_stock,
@@ -125,7 +153,7 @@ export class ProductService {
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
           tags: dbProduct.tags || [],
-          images: dbProduct.images || []
+          images: parseImages(dbProduct.image_url)
         }))
 
         return mappedProducts
