@@ -66,7 +66,6 @@ const Checkout = () => {
 
     if (step === 1) {
       if (!formData.firstName.trim()) newErrors.firstName = 'First Name is required'
-      if (!formData.lastName.trim()) newErrors.lastName = 'Last Name is required'
       if (!formData.email.trim()) newErrors.email = 'Email is required'
       else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
       if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
@@ -400,7 +399,7 @@ const Checkout = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Last Name *
+                        Last Name
                       </label>
                       <input
                         type="text"
