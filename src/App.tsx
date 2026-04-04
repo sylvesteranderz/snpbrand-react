@@ -10,7 +10,7 @@ import Checkout from '@/features/checkout/pages/Checkout'
 import OrderTracking from '@/features/orders/pages/OrderTracking'
 // import Account from '@/features/auth/pages/Account'
 import AdminDashboard from '@/features/admin/pages/AdminDashboard'
-// import Login from '@/features/auth/pages/Login'
+import Login from '@/features/auth/pages/Login'
 // import Signup from '@/features/auth/pages/Signup'
 import Orders from '@/features/orders/pages/Orders'
 import Wishlist from '@/features/wishlist/pages/Wishlist'
@@ -60,13 +60,13 @@ const AppContent = () => {
           <Route path="/order-tracking/:orderNumber" element={<OrderTracking />} />
           {/* <Route path="/account" element={<Account />} /> */}
           <Route path="/orders" element={<Orders />} />
-          {/* <Route path="/login" element={<Login />} /> */}
+          <Route path="/login" element={<Login />} />
           {/* <Route path="/signup" element={<Signup />} /> */}
           {/* <Route path="/verification-pending" element={<VerificationPending />} /> */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute /* requireAdmin={true} */>
+              <ProtectedRoute requireAdmin={true} >
                 <AdminDashboard />
               </ProtectedRoute>
             }

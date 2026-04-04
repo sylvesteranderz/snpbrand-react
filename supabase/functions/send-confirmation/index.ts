@@ -7,7 +7,7 @@ const ADMIN_EMAIL = 'Sylvesteranderson726t@gmail.com'
 
 serve(async (req) => {
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': 'https://snpbrand.vercel.app',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
 
