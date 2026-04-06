@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
-import { User } from '@supabase/supabase-js'
+import React, { createContext, useContext, useReducer, useRef, ReactNode, useEffect } from 'react'
 import { supabase, isSupabaseEnabled } from '@/lib/supabase'
 import { UserProfileService } from '@/services/supabaseService'
 
@@ -85,130 +84,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error: null
   })
 
-  // Initialize auth state
+  const isFetchingProfile = useRef(false)
+
+  // Initialize auth state — single listener, no getInitialSession
   useEffect(() => {
-    if (isSupabaseEnabled && supabase) {
-      // Supabase initialization
-      const getInitialSession = async () => {
-        try {
-          // Manual hash handling for OAuth redirects
-          const hash = window.location.hash
-          if (hash && hash.includes('access_token')) {
-            console.log('Detected session in URL hash, attempting manual setSession')
-            // Parse hash manually if needed, but lets try supabase.auth.getSession() first which normally handles it.
-            // If the hash persists, it means getSession didn't strip it or didn't pick it up.
-
-            // Extract tokens manually
-            const params = new URLSearchParams(hash.replace(/^#/, ''))
-            const access_token = params.get('access_token')
-            const refresh_token = params.get('refresh_token')
-
-            if (access_token && refresh_token && supabase) {
-              const { data, error } = await supabase.auth.setSession({
-                access_token,
-                refresh_token
-              })
-              if (!error && data.session) {
-                console.log('Manual setSession success')
-                // await loadUserProfile(data.session.user.id) // Let the listener handle it or call it here
-                // Clear hash
-                window.history.replaceState(null, '', window.location.pathname)
-              }
-            }
-          }
-
-          const { data: { session }, error } = await supabase?.auth.getSession() || { data: { session: null }, error: null }
-
-          if (error) {
-            console.error('Error getting session:', error)
-            dispatch({ type: 'SET_ERROR', payload: error.message })
-            return
-          }
-
-          if (session?.user) {
-            await loadUserProfile(session.user.id)
-          } else {
-            dispatch({ type: 'SET_LOADING', payload: false })
-          }
-        } catch (error) {
-          console.error('Error initializing auth:', error)
-          dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize authentication' })
-        }
-      }
-
-      getInitialSession()
-
-      // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('Auth state change:', event, session?.user?.email)
-
-          if (session?.user) {
-            console.log('Session found, loading profile...')
-            await loadUserProfile(session.user.id)
-          } else {
-            console.log('No session, logging out...')
-            dispatch({ type: 'LOGOUT' })
-          }
-        }
-      )
-
-      return () => {
-        subscription.unsubscribe()
-      }
-    } else {
-      console.error('Supabase not configured')
+    if (!isSupabaseEnabled || !supabase) {
       dispatch({ type: 'SET_LOADING', payload: false })
+      return
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (
+          session?.user &&
+          (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')
+        ) {
+          // Only load profile on actual sign-in or initial page load.
+          // TOKEN_REFRESHED and USER_UPDATED do NOT change the profile —
+          // re-fetching on those events causes auth lock contention
+          // (AbortError: Lock broken by another request with the 'steal' option)
+          await loadUserProfile(session.user.id)
+        } else if (event === 'SIGNED_OUT' || !session) {
+          dispatch({ type: 'LOGOUT' })
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
     }
   }, [])
 
 
-  // Load user profile from database
+  // Load user profile from database — no getUser() calls to avoid auth lock contention
   const loadUserProfile = async (userId: string) => {
+    if (isFetchingProfile.current) return
+    isFetchingProfile.current = true
     try {
-      console.log('Loading user profile for:', userId)
       const profile = await UserProfileService.getUserProfile(userId)
-
       if (profile) {
-        console.log('Profile found:', profile)
         dispatch({ type: 'SET_USER', payload: profile })
       } else {
-        console.log('No profile found, creating one...')
-        // If no profile exists, create one
-        const { data: { user } } = await supabase!.auth.getUser()
-        if (user) {
-          await createUserProfile(user)
-        }
+        // No profile found — user needs to sign up to create one
+        dispatch({ type: 'SET_LOADING', payload: false })
       }
     } catch (error) {
       console.error('Error loading user profile:', error)
-      // If profile loading fails, create a basic profile from auth user
-      try {
-        const { data: { user } } = await supabase!.auth.getUser()
-        if (user) {
-          await createUserProfile(user)
-        }
-      } catch (fallbackError) {
-        console.error('Fallback profile creation failed:', fallbackError)
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to load user profile' })
-      }
-    }
-  }
-
-  // Create user profile
-  const createUserProfile = async (user: User) => {
-    try {
-      const profile = await UserProfileService.createUserProfile({
-        id: user.id,
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        role: 'customer'
-      })
-      dispatch({ type: 'SET_USER', payload: profile })
-    } catch (error) {
-      console.error('Error creating user profile:', error)
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to create user profile' })
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load user profile' })
+    } finally {
+      isFetchingProfile.current = false
     }
   }
 
@@ -231,7 +155,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         if (data.user) {
-          await loadUserProfile(data.user.id)
           return true
         }
         return false

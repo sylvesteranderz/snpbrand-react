@@ -13,7 +13,11 @@ export const supabase = isSupabaseConfigured
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      // Disable navigator.locks to prevent AbortError from auth lock contention.
+      // The default lock uses navigator.locks with { steal: true } which aborts
+      // concurrent Supabase requests. Safe for single-tab e-commerce flows.
+      lock: (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
     }
   })
   : null

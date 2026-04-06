@@ -98,7 +98,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!formData.name || !formData.price || !formData.image) {
@@ -124,8 +124,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       tags: formData.tags
     }
 
-    addProduct(productData)
-    onClose()
+    try {
+      await addProduct(productData)
+      onClose()
+    } catch (err: any) {
+      alert('Failed to add product: ' + (err?.message || 'Unknown error. Check your Supabase RLS policies.'))
+    }
   }
 
   return (
