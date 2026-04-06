@@ -23,6 +23,27 @@ interface FormData {
   paymentMethod: 'paystack' // | 'pay_on_delivery'
 }
 
+// Retry helper for Supabase operations that may hit auth lock contention
+const retryOnAbort = async <T,>(fn: () => Promise<T>, maxRetries = 2, delayMs = 500): Promise<T> => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      const isAbortError =
+        error?.name === 'AbortError' ||
+        error?.message?.includes('Lock broken') ||
+        error?.details?.includes('Lock broken')
+      if (isAbortError && attempt < maxRetries) {
+        console.warn(`Supabase lock contention (attempt ${attempt + 1}), retrying in ${delayMs}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
+        continue
+      }
+      throw error
+    }
+  }
+  throw new Error('Retry exhausted') // unreachable, satisfies TS
+}
+
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
@@ -164,8 +185,8 @@ const Checkout = () => {
         created_at: new Date().toISOString()
       }
 
-      // Submit to Supabase
-      const createdOrder = await OrderService.createOrder(orderPayload)
+      // Submit to Supabase (with retry for auth lock contention)
+      const createdOrder = await retryOnAbort(() => OrderService.createOrder(orderPayload))
 
       if (!createdOrder) throw new Error("Order creation failed")
 
@@ -207,8 +228,12 @@ const Checkout = () => {
               setIsProcessing(false);
               return;
             }
+            // Use orderNumber (already in state) instead of createdOrder.id —
+            // createOrder no longer returns a DB-generated UUID (to avoid RLS
+            // read-back issues for guest users), so we identify the order by
+            // its order_number which is guaranteed unique and already stored.
             supabase.functions.invoke('verify-payment', {
-              body: { reference: referenceData.reference, order_id: createdOrder.id }
+              body: { reference: referenceData.reference, order_number: orderNumber }
             }).then(({ error: verifyError }) => {
               if (verifyError) {
                 console.error('Verification failed:', verifyError);

@@ -560,13 +560,19 @@ export class OrderService {
   static async createOrder(orderData: any) {
     if (isSupabaseEnabled && supabase) {
       try {
-        const { data, error } = await supabase
+        // Do NOT use .select() after insert — the SELECT RLS policy
+        // (auth.uid() = user_id) blocks read-back for guest users where
+        // both auth.uid() and user_id are NULL (NULL = NULL → false in SQL).
+        // Instead, insert without returning data and reconstruct from input.
+        const { error } = await supabase
           .from('orders')
           .insert([orderData])
-          .select()
-          .single()
+
         if (error) throw error
-        return data
+
+        // Return the order data as-is (id will be missing but isn't needed
+        // for the checkout flow — order_number is used for confirmation)
+        return { ...orderData, id: orderData.order_number }
       } catch (error) {
         console.error('Supabase create order error:', error)
         throw error

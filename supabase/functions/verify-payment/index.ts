@@ -1,22 +1,36 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': 'https://snpbrand.vercel.app',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+    'https://snpbrand.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
+]
+
+const getCorsHeaders = (req: Request) => {
+    const origin = req.headers.get('Origin') ?? ''
+    // Only echo back origins we explicitly allow — never fall back to production
+    // for an unknown origin, as that would silently bypass CORS protection.
+    const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ''
+    return {
+        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
 }
 
 serve(async (req) => {
+    const corsHeaders = getCorsHeaders(req)
+
     // Handle CORS
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
     }
 
     try {
-        const { reference, order_id } = await req.json()
+        const { reference, order_number } = await req.json()
 
-        if (!reference || !order_id) {
-            throw new Error('Reference and order_id are required')
+        if (!reference || !order_number) {
+            throw new Error('Reference and order_number are required')
         }
 
         // Verify transaction with Paystack
@@ -53,14 +67,16 @@ serve(async (req) => {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        // Update order status in Supabase
+        // Update order status in Supabase — query by order_number (a stable,
+        // unique string) rather than the DB-generated UUID id, since guest
+        // checkout does not return the UUID from the insert (RLS blocks read-back).
         const { error: updateError } = await supabase
             .from('orders')
             .update({
                 payment_status: 'paid',
                 payment_reference: reference,
             })
-            .eq('id', order_id)
+            .eq('order_number', order_number)
 
         if (updateError) {
             throw updateError
