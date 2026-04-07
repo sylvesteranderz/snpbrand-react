@@ -144,7 +144,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const savedCart = localStorage.getItem('snpbrand-cart')
       if (savedCart) {
-        const cartItems: CartItem[] = JSON.parse(savedCart)
+        const raw: CartItem[] = JSON.parse(savedCart)
+        // Heal any items where image_url wasn't mapped to image (legacy data)
+        const cartItems: CartItem[] = raw.map((item) => {
+          const p = item.product as any
+          if (p && !p.image && p.image_url) {
+            return {
+              ...item,
+              product: {
+                ...p,
+                image: Array.isArray(p.image_url) ? p.image_url[0] : p.image_url,
+              }
+            }
+          }
+          return item
+        })
         dispatch({ type: 'SET_CART', payload: cartItems })
       }
     } catch (error) {
@@ -172,13 +186,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       dispatch({ type: 'SET_LOADING', payload: true })
       const cartData = await CartService.getCart(user.id)
       
-      const cartItems: CartItem[] = cartData.map((item: any) => ({
-        id: item.id,
-        product: item.products || item.product,
-        quantity: item.quantity,
-        selectedSize: item.selected_size,
-        selectedColor: item.selected_color
-      }))
+      const cartItems: CartItem[] = cartData.map((item: any) => {
+        const rawProduct = item.products || item.product
+        const imageUrl = rawProduct?.image_url
+        return {
+          id: item.id,
+          product: {
+            ...rawProduct,
+            image: Array.isArray(imageUrl) ? imageUrl[0] : (imageUrl || rawProduct?.image || ''),
+            images: Array.isArray(imageUrl) ? imageUrl : (imageUrl ? [imageUrl] : rawProduct?.images || []),
+          },
+          quantity: item.quantity,
+          selectedSize: item.selected_size,
+          selectedColor: item.selected_color,
+        }
+      })
 
       dispatch({ type: 'SET_CART', payload: cartItems })
     } catch (error) {

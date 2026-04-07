@@ -5,13 +5,22 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const FROM_EMAIL = 'noreply@orders.snpbrand.com'
 const ADMIN_EMAIL = 'Sylvesteranderson726t@gmail.com'
 
+const ALLOWED_ORIGINS = [
+  'https://snpbrand.com',
+  'https://www.snpbrand.com',
+  'https://snpbrand.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+]
+
 serve(async (req) => {
+  const origin = req.headers.get('Origin') ?? ''
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ''
   const corsHeaders = {
-    'Access-Control-Allow-Origin': 'https://snpbrand.vercel.app',
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
 
-  // Handle CORS just in case
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

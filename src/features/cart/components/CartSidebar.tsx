@@ -59,9 +59,10 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
                   {items.map((item) => (
                     <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex items-center space-x-4 p-4 border rounded-lg">
                       <img
-                        src={item.product?.image || '/images/placeholder.jpg'}
+                        src={item.product?.image || (item.product as any)?.image_url || ''}
                         alt={item.product?.name || 'Product'}
-                        className="w-16 h-16 object-cover rounded-md"
+                        className="w-16 h-16 object-cover rounded-md bg-gray-100"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium text-gray-900 truncate">{item.product?.name || 'Product'}</h3>
