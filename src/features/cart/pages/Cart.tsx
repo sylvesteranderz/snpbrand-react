@@ -85,9 +85,10 @@ const Cart = () => {
                 <div className="flex items-center space-x-4">
                   {/* Product Image */}
                   <img
-                    src={item.product?.image || '/images/placeholder.jpg'}
+                    src={item.product?.image || item.product?.image_url || ''}
                     alt={item.product?.name || 'Product'}
-                    className="w-20 h-20 object-cover rounded-lg"
+                    className="w-20 h-20 object-cover rounded-lg bg-gray-100"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
 
                   {/* Product Info */}

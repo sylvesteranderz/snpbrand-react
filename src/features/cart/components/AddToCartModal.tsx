@@ -83,9 +83,10 @@ const AddToCartModal = ({
                   {/* Product Image */}
                   <div className="flex-shrink-0">
                     <img
-                      src={product.image}
+                      src={(product as any).image || (product as any).image_url || ''}
                       alt={product.name}
-                      className="w-16 h-16 object-cover rounded-md"
+                      className="w-16 h-16 object-cover rounded-md bg-gray-100"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                     />
                   </div>
 
