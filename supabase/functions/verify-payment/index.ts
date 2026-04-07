@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
 const ALLOWED_ORIGINS = [
+    'https://snpbrand.com',
+    'https://www.snpbrand.com',
     'https://snpbrand.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173',

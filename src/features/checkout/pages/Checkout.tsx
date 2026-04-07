@@ -221,51 +221,45 @@ const Checkout = () => {
       if (formData.paymentMethod === 'paystack') {
         initializePayment({
           onSuccess: (referenceData: any) => {
-            // Verify payment on backend
-            if (!supabase) {
-              console.error('Supabase client is not available');
-              alert('Payment received but verification failed (System Error). Please contact support.');
-              setIsProcessing(false);
-              return;
-            }
-            // Use orderNumber (already in state) instead of createdOrder.id —
-            // createOrder no longer returns a DB-generated UUID (to avoid RLS
-            // read-back issues for guest users), so we identify the order by
-            // its order_number which is guaranteed unique and already stored.
-            supabase.functions.invoke('verify-payment', {
-              body: { reference: referenceData.reference, order_number: orderNumber }
-            }).then(({ error: verifyError }) => {
-              if (verifyError) {
-                console.error('Verification failed:', verifyError);
-                alert('Payment received but verification failed. Please contact support.');
-                setIsProcessing(false);
-              } else {
-                // ✅ Payment verified — send confirmation email
-                supabase?.functions.invoke('send-confirmation', {
-                  body: {
-                    orderNumber,
-                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                    email: formData.email,
-                    items: orderItems,
-                    total,
-                    deliveryMethod: formData.deliveryMethod,
-                    address: formData.deliveryMethod === 'delivery'
-                      ? `${formData.address}, ${formData.city}`
-                      : null,
-                    campus: formData.deliveryMethod === 'pickup'
-                      ? formData.campus
-                      : null,
-                    estimatedDelivery: uiOrderData.estimatedDelivery
-                  }
-                }).catch((emailErr) => {
-                  console.error('Email failed silently:', emailErr)
-                })
+            // Paystack's onSuccess ONLY fires on genuine successful payment.
+            // Show confirmation immediately — don't block the user on verification.
+            setOrderData(uiOrderData)
+            setIsComplete(true)
+            clearCart()
 
-                setOrderData(uiOrderData)
-                setIsComplete(true)
-                clearCart()
-              }
-            });
+            // Verify and update order status in the background (non-blocking)
+            if (supabase) {
+              supabase.functions.invoke('verify-payment', {
+                body: { reference: referenceData.reference, order_number: orderNumber }
+              }).then(({ error: verifyError }) => {
+                if (verifyError) {
+                  console.error('Background verification failed:', verifyError)
+                  // Order is still recorded in DB with payment_status: 'pending'
+                  // Admin can reconcile manually via Paystack dashboard
+                }
+              })
+
+              // Send confirmation email (also non-blocking)
+              supabase.functions.invoke('send-confirmation', {
+                body: {
+                  orderNumber,
+                  customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                  email: formData.email,
+                  items: orderItems,
+                  total,
+                  deliveryMethod: formData.deliveryMethod,
+                  address: formData.deliveryMethod === 'delivery'
+                    ? `${formData.address}, ${formData.city}`
+                    : null,
+                  campus: formData.deliveryMethod === 'pickup'
+                    ? formData.campus
+                    : null,
+                  estimatedDelivery: uiOrderData.estimatedDelivery
+                }
+              }).catch((emailErr) => {
+                console.error('Confirmation email failed silently:', emailErr)
+              })
+            }
           },
           onClose: () => {
             alert('Payment cancelled by user.');
