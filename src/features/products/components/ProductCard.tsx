@@ -136,12 +136,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
         {/* Size Info */}
 
         <div className="text-xs text-gray-500">
-          {isActuallyOutOfStock
-            ? 'Out of stock'
-            : product.sizes && product.sizes.length > 0
-              ? `Sizes: ${product.sizes.join(', ')}`
-              : null
-          }
+          {isActuallyOutOfStock ? 'Out of stock' : null}
         </div>
 
       </div>
