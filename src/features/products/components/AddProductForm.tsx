@@ -9,7 +9,8 @@ interface AddProductFormProps {
 }
 
 const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
-  const { addProduct, isLoading } = useProducts()
+  const { addProduct } = useProducts()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -19,7 +20,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     image: '',
     rating: '0',
     reviews: '0',
-    inStock: true,
+    in_stock: true,
     isNew: false,
     isOnSale: false,
     discount: '0',
@@ -106,6 +107,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       return
     }
 
+    setIsSubmitting(true)
     const productData: Omit<Product, 'id'> = {
       name: formData.name,
       price: parseFloat(formData.price),
@@ -115,7 +117,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       image: formData.image,
       rating: parseFloat(formData.rating),
       reviews: parseInt(formData.reviews),
-      inStock: formData.inStock,
+      in_stock: formData.in_stock,
       isNew: formData.isNew,
       isOnSale: formData.isOnSale,
       discount: parseInt(formData.discount),
@@ -129,6 +131,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       onClose()
     } catch (err: any) {
       alert('Failed to add product: ' + (err?.message || 'Unknown error. Check your Supabase RLS policies.'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -410,8 +414,8 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                name="inStock"
-                checked={formData.inStock}
+                name="in_stock"
+                checked={formData.in_stock}
                 onChange={handleInputChange}
                 className="mr-2"
               />
@@ -440,10 +444,10 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
             >
-              {isLoading ? 'Adding...' : 'Add Product'}
+              {isSubmitting ? 'Adding...' : 'Add Product'}
             </button>
           </div>
         </form>

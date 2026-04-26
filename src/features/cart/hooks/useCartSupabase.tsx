@@ -342,6 +342,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
       
+      // Explicitly remove local storage item so cart clears for guests and acts as persistent sync
+      try {
+        localStorage.removeItem('snpbrand-cart')
+      } catch (e) {
+        // Ignore potential localStorage errors in private mode
+      }
+      
       dispatch({ type: 'CLEAR_CART' })
     } catch (error) {
       console.error('Error clearing cart:', error)

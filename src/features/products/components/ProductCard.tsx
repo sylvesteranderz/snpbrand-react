@@ -47,14 +47,12 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
     ))
   }
 
-  const isActuallyOutOfStock = product.size_stock && Object.keys(product.size_stock).length > 0
-    ? Object.values(product.size_stock).every(v => v === 0)
-    : !product.inStock;
+  const isActuallyOutOfStock = product.in_stock === false;
 
   return (
     <motion.div
-      className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full`}
-      whileHover={{ y: -5 }}
+      className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full ${isActuallyOutOfStock ? 'opacity-50 pointer-events-none' : ''}`}
+      whileHover={isActuallyOutOfStock ? {} : { y: -5 }}
       transition={{ duration: 0.2 }}
     >
       {/* Badges - Top Left */}
@@ -69,21 +67,24 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
             -{product.discount}%
           </div>
         )}
-        {isActuallyOutOfStock && (
-          <div className="bg-gray-500 text-white rounded-md px-2 py-1 text-xs font-medium">
-            Sold
-          </div>
-        )}
       </div>
 
       {/* Product Image */}
-      <Link to={`/product/${product.id}`}>
+      <Link to={`/product/${product.id}`} tabIndex={isActuallyOutOfStock ? -1 : 0}>
         <div className="relative overflow-hidden bg-gray-100 ">
           <img
             src={product.images && product.images.length > 0 ? product.images[0] : product.image}
             alt={product.name}
             className="w-full h-40 sm:h-44 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
           />
+
+          {isActuallyOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px] z-30">
+               <span className="bg-black/80 text-white px-4 py-2 rounded-md font-bold text-sm tracking-widest uppercase shadow-xl">
+                 Out of Stock
+               </span>
+            </div>
+          )}
 
           {/* Wishlist Icon */}
           <button
@@ -134,8 +135,8 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
 
         {/* Size Info */}
 
-        <div className="text-xs text-black-500">
-          All sizes available
+        <div className="text-xs text-gray-500">
+          {isActuallyOutOfStock ? 'Out of stock' : null}
         </div>
 
       </div>
