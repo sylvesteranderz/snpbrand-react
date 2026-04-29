@@ -2,12 +2,23 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 
 const GoogleOneTap = () => {
     const navigate = useNavigate()
+    const { isAuthenticated, isLoading } = useAuth()
 
     useEffect(() => {
         if (!supabase) return;
+
+        // Don't show One Tap while auth state is still loading
+        if (isLoading) return;
+
+        // Cancel and skip One Tap if user is already logged in
+        if (isAuthenticated) {
+            window.google?.accounts?.id?.cancel()
+            return
+        }
 
         // Skip One Tap if we are processing an auth redirect
         if (window.location.hash.includes('access_token') || window.location.hash.includes('type=recovery')) {
@@ -42,8 +53,6 @@ const GoogleOneTap = () => {
         const initializeGoogleOneTap = () => {
             if (!window.google) return
 
-            // You need to get this from your env or Supabase config if exposed
-            // For now we will use a placeholder or try to read from env
             const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
             if (!clientId) {
@@ -55,7 +64,6 @@ const GoogleOneTap = () => {
                 client_id: clientId,
                 callback: handleCredentialResponse,
                 use_fedcm_for_prompt: true,
-                // cancel_on_tap_outside: false, // Optional
             })
 
             window.google.accounts.id.prompt() // FedCM handles the prompt display
@@ -80,7 +88,7 @@ const GoogleOneTap = () => {
             window.google?.accounts?.id?.cancel()
         }
 
-    }, [navigate])
+    }, [navigate, isAuthenticated, isLoading])
 
     return <div id="google-one-tap-container" style={{ display: 'none' }} />
 }

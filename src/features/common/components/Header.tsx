@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Search, Heart, ShoppingCart, Menu, X, ChevronDown, Footprints, Shirt, Grid } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Search, Heart, ShoppingCart, Menu, X, ChevronDown, Footprints, Shirt, Grid, User, Settings, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useWishlist } from '@/features/wishlist/hooks/useWishlistSupabase'
-// import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
+import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 import CartSidebar from '@/features/cart/components/CartSidebar'
 import SearchSidebar from '@/features/common/components/SearchSidebar'
 import { categories } from '@/utils/data'
@@ -17,9 +17,10 @@ const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const { itemCount: cartCount } = useCart()
   const { items: wishlistItems } = useWishlist()
-  // const { user, isAuthenticated, logout, isLoading } = useAuth()
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   // Debug authentication state
   // console.log('Header - Auth State:', { user, isAuthenticated })
@@ -191,7 +192,7 @@ const Header = () => {
                   </AnimatePresence>
                 </div>
               </div>
-              {/* {isAuthenticated ? (
+              {isAuthenticated ? (
                 <></>
               ) : (
                 <>
@@ -208,10 +209,10 @@ const Header = () => {
                     Sign Up
                   </Link>
                 </>
-              )} */}
+              )}
 
               {/* Profile Dropdown - Desktop */}
-              {/* {isAuthenticated && (
+              {isAuthenticated && (
                 <div className="relative dropdown-container profile-dropdown">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -301,7 +302,7 @@ const Header = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              )} */}
+              )}
 
               <Link
                 to="/wishlist"
@@ -350,7 +351,7 @@ const Header = () => {
               </button>
 
               {/* Mobile Profile/Auth Icon */}
-              {/* <div className="relative">
+              <div className="relative">
                 {isAuthenticated ? (
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -437,6 +438,7 @@ const Header = () => {
                               onClick={async () => {
                                 setIsProfileOpen(false)
                                 await logout()
+                                navigate('/')
                               }}
                               disabled={isLoading}
                               className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
@@ -483,7 +485,7 @@ const Header = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div> */}
+              </div>
 
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -509,7 +511,7 @@ const Header = () => {
               <div className="container mx-auto px-4 py-6">
                 <nav className="space-y-4">
                   {/* Authentication Links - Top Priority */}
-                  {/* {!isAuthenticated && (
+                  {!isAuthenticated && (
                     <div className="pb-4 border-b border-gray-700">
                       <Link
                         to="/login"
@@ -528,7 +530,7 @@ const Header = () => {
                         <span>Sign Up</span>
                       </Link>
                     </div>
-                  )} */}
+                  )}
 
                   {/* Navigation Links */}
                   {navigation.map((item) => (
@@ -566,7 +568,7 @@ const Header = () => {
 
                   {/* Mobile Account Links */}
                   <div className="pt-4 border-t border-gray-700">
-                    {/* {isAuthenticated ? (
+                    {isAuthenticated ? (
                       <>
                         <div className="flex items-center space-x-3 py-3 px-4 text-gray-300">
                           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
@@ -601,6 +603,7 @@ const Header = () => {
                           onClick={async () => {
                             await logout()
                             setIsMenuOpen(false)
+                            navigate('/')
                           }}
                           disabled={isLoading}
                           className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
@@ -609,7 +612,7 @@ const Header = () => {
                           <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
                         </button>
                       </>
-                    ) : null} */}
+                    ) : null}
                     <Link
                       to="/wishlist"
                       className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
