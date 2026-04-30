@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet } from 'lucide-react'
+import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet, Tag, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
@@ -54,6 +54,18 @@ const Checkout = () => {
     return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   };
   const [orderNumber] = useState(generateOrderNumber())
+
+  // Discount state
+  const [discountCode, setDiscountCode] = useState('')
+  const [discountInput, setDiscountInput] = useState('')
+  const [discountData, setDiscountData] = useState<{
+    code_id: string
+    discount_amount: number
+    min_order_value: number
+    message: string
+  } | null>(null)
+  const [discountError, setDiscountError] = useState('')
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -125,12 +137,14 @@ const Checkout = () => {
   const { user } = useAuth()
 
   const subtotal = totalPrice
-  const total = subtotal
+  const discountAmount = discountData?.discount_amount ?? 0
+  // Guard against negative total if items are removed after a discount is applied
+  const total = Math.max(0, subtotal - discountAmount)
 
   const paystackConfig = {
     publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
     email: formData.email || 'guest@example.com',
-    amount: Math.round(total * 100), // in pesewas
+    amount: Math.round(total * 100), // in pesewas — uses discounted total
     currency: PAYSTACK_CONFIG.CURRENCY,
     metadata: {
       custom_fields: [
@@ -141,14 +155,73 @@ const Checkout = () => {
 
   const initializePayment = usePaystackPayment(paystackConfig)
 
+  const handleApplyDiscount = async () => {
+    if (!discountInput.trim() || !supabase) return
+    setIsApplyingDiscount(true)
+    setDiscountError('')
+    setDiscountData(null)
+    try {
+      // user_id is intentionally omitted — the edge function extracts it from the verified JWT
+      const { data, error } = await supabase.functions.invoke('validate-discount', {
+        body: { code: discountInput.trim(), cart_total: subtotal }
+      })
+      if (error || !data?.valid) {
+        setDiscountError(data?.message || 'Invalid discount code.')
+      } else {
+        setDiscountData({
+          code_id: data.code_id,
+          discount_amount: data.discount_amount,
+          min_order_value: data.min_order_value ?? 0,
+          message: data.message,
+        })
+        setDiscountCode(discountInput.trim().toUpperCase())
+      }
+    } catch {
+      setDiscountError('Could not reach the server. Please try again.')
+    } finally {
+      setIsApplyingDiscount(false)
+    }
+  }
+
+  const handleRemoveDiscount = () => {
+    setDiscountData(null)
+    setDiscountCode('')
+    setDiscountInput('')
+    setDiscountError('')
+  }
+
   const handleSubmit = async () => {
     if (!validateStep(3)) return
 
     setIsProcessing(true)
 
     try {
-      // Calculate totals
-      // Variables hoisted outside handleSubmit for paystack config
+      // Re-validate the discount code immediately before creating the order.
+      // The code may have expired, been deactivated, or reached max_uses since the user applied it.
+      if (discountData && discountCode && supabase) {
+        if (subtotal < discountData.min_order_value) {
+          handleRemoveDiscount()
+          setIsProcessing(false)
+          alert(`Your cart no longer meets the minimum order value for this discount code. The discount has been removed.`)
+          return
+        }
+        try {
+          const { data: recheck, error: recheckErr } = await supabase.functions.invoke('validate-discount', {
+            body: { code: discountCode, cart_total: subtotal }
+          })
+          if (recheckErr || !recheck?.valid) {
+            handleRemoveDiscount()
+            setIsProcessing(false)
+            alert(recheck?.message || 'Your discount code is no longer valid. Please review your total and try again.')
+            return
+          }
+        } catch {
+          handleRemoveDiscount()
+          setIsProcessing(false)
+          alert('Could not verify your discount code. Please try applying it again.')
+          return
+        }
+      }
 
       // Create snapshot of items
       const orderItems = items.map(item => ({
@@ -169,7 +242,7 @@ const Checkout = () => {
 
       // Create order payload for Supabase
       const orderPayload = {
-        user_id: user?.id || null, // Null for guest checkout
+        user_id: user?.id || null,
         order_number: orderNumber,
         customer_info: submissionData, // Stored as JSONB
         shipping_address: {
@@ -182,6 +255,8 @@ const Checkout = () => {
         payment_status: 'pending',
         status: 'pending',
         total_amount: total,
+        discount_code: discountCode || null,
+        discount_amount: discountAmount,
         created_at: new Date().toISOString()
       }
 
@@ -215,6 +290,8 @@ const Checkout = () => {
         paymentMethod: formData.paymentMethod,
         total,
         subtotal,
+        discountCode: discountCode || null,
+        discountAmount: discountAmount || 0,
         estimatedDelivery
       }
 
@@ -227,38 +304,57 @@ const Checkout = () => {
             setIsComplete(true)
             clearCart()
 
-            // Verify and update order status in the background (non-blocking)
+            // Run post-payment tasks sequentially in the background.
+            // Discount recording is awaited first — payment already succeeded so we
+            // log any failure loudly for manual reconciliation but don't block the user.
             if (supabase) {
-              supabase.functions.invoke('verify-payment', {
-                body: { reference: referenceData.reference, order_number: orderNumber }
-              }).then(({ error: verifyError }) => {
-                if (verifyError) {
-                  console.error('Background verification failed:', verifyError)
-                  // Order is still recorded in DB with payment_status: 'pending'
-                  // Admin can reconcile manually via Paystack dashboard
+              ;(async () => {
+                if (discountData && user?.id) {
+                  const { error: rpcError } = await supabase.rpc('record_discount_use', {
+                    p_code_id: discountData.code_id,
+                    p_user_id: user.id,
+                    p_order_number: orderNumber,
+                    p_cart_total: subtotal,
+                  })
+                  if (rpcError) {
+                    console.error('[checkout] CRITICAL — discount not recorded after payment. Manual reconciliation required.', {
+                      order_number: orderNumber,
+                      code_id: discountData.code_id,
+                      error: rpcError.message,
+                    })
+                  }
                 }
-              })
 
-              // Send confirmation email (also non-blocking)
-              supabase.functions.invoke('send-confirmation', {
-                body: {
-                  orderNumber,
-                  customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                  email: formData.email,
-                  items: orderItems,
-                  total,
-                  deliveryMethod: formData.deliveryMethod,
-                  address: formData.deliveryMethod === 'delivery'
-                    ? `${formData.address}, ${formData.city}`
-                    : null,
-                  campus: formData.deliveryMethod === 'pickup'
-                    ? formData.campus
-                    : null,
-                  estimatedDelivery: uiOrderData.estimatedDelivery
-                }
-              }).catch((emailErr) => {
-                console.error('Confirmation email failed silently:', emailErr)
-              })
+                supabase.functions.invoke('verify-payment', {
+                  body: { reference: referenceData.reference, order_number: orderNumber }
+                }).then(({ error: verifyError }) => {
+                  if (verifyError) {
+                    console.error('Background verification failed:', verifyError)
+                    // Order is still in DB with payment_status: 'pending'
+                    // Admin can reconcile via Paystack dashboard
+                  }
+                })
+
+                supabase.functions.invoke('send-confirmation', {
+                  body: {
+                    orderNumber,
+                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+                    email: formData.email,
+                    items: orderItems,
+                    total,
+                    deliveryMethod: formData.deliveryMethod,
+                    address: formData.deliveryMethod === 'delivery'
+                      ? `${formData.address}, ${formData.city}`
+                      : null,
+                    campus: formData.deliveryMethod === 'pickup'
+                      ? formData.campus
+                      : null,
+                    estimatedDelivery: uiOrderData.estimatedDelivery
+                  }
+                }).catch((emailErr) => {
+                  console.error('Confirmation email failed silently:', emailErr)
+                })
+              })()
             }
           },
           onClose: () => {
@@ -747,12 +843,61 @@ const Checkout = () => {
                   <span className="text-gray-600">Shipping</span>
                   <span className="font-medium text-primary-600 text-sm italic">Would be calculated</span>
                 </div>
+                {discountData && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      {discountCode}
+                    </span>
+                    <span className="font-medium">- {formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
               </div>
+
+              {/* Discount Code Input — signed-in users only */}
+              {user && (
+                <div className="mb-6">
+                  {discountData ? (
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-700">{discountData.message}</span>
+                      </div>
+                      <button onClick={handleRemoveDiscount} className="text-green-600 hover:text-green-800">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={discountInput}
+                          onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError('') }}
+                          onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
+                          placeholder="Discount code"
+                          className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase"
+                        />
+                        <button
+                          onClick={handleApplyDiscount}
+                          disabled={isApplyingDiscount || !discountInput.trim()}
+                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isApplyingDiscount ? '...' : 'Apply'}
+                        </button>
+                      </div>
+                      {discountError && (
+                        <p className="text-red-500 text-xs mt-1.5">{discountError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">

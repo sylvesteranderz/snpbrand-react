@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Phone,
   MapPin,
-  XCircle
+  XCircle,
+  Tag
 } from 'lucide-react'
 import { formatPrice } from '@/utils/currency'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
@@ -23,6 +24,7 @@ import AddProductForm from '@/features/products/components/AddProductForm'
 import { OrderService, UserProfileService } from '@/services/supabaseService'
 import { useEffect, useMemo } from 'react'
 import { Product } from '@/types'
+import DiscountCodesTab from '@/features/admin/components/DiscountCodesTab'
 
 const getProductStatusInfo = (product: Product) => {
   const sizeStock = product.size_stock || {};
@@ -166,7 +168,7 @@ interface User {
 
 const AdminDashboard = () => {
   const { products } = useProducts()
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [orderTab, setOrderTab] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all')
 
@@ -293,7 +295,8 @@ const AdminDashboard = () => {
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'users', label: 'Users', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp }
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+    { id: 'discounts', label: 'Discounts', icon: Tag },
   ]
 
   const stats = {
@@ -910,11 +913,12 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
+
+            {/* Discounts Tab */}
+            {activeTab === 'discounts' && <DiscountCodesTab />}
           </motion.div>
         </div>
-      </div>
 
-      {/* Add Product Form Modal */}
       {showAddProductForm && (
         <AddProductForm onClose={() => setShowAddProductForm(false)} />
       )}
@@ -922,6 +926,7 @@ const AdminDashboard = () => {
       {stockModalProduct && (
         <AddStockModal product={stockModalProduct} onClose={() => setStockModalProduct(null)} />
       )}
+      </div>
     </motion.div>
   )
 }
