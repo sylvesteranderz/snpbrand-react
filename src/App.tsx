@@ -10,6 +10,7 @@ import Checkout from '@/features/checkout/pages/Checkout'
 import OrderTracking from '@/features/orders/pages/OrderTracking'
 import Account from '@/features/auth/pages/Account'
 import AdminDashboard from '@/features/admin/pages/AdminDashboard'
+import NewOrderForm from '@/features/admin/pages/NewOrderForm'
 import Login from '@/features/auth/pages/Login'
 import Signup from '@/features/auth/pages/Signup'
 import Orders from '@/features/orders/pages/Orders'
@@ -28,6 +29,22 @@ import { ProductProvider } from '@/features/products/hooks/useProductsSupabase'
 // Component to handle footer visibility
 const AppContent = () => {
   const location = useLocation()
+
+  // Pages that render their own full-screen layout (no site chrome)
+  if (location.pathname.startsWith('/new-order')) {
+    return (
+      <Routes>
+        <Route
+          path="/new-order"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <NewOrderForm />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    )
+  }
 
   // Pages where footer should be hidden on mobile
   const hideFooterOnMobile = [

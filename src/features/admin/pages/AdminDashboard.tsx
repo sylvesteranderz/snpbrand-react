@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   BarChart3,
@@ -16,7 +17,8 @@ import {
   Phone,
   MapPin,
   XCircle,
-  Tag
+  Tag,
+  ClipboardList,
 } from 'lucide-react'
 import { formatPrice } from '@/utils/currency'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
@@ -167,6 +169,7 @@ interface User {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate()
   const { products } = useProducts()
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
@@ -502,7 +505,19 @@ const AdminDashboard = () => {
             {/* Orders Tab */}
             {activeTab === 'orders' && (
               <div className="space-y-6">
-                
+
+                {/* Tab header with New Order button */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">Orders</h2>
+                  <button
+                    onClick={() => navigate('/new-order')}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#DEAD6F] hover:bg-[#d4a83d] text-black font-semibold rounded-xl shadow-sm transition-colors"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    <span>New Order</span>
+                  </button>
+                </div>
+
                 {/* Orders Summary Stats */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
