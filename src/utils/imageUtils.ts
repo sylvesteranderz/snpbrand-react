@@ -1,65 +1,105 @@
 /**
- * Supabase Storage image transformation utility.
+ * Client-side image compression utility for Supabase free-tier storage.
  *
- * Supabase serves transformed images from the /render/image/ endpoint.
- * Non-Supabase URLs are returned unchanged so legacy external links still work.
+ * Supabase's /render/image/ transformation endpoint requires the Pro plan.
+ * Instead, we compress images in the browser via Canvas before uploading so
+ * the stored file is already small — permanently reducing Cached Egress.
  *
- * Docs: https://supabase.com/docs/guides/storage/serving/image-transformations
+ * Usage in an upload handler:
+ *   const compressed = await compressImageForUpload(file)
+ *   await supabase.storage.from('product-images').upload(path, compressed, {
+ *     cacheControl: '31536000',
+ *     contentType: 'image/webp',
+ *     upsert: false,
+ *   })
  */
 
-export interface ImageTransformOptions {
-  width?: number
-  height?: number
-  quality?: number // 1-100, default 80
-  format?: 'webp' | 'avif' | 'origin'
-  resize?: 'cover' | 'contain' | 'fill'
+export interface CompressOptions {
+  maxWidthPx?: number   // default 1200 — enough for full-bleed product shots
+  maxHeightPx?: number  // default 1200
+  quality?: number      // 0–1, default 0.82
+  outputFormat?: 'image/webp' | 'image/jpeg'
 }
-
-const STORAGE_OBJECT_PATH = '/storage/v1/object/public/'
-const STORAGE_RENDER_PATH = '/storage/v1/render/image/public/'
 
 /**
- * Returns a Supabase image transformation URL for storage assets.
- * Falls through unchanged for any URL that isn't a Supabase storage URL.
+ * Compress a File/Blob via Canvas before uploading to Supabase Storage.
+ * Returns a Blob ready to pass to supabase.storage.upload().
+ *
+ * WebP is preferred (smaller than JPEG at the same quality). Falls back to
+ * JPEG for environments that don't support WebP encoding (rare in 2025).
  */
-export function getOptimizedImageUrl(
-  url: string | undefined | null,
-  options: ImageTransformOptions = {},
-): string {
-  if (!url) return ''
-
-  const storageIndex = url.indexOf(STORAGE_OBJECT_PATH)
-  if (storageIndex === -1) return url
-
+export async function compressImageForUpload(
+  file: File | Blob,
+  options: CompressOptions = {},
+): Promise<Blob> {
   const {
-    width = 800,
-    quality = 80,
-    format = 'webp',
-    height,
-    resize = 'cover',
+    maxWidthPx = 1200,
+    maxHeightPx = 1200,
+    quality = 0.82,
+    outputFormat = 'image/webp',
   } = options
 
-  const origin = url.slice(0, storageIndex)
-  const bucketAndPath = url.slice(storageIndex + STORAGE_OBJECT_PATH.length)
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
 
-  const params = new URLSearchParams()
-  params.set('width', String(width))
-  params.set('quality', String(quality))
-  params.set('format', format)
-  if (height) params.set('height', String(height))
-  params.set('resize', resize)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
 
-  return `${origin}${STORAGE_RENDER_PATH}${bucketAndPath}?${params.toString()}`
+      let { width, height } = img
+
+      // Scale down proportionally if either dimension exceeds the max
+      const scale = Math.min(maxWidthPx / width, maxHeightPx / height, 1)
+      width = Math.round(width * scale)
+      height = Math.round(height * scale)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('Canvas 2D context unavailable'))
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            // Fallback: return original file untouched
+            resolve(file)
+          }
+        },
+        outputFormat,
+        quality,
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Failed to load image for compression'))
+    }
+
+    img.src = objectUrl
+  })
 }
 
-/** Preset for product card thumbnails (grid view). */
-export const productCardImage = (url?: string | null) =>
-  getOptimizedImageUrl(url, { width: 400, quality: 75, format: 'webp' })
+/**
+ * Thumbnail preset — for cart sidebar / order detail thumbnails.
+ * 300 px wide is more than enough; drops most product images to ~15 KB.
+ */
+export const compressThumbnail = (file: File | Blob) =>
+  compressImageForUpload(file, { maxWidthPx: 300, maxHeightPx: 300, quality: 0.75 })
 
-/** Preset for the large product detail hero image. */
-export const productDetailImage = (url?: string | null) =>
-  getOptimizedImageUrl(url, { width: 900, quality: 85, format: 'webp' })
+/**
+ * Card preset — for product grid cards (~400 px display width).
+ */
+export const compressCardImage = (file: File | Blob) =>
+  compressImageForUpload(file, { maxWidthPx: 800, maxHeightPx: 800, quality: 0.82 })
 
-/** Preset for cart / sidebar thumbnails (small). */
-export const productThumbnailImage = (url?: string | null) =>
-  getOptimizedImageUrl(url, { width: 120, quality: 70, format: 'webp' })
+/**
+ * Full-size preset — for product detail hero image.
+ */
+export const compressHeroImage = (file: File | Blob) =>
+  compressImageForUpload(file, { maxWidthPx: 1200, maxHeightPx: 1200, quality: 0.88 })

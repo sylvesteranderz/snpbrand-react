@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Product } from '@/types'
 import { useWishlist } from '@/features/wishlist/hooks/useWishlistSupabase'
 import { formatPrice } from '@/utils/currency'
-import { productCardImage } from '@/utils/imageUtils'
 
 interface ProductCardProps {
   product: Product
@@ -78,9 +77,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
       <Link to={`/product/${product.id}`} tabIndex={isActuallyOutOfStock ? -1 : 0}>
         <div className="relative overflow-hidden bg-gray-100 ">
           <img
-            src={productCardImage(
-              product.images && product.images.length > 0 ? product.images[0] : product.image
-            )}
+            src={product.images && product.images.length > 0 ? product.images[0] : product.image}
             alt={product.name}
             loading="lazy"
             decoding="async"
