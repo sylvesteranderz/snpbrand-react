@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import Header from '@/features/common/components/Header'
 import Footer from '@/features/common/components/Footer'
 import ScrollToTop from '@/features/common/components/ScrollToTop'
@@ -108,6 +109,7 @@ function App() {
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ScrollToTop />
               <AppContent />
+              <Analytics />
             </Router>
           </WishlistProvider>
         </CartProvider>
