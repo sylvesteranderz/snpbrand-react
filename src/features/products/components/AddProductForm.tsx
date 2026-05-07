@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, UploadCloud } from 'lucide-react'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
 import { Product } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { compressCardImage } from '@/utils/imageUtils'
 
 interface AddProductFormProps {
   onClose: () => void
@@ -32,6 +34,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
   const [newSize, setNewSize] = useState('')
   const [newColor, setNewColor] = useState('')
   const [newTag, setNewTag] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const categories = [
     { value: 'slippers', label: 'Slippers' },
@@ -99,22 +104,51 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     }))
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    // Clear any manually-typed URL so validation uses the file path
+    setFormData(prev => ({ ...prev, image: '' }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.name || !formData.price || !formData.image) {
-      alert('Please fill in all required fields')
+    if (!formData.name || !formData.price || (!formData.image && !imageFile)) {
+      alert('Please fill in all required fields including an image')
       return
     }
 
     setIsSubmitting(true)
+
+    let imageUrl = formData.image
+    if (imageFile && supabase) {
+      try {
+        const compressed = await compressCardImage(imageFile)
+        const ext = 'webp'
+        const path = `products/${Date.now()}-${imageFile.name.replace(/\s+/g, '_').replace(/\.[^.]+$/, '')}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(path, compressed, { cacheControl: '31536000', contentType: 'image/webp', upsert: false })
+        if (uploadError) throw uploadError
+        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
+        imageUrl = urlData.publicUrl
+      } catch (err: any) {
+        alert('Image upload failed: ' + (err?.message || 'Unknown error'))
+        setIsSubmitting(false)
+        return
+      }
+    }
+
     const productData: Omit<Product, 'id'> = {
       name: formData.name,
       price: parseFloat(formData.price),
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
       description: formData.description,
       category: formData.category,
-      image: formData.image,
+      image: imageUrl,
       rating: parseFloat(formData.rating),
       reviews: parseInt(formData.reviews),
       in_stock: formData.in_stock,
@@ -214,17 +248,38 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL *
+                  Product Image *
                 </label>
                 <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="https://example.com/image.jpg"
-                  required
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
                 />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-full border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 transition-colors overflow-hidden"
+                >
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-white text-sm font-medium">Click to change</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                      <UploadCloud className="w-8 h-8 mb-2" />
+                      <span className="text-sm font-medium">Click to upload from device</span>
+                      <span className="text-xs mt-1">PNG, JPG, WEBP — auto-compressed</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -447,7 +502,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
               disabled={isSubmitting}
               className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Adding...' : 'Add Product'}
+              {isSubmitting ? (imageFile ? 'Uploading...' : 'Adding...') : 'Add Product'}
             </button>
           </div>
         </form>
