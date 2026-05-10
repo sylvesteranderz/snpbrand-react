@@ -72,16 +72,35 @@ serve(async (req) => {
         // Update order status in Supabase — query by order_number (a stable,
         // unique string) rather than the DB-generated UUID id, since guest
         // checkout does not return the UUID from the insert (RLS blocks read-back).
-        const { error: updateError } = await supabase
+        const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
             .update({
                 payment_status: 'paid',
                 payment_reference: reference,
             })
             .eq('order_number', order_number)
+            .select('id, total_amount')
+            .maybeSingle()
 
         if (updateError) {
             throw updateError
+        }
+
+        // Auto-log the sale into financial_transactions (non-blocking — do not
+        // throw if this fails; the payment update is the critical operation).
+        if (updatedOrder?.id) {
+            const { error: finErr } = await supabase
+                .from('financial_transactions')
+                .insert({
+                    type:        'sale',
+                    amount:      updatedOrder.total_amount,
+                    description: `Order #${order_number}`,
+                    reference_id: updatedOrder.id,
+                    date:        new Date().toISOString().slice(0, 10),
+                })
+            if (finErr) {
+                console.error('financial_transactions insert failed:', finErr.message)
+            }
         }
 
         return new Response(

@@ -80,3 +80,40 @@ export interface SearchParams {
   category?: string
   filters?: Partial<FilterOptions>
 }
+
+// ── Inventory & Financial Ledger ────────────────────────────────────────────
+
+export type TransactionType   = 'restock' | 'sale' | 'adjustment' | 'return'
+export type FinancialType     = 'sale' | 'expense'
+export type ExpenseCategory   = 'packaging' | 'marketing' | 'logistics' | 'data_airtime' | 'other'
+
+export interface InventoryTransaction {
+  id:         string
+  product_id: string
+  type:       TransactionType
+  quantity:   number
+  unit_cost:  number | null
+  note:       string | null
+  created_at: string
+  // joined field when fetched with product name
+  product_name?: string
+}
+
+export interface FinancialTransaction {
+  id:           string
+  type:         FinancialType
+  amount:       number
+  category:     ExpenseCategory | null
+  description:  string | null
+  reference_id: string | null
+  date:         string
+  created_at:   string
+}
+
+export interface ProfitLossSummary {
+  gross_revenue:      number
+  cogs:               number
+  gross_profit:       number
+  operating_expenses: number
+  net_profit:         number
+}

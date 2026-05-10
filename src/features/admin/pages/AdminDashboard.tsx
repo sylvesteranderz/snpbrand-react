@@ -19,6 +19,8 @@ import {
   XCircle,
   Tag,
   ClipboardList,
+  Warehouse,
+  LineChart,
 } from 'lucide-react'
 import { formatPrice } from '@/utils/currency'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
@@ -27,6 +29,10 @@ import { OrderService, UserProfileService } from '@/services/supabaseService'
 import { useEffect, useMemo } from 'react'
 import { Product } from '@/types'
 import DiscountCodesTab from '@/features/admin/components/DiscountCodesTab'
+import RestockModal  from '@/features/admin/components/RestockModal'
+import InventoryLog  from '@/features/admin/components/InventoryLog'
+import ExpenseLogger from '@/features/admin/components/ExpenseLogger'
+import ProfitLoss    from '@/features/admin/components/ProfitLoss'
 
 const getProductStatusInfo = (product: Product) => {
   const sizeStock = product.size_stock || {};
@@ -177,13 +183,14 @@ interface User {
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
-  const { products } = useProducts()
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts'>('overview')
+  const { products, refreshProducts } = useProducts()
+  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts' | 'inventory' | 'finance'>('overview')
   const [searchTerm, setSearchTerm] = useState('')
   const [orderTab, setOrderTab] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all')
 
   const [showAddProductForm, setShowAddProductForm] = useState(false)
   const [stockModalProduct, setStockModalProduct] = useState<Product | null>(null)
+  const [restockModalProduct, setRestockModalProduct] = useState<Product | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [users, setUsers] = useState<User[]>([])
 
@@ -301,12 +308,14 @@ const AdminDashboard = () => {
   })
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'discounts', label: 'Discounts', icon: Tag },
+    { id: 'overview',   label: 'Overview',   icon: BarChart3   },
+    { id: 'orders',     label: 'Orders',     icon: ShoppingCart },
+    { id: 'products',   label: 'Products',   icon: Package      },
+    { id: 'users',      label: 'Users',      icon: Users        },
+    { id: 'inventory',  label: 'Inventory',  icon: Warehouse    },
+    { id: 'finance',    label: 'Finance',    icon: LineChart    },
+    { id: 'analytics',  label: 'Analytics',  icon: TrendingUp   },
+    { id: 'discounts',  label: 'Discounts',  icon: Tag          },
   ]
 
   const stats = {
@@ -847,8 +856,8 @@ const AdminDashboard = () => {
                               </td>
                               <td className="px-6 py-5">
                                 <div className="flex items-center gap-3">
-                                  <button onClick={() => setStockModalProduct(product)} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold rounded-lg transition-colors">
-                                    <Plus className="w-4 h-4" /> Stock
+                                  <button onClick={() => setRestockModalProduct(product)} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-700 text-sm font-semibold rounded-lg transition-colors border border-primary-200">
+                                    <Package className="w-4 h-4" /> Restock
                                   </button>
                                   <button onClick={() => {}} className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors">
                                     <Edit className="w-4 h-4" />
@@ -937,6 +946,27 @@ const AdminDashboard = () => {
               </div>
             )}
 
+            {/* Inventory Tab */}
+            {activeTab === 'inventory' && (
+              <div className="bg-white rounded-lg shadow-sm p-6 border">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Inventory Ledger</h2>
+                <InventoryLog />
+              </div>
+            )}
+
+            {/* Finance Tab */}
+            {activeTab === 'finance' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg shadow-sm p-6 border">
+                  <ProfitLoss />
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-6 border">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Expense Logger</h2>
+                  <ExpenseLogger />
+                </div>
+              </div>
+            )}
+
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
               <div className="space-y-6">
@@ -962,6 +992,14 @@ const AdminDashboard = () => {
       
       {stockModalProduct && (
         <AddStockModal product={stockModalProduct} onClose={() => setStockModalProduct(null)} />
+      )}
+
+      {restockModalProduct && (
+        <RestockModal
+          product={restockModalProduct}
+          onClose={() => setRestockModalProduct(null)}
+          onSuccess={() => { refreshProducts(); setRestockModalProduct(null) }}
+        />
       )}
       </div>
     </motion.div>
