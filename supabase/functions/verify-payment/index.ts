@@ -79,27 +79,49 @@ serve(async (req) => {
                 payment_reference: reference,
             })
             .eq('order_number', order_number)
-            .select('id, total_amount')
+            .select('id, total_amount, items')
             .maybeSingle()
 
         if (updateError) {
             throw updateError
         }
 
-        // Auto-log the sale into financial_transactions (non-blocking — do not
-        // throw if this fails; the payment update is the critical operation).
         if (updatedOrder?.id) {
+            const today = new Date().toISOString().slice(0, 10)
+
+            // 1. Log the sale into financial_transactions
             const { error: finErr } = await supabase
                 .from('financial_transactions')
                 .insert({
-                    type:        'sale',
-                    amount:      updatedOrder.total_amount,
-                    description: `Order #${order_number}`,
+                    type:         'sale',
+                    amount:       updatedOrder.total_amount,
+                    description:  `Order #${order_number}`,
                     reference_id: updatedOrder.id,
-                    date:        new Date().toISOString().slice(0, 10),
+                    date:         today,
                 })
             if (finErr) {
                 console.error('financial_transactions insert failed:', finErr.message)
+            }
+
+            // 2. Log each line item into inventory_transactions with size
+            //    items is a JSONB snapshot: [{product_id, name, quantity, selected_size, price}]
+            const items: any[] = Array.isArray(updatedOrder.items) ? updatedOrder.items : []
+            if (items.length > 0) {
+                const invRows = items.map((item: any) => ({
+                    product_id: item.product_id,
+                    type:       'sale',
+                    size:       item.selected_size || item.selectedSize || 'unknown',
+                    quantity:   -(item.quantity ?? 1),   // negative = stock OUT
+                    unit_cost:  null,
+                    note:       `Order #${order_number}`,
+                    created_at: new Date().toISOString(),
+                }))
+                const { error: invErr } = await supabase
+                    .from('inventory_transactions')
+                    .insert(invRows)
+                if (invErr) {
+                    console.error('inventory_transactions insert failed:', invErr.message)
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Package } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -13,43 +13,88 @@ interface RestockModalProps {
 const today = () => new Date().toISOString().slice(0, 10)
 
 const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess }) => {
-  const [qty, setQty]         = useState('')
-  const [unitCost, setUnitCost] = useState('')
-  const [note, setNote]       = useState('')
-  const [date, setDate]       = useState(today())
-  const [saving, setSaving]   = useState(false)
-  const [error, setError]     = useState('')
+  // Per-size quantities — keyed by size name, value is string so inputs stay controlled
+  const [sizeQtys, setSizeQtys]   = useState<Record<string, string>>({})
+  const [sizes, setSizes]         = useState<string[]>([])
+  const [loadingSizes, setLoadingSizes] = useState(true)
 
-  const totalCost =
-    qty && unitCost ? (parseFloat(qty) * parseFloat(unitCost)).toFixed(2) : null
+  const [unitCost, setUnitCost]   = useState('')
+  const [note, setNote]           = useState('')
+  const [date, setDate]           = useState(today())
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState('')
+
+  // Fetch authoritative sizes from the products table on open
+  useEffect(() => {
+    const fetchSizes = async () => {
+      setLoadingSizes(true)
+      const { data } = await supabase!
+        .from('products')
+        .select('sizes, size_stock')
+        .eq('id', product.id)
+        .single()
+
+      let fetchedSizes: string[] = []
+      if (data?.sizes && Array.isArray(data.sizes) && data.sizes.length > 0) {
+        fetchedSizes = data.sizes
+      } else if (data?.size_stock && typeof data.size_stock === 'object') {
+        fetchedSizes = Object.keys(data.size_stock)
+      } else if (product.sizes && product.sizes.length > 0) {
+        fetchedSizes = product.sizes
+      }
+
+      // Fallback: at least one "General" slot so the form is never empty
+      if (fetchedSizes.length === 0) fetchedSizes = ['General']
+
+      setSizes(fetchedSizes)
+      const initial: Record<string, string> = {}
+      fetchedSizes.forEach(s => { initial[s] = '' })
+      setSizeQtys(initial)
+      setLoadingSizes(false)
+    }
+    fetchSizes()
+  }, [product.id, product.sizes])
+
+  // Total units across all size inputs
+  const totalUnits = Object.values(sizeQtys)
+    .reduce((sum, v) => sum + (parseInt(v) || 0), 0)
+
+  const totalCost = unitCost && totalUnits > 0
+    ? (totalUnits * parseFloat(unitCost)).toFixed(2)
+    : null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    const qtyNum      = parseInt(qty)
-    const unitCostNum = parseFloat(unitCost)
 
-    if (!qtyNum || qtyNum < 1)       { setError('Quantity must be at least 1'); return }
+    const unitCostNum = parseFloat(unitCost)
     if (!unitCostNum || unitCostNum <= 0) { setError('Unit cost must be greater than 0'); return }
+    if (totalUnits < 1) { setError('Enter at least 1 unit for one size'); return }
 
     setSaving(true)
     try {
-      const { error: dbErr } = await supabase!
-        .from('inventory_transactions')
-        .insert({
+      // Build one row per size where qty > 0
+      const rows = sizes
+        .map(size => ({ size, qty: parseInt(sizeQtys[size]) || 0 }))
+        .filter(r => r.qty > 0)
+        .map(r => ({
           product_id: product.id,
           type:       'restock',
-          quantity:   qtyNum,
+          size:       r.size,
+          quantity:   r.qty,
           unit_cost:  unitCostNum,
           note:       note.trim() || null,
           created_at: new Date(date).toISOString(),
-        })
+        }))
+
+      const { error: dbErr } = await supabase!
+        .from('inventory_transactions')
+        .insert(rows)
       if (dbErr) throw dbErr
+
       onSuccess()
-      onClose()
     } catch (err: any) {
       setError(err?.message || 'Failed to save restock. Try again.')
-    } finally {
       setSaving(false)
     }
   }
@@ -62,7 +107,7 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
         onClick={onClose}
       >
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
           initial={{ scale: 0.93, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.93, opacity: 0 }}
@@ -85,33 +130,58 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {/* Qty + Unit cost side by side */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Quantity <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number" min="1" required
-                  value={qty}
-                  onChange={e => setQty(e.target.value)}
-                  placeholder="e.g. 50"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Unit Cost (GHS) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number" min="0.01" step="0.01" required
-                  value={unitCost}
-                  onChange={e => setUnitCost(e.target.value)}
-                  placeholder="e.g. 120.00"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="p-5 space-y-5">
+
+            {/* Per-size quantity inputs */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+                Quantity per Size <span className="text-red-500">*</span>
+              </label>
+              {loadingSizes ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {sizes.map(size => (
+                    <div key={size} className="flex flex-col">
+                      <label className="text-xs font-medium text-gray-600 mb-1 text-center">
+                        {size}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={sizeQtys[size] ?? ''}
+                        onChange={e => setSizeQtys(prev => ({ ...prev, [size]: e.target.value }))}
+                        placeholder="0"
+                        className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {totalUnits > 0 && (
+                <p className="text-xs text-gray-500 mt-2 text-right">
+                  Total units: <strong className="text-gray-800">{totalUnits}</strong>
+                </p>
+              )}
+            </div>
+
+            {/* Unit cost */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Unit Cost (GHS) <span className="text-red-500">*</span>
+                <span className="text-gray-400 font-normal ml-1">— shared across all sizes</span>
+              </label>
+              <input
+                type="number" min="0.01" step="0.01" required
+                value={unitCost}
+                onChange={e => setUnitCost(e.target.value)}
+                placeholder="e.g. 120.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
             </div>
 
             {/* Total cost banner */}
@@ -122,6 +192,7 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
               </div>
             )}
 
+            {/* Note */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Note (optional)</label>
               <input
@@ -133,6 +204,7 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
               />
             </div>
 
+            {/* Date */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
               <input
@@ -155,7 +227,7 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
                 Cancel
               </button>
               <button
-                type="submit" disabled={saving}
+                type="submit" disabled={saving || loadingSizes}
                 className="flex-1 px-4 py-2.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
               >
                 {saving ? 'Saving…' : 'Confirm Restock'}
