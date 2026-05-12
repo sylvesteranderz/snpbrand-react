@@ -91,6 +91,7 @@ export interface InventoryTransaction {
   id:         string
   product_id: string
   type:       TransactionType
+  size:       string | null
   quantity:   number
   unit_cost:  number | null
   note:       string | null

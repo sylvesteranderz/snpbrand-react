@@ -21,6 +21,7 @@ import {
   ClipboardList,
   Warehouse,
   LineChart,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { formatPrice } from '@/utils/currency'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
@@ -29,10 +30,11 @@ import { OrderService, UserProfileService } from '@/services/supabaseService'
 import { useEffect, useMemo } from 'react'
 import { Product } from '@/types'
 import DiscountCodesTab from '@/features/admin/components/DiscountCodesTab'
-import RestockModal  from '@/features/admin/components/RestockModal'
-import InventoryLog  from '@/features/admin/components/InventoryLog'
-import ExpenseLogger from '@/features/admin/components/ExpenseLogger'
-import ProfitLoss    from '@/features/admin/components/ProfitLoss'
+import RestockModal     from '@/features/admin/components/RestockModal'
+import AdjustStockModal from '@/features/admin/components/AdjustStockModal'
+import InventoryLog     from '@/features/admin/components/InventoryLog'
+import ExpenseLogger    from '@/features/admin/components/ExpenseLogger'
+import ProfitLoss       from '@/features/admin/components/ProfitLoss'
 
 const getProductStatusInfo = (product: Product) => {
   const sizeStock = product.size_stock || {};
@@ -190,7 +192,8 @@ const AdminDashboard = () => {
 
   const [showAddProductForm, setShowAddProductForm] = useState(false)
   const [stockModalProduct, setStockModalProduct] = useState<Product | null>(null)
-  const [restockModalProduct, setRestockModalProduct] = useState<Product | null>(null)
+  const [restockModalProduct, setRestockModalProduct]     = useState<Product | null>(null)
+  const [adjustStockModalProduct, setAdjustStockModalProduct] = useState<Product | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [users, setUsers] = useState<User[]>([])
 
@@ -855,9 +858,16 @@ const AdminDashboard = () => {
                                 </span>
                               </td>
                               <td className="px-6 py-5">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
                                   <button onClick={() => setRestockModalProduct(product)} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-700 text-sm font-semibold rounded-lg transition-colors border border-primary-200">
                                     <Package className="w-4 h-4" /> Restock
+                                  </button>
+                                  <button
+                                    onClick={() => setAdjustStockModalProduct(product)}
+                                    title="Adjust / correct stock levels"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold rounded-lg transition-colors border border-amber-200"
+                                  >
+                                    <SlidersHorizontal className="w-3.5 h-3.5" /> Adjust
                                   </button>
                                   <button onClick={() => {}} className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors">
                                     <Edit className="w-4 h-4" />
@@ -999,6 +1009,14 @@ const AdminDashboard = () => {
           product={restockModalProduct}
           onClose={() => setRestockModalProduct(null)}
           onSuccess={() => { refreshProducts(); setRestockModalProduct(null) }}
+        />
+      )}
+
+      {adjustStockModalProduct && (
+        <AdjustStockModal
+          product={adjustStockModalProduct}
+          onClose={() => setAdjustStockModalProduct(null)}
+          onSuccess={() => { refreshProducts(); setAdjustStockModalProduct(null) }}
         />
       )}
       </div>

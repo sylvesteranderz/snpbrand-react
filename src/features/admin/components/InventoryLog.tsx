@@ -126,7 +126,7 @@ const InventoryLog: React.FC = () => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-left">
-              {['Date', 'Product', 'Type', 'Qty', 'Unit Cost', 'Note'].map(h => (
+              {['Date', 'Product', 'Size', 'Type', 'Qty', 'Unit Cost', 'Note'].map(h => (
                 <th key={h} className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   {h}
                 </th>
@@ -135,15 +135,21 @@ const InventoryLog: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">Loading…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400 text-sm">No transactions found for this period.</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm">No transactions found for this period.</td></tr>
             ) : rows.map(r => (
               <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                   {new Date(r.created_at).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}
                 </td>
                 <td className="px-4 py-3 text-gray-900 font-medium max-w-[160px] truncate">{r.product_name}</td>
+                <td className="px-4 py-3">
+                  {r.size && r.size !== 'unknown'
+                    ? <span className="inline-flex px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">{r.size}</span>
+                    : <span className="text-gray-400">—</span>
+                  }
+                </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_BADGE[r.type] ?? 'bg-gray-100 text-gray-600'}`}>
                     {r.type.charAt(0).toUpperCase() + r.type.slice(1)}

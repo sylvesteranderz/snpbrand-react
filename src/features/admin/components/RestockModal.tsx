@@ -22,6 +22,7 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
   const [note, setNote]           = useState('')
   const [date, setDate]           = useState(today())
   const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
   const [error, setError]         = useState('')
 
   // Fetch authoritative sizes from the products table on open
@@ -92,7 +93,12 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
         .insert(rows)
       if (dbErr) throw dbErr
 
-      onSuccess()
+      // Show success state briefly so the user knows it worked,
+      // then let the parent close and refresh
+      setSaved(true)
+      setTimeout(() => {
+        onSuccess()
+      }, 1000)
     } catch (err: any) {
       setError(err?.message || 'Failed to save restock. Try again.')
       setSaving(false)
@@ -219,6 +225,13 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
               <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
             )}
 
+            {saved && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+                <span className="text-green-600 font-bold text-base">✓</span>
+                <span className="text-sm font-medium text-green-700">Restock saved successfully!</span>
+              </div>
+            )}
+
             <div className="flex gap-3 pt-1">
               <button
                 type="button" onClick={onClose}
@@ -227,10 +240,12 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
                 Cancel
               </button>
               <button
-                type="submit" disabled={saving || loadingSizes}
-                className="flex-1 px-4 py-2.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+                type="submit" disabled={saving || loadingSizes || saved}
+                className={`flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-75 ${
+                  saved ? 'bg-green-500' : 'bg-primary-500 hover:bg-primary-600'
+                }`}
               >
-                {saving ? 'Saving…' : 'Confirm Restock'}
+                {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Confirm Restock'}
               </button>
             </div>
           </form>
