@@ -10,7 +10,7 @@ export interface Product {
   subcategory?: string
   rating: number
   reviews: number
-  inStock: boolean
+  in_stock: boolean
   isNew?: boolean
   isOnSale?: boolean
   discount?: number
@@ -19,6 +19,7 @@ export interface Product {
   tags?: string[]
   imagePosition?: string
   size_stock?: Record<string, number>
+  stockQuantity?: number
 }
 
 export interface CartItem extends Product {
@@ -69,7 +70,7 @@ export interface FilterOptions {
   category: string
   priceRange: [number, number]
   rating: number
-  inStock: boolean
+  in_stock: boolean
   sortBy: 'name' | 'price' | 'rating' | 'newest'
   sortOrder: 'asc' | 'desc'
 }

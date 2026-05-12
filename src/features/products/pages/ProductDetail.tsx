@@ -68,6 +68,15 @@ const ProductDetail = () => {
     }
   }, [isInWishlist, product])
 
+  // Deselect size if its stock quantity drops to 0 via realtime db updates
+  useEffect(() => {
+    if (product && selectedSize && product.size_stock) {
+      if (product.size_stock[selectedSize] === 0) {
+        setSelectedSize('')
+      }
+    }
+  }, [product, selectedSize])
+
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -82,10 +91,11 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
-    // Check if size is required and selected
-    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      alert('Please select a size before adding to cart')
-      return
+    if (product.sizes && product.sizes.length > 0) {
+      if (!selectedSize) {
+        alert('Please select a size')
+        return
+      }
     }
 
     addToCart(product, quantity || 1, selectedSize, selectedColor)
@@ -113,9 +123,7 @@ const ProductDetail = () => {
     ))
   }
 
-  const isActuallyOutOfStock = product.size_stock && Object.keys(product.size_stock).length > 0
-    ? Object.values(product.size_stock).every(v => v === 0)
-    : !product.inStock;
+  const isActuallyOutOfStock = product.in_stock === false;
 
   return (
     <motion.div
@@ -243,28 +251,37 @@ const ProductDetail = () => {
             </p>
 
             {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (!product.size_stock || !Object.values(product.size_stock || {}).every(v => v === 0)) && (
+            {product.sizes && product.sizes.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
                   Size <span className="text-red-500">*</span>
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => {
-                    const isSizeOutOfStock = product.size_stock && product.size_stock[size] === 0;
+                    const qty = product.size_stock?.[size] ?? 0
+                    const isOut = qty === 0
+                    const isSelected = selectedSize === size
 
                     return (
                       <button
                         key={size}
-                        onClick={() => !isSizeOutOfStock && setSelectedSize(size)}
-                        disabled={isSizeOutOfStock}
-                        className={`px-3 py-2 min-w-[50px] text-center border rounded-md transition-colors ${isSizeOutOfStock
-                          ? 'opacity-40 line-through cursor-not-allowed text-gray-400 bg-gray-100 border-gray-300'
-                          : selectedSize === size
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-gray-300 hover:border-primary-500'
-                          }`}
+                        disabled={isOut}
+                        onClick={() => !isOut && setSelectedSize(size)}
+                        className={`
+                          relative px-4 py-2 rounded-md border text-sm font-medium transition-all
+                          ${isOut
+                            ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50'
+                            : 'border-gray-300 text-gray-800 hover:border-primary-500 cursor-pointer'
+                          }
+                          ${isSelected && !isOut ? 'border-primary-500 bg-primary-500 text-white' : ''}
+                        `}
                       >
                         {size}
+                        {isOut && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="w-full border-t border-gray-300 absolute rotate-[-20deg]" />
+                          </span>
+                        )}
                       </button>
                     )
                   })}

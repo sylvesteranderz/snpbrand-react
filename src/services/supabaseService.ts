@@ -56,14 +56,16 @@ export class ProductService {
           image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
-          inStock: dbProduct.in_stock,
+          in_stock: dbProduct.in_stock,
           isNew: dbProduct.is_new,
           isOnSale: dbProduct.is_on_sale,
           discount: dbProduct.discount,
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
           tags: dbProduct.tags || [],
-          images: parseImages(dbProduct.image_url)
+          images: parseImages(dbProduct.image_url),
+          size_stock: dbProduct.size_stock || {},
+          stockQuantity: dbProduct.stock_quantity || 0
         }))
 
         return mappedProducts
@@ -101,14 +103,16 @@ export class ProductService {
           image: Array.isArray(data.image_url) ? data.image_url[0] : data.image_url,
           rating: data.rating,
           reviews: data.reviews,
-          inStock: data.in_stock,
+          in_stock: data.in_stock,
           isNew: data.is_new,
           isOnSale: data.is_on_sale,
           discount: data.discount,
           sizes: data.sizes || [],
           colors: data.colors || [],
           tags: data.tags || [],
-          images: parseImages(data.image_url)
+          images: parseImages(data.image_url),
+          size_stock: data.size_stock || {},
+          stockQuantity: data.stock_quantity || 0
         }
 
         return mappedProduct
@@ -146,14 +150,16 @@ export class ProductService {
           image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
-          inStock: dbProduct.in_stock,
+          in_stock: dbProduct.in_stock,
           isNew: dbProduct.is_new,
           isOnSale: dbProduct.is_on_sale,
           discount: dbProduct.discount,
           sizes: dbProduct.sizes || [],
           colors: dbProduct.colors || [],
           tags: dbProduct.tags || [],
-          images: parseImages(dbProduct.image_url)
+          images: parseImages(dbProduct.image_url),
+          size_stock: dbProduct.size_stock || {},
+          stockQuantity: dbProduct.stock_quantity || 0
         }))
 
         return mappedProducts
@@ -176,16 +182,18 @@ export class ProductService {
           original_price: productData.originalPrice,
           description: productData.description,
           category: productData.category,
-          image_url: productData.image,
+          image_url: [productData.image],
           rating: productData.rating || 0,
           reviews: productData.reviews || 0,
-          in_stock: productData.inStock !== undefined ? productData.inStock : true,
+          in_stock: productData.in_stock !== undefined ? productData.in_stock : true,
           is_new: productData.isNew || false,
           is_on_sale: productData.isOnSale || false,
           discount: productData.discount || 0,
           sizes: productData.sizes || [],
           colors: productData.colors || [],
-          tags: productData.tags || []
+          tags: productData.tags || [],
+          size_stock: productData.size_stock || {},
+          stock_quantity: productData.stockQuantity || 0
         }
 
         const { data, error } = await supabase
@@ -210,13 +218,16 @@ export class ProductService {
           image: data.image_url,
           rating: data.rating,
           reviews: data.reviews,
-          inStock: data.in_stock,
+          in_stock: data.in_stock,
           isNew: data.is_new,
           isOnSale: data.is_on_sale,
           discount: data.discount,
           sizes: data.sizes || [],
           colors: data.colors || [],
-          tags: data.tags || []
+          tags: data.tags || [],
+          images: parseImages(data.image_url),
+          size_stock: data.size_stock || {},
+          stockQuantity: data.stock_quantity || 0
         }
 
         return mappedProduct
@@ -239,16 +250,18 @@ export class ProductService {
         if (updates.originalPrice !== undefined) dbUpdates.original_price = updates.originalPrice
         if (updates.description !== undefined) dbUpdates.description = updates.description
         if (updates.category !== undefined) dbUpdates.category = updates.category
-        if (updates.image !== undefined) dbUpdates.image_url = updates.image
+        if (updates.image !== undefined) dbUpdates.image_url = [updates.image]
         if (updates.rating !== undefined) dbUpdates.rating = updates.rating
         if (updates.reviews !== undefined) dbUpdates.reviews = updates.reviews
-        if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock
+        if (updates.in_stock !== undefined) dbUpdates.in_stock = updates.in_stock
         if (updates.isNew !== undefined) dbUpdates.is_new = updates.isNew
         if (updates.isOnSale !== undefined) dbUpdates.is_on_sale = updates.isOnSale
         if (updates.discount !== undefined) dbUpdates.discount = updates.discount
         if (updates.sizes !== undefined) dbUpdates.sizes = updates.sizes
         if (updates.colors !== undefined) dbUpdates.colors = updates.colors
         if (updates.tags !== undefined) dbUpdates.tags = updates.tags
+        if (updates.size_stock !== undefined) dbUpdates.size_stock = updates.size_stock
+        if (updates.stockQuantity !== undefined) dbUpdates.stock_quantity = updates.stockQuantity
 
         const { data, error } = await supabase
           .from('products')
@@ -273,13 +286,16 @@ export class ProductService {
           image: data.image_url,
           rating: data.rating,
           reviews: data.reviews,
-          inStock: data.in_stock,
+          in_stock: data.in_stock,
           isNew: data.is_new,
           isOnSale: data.is_on_sale,
           discount: data.discount,
           sizes: data.sizes || [],
           colors: data.colors || [],
-          tags: data.tags || []
+          tags: data.tags || [],
+          images: parseImages(data.image_url),
+          size_stock: data.size_stock || {},
+          stockQuantity: data.stock_quantity || 0
         }
 
         return mappedProduct
@@ -337,7 +353,7 @@ export class ProductService {
           image: dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
-          inStock: dbProduct.in_stock,
+          in_stock: dbProduct.in_stock,
           isNew: dbProduct.is_new,
           isOnSale: dbProduct.is_on_sale,
           discount: dbProduct.discount,

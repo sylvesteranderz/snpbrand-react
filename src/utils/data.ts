@@ -13,7 +13,7 @@ export const products: Product[] = [
     subcategory: 'casual',
     rating: 5.0,
     reviews: 24,
-    inStock: true,
+    in_stock: true,
     isNew: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Green', 'Black', 'Brown'],
@@ -30,7 +30,7 @@ export const products: Product[] = [
     subcategory: 'leather',
     rating: 5.0,
     reviews: 18,
-    inStock: true,
+    in_stock: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Black', 'Tan'],
     tags: ['leather', 'premium', 'durable']
@@ -47,7 +47,7 @@ export const products: Product[] = [
     subcategory: 'leather',
     rating: 5.0,
     reviews: 32,
-    inStock: true,
+    in_stock: true,
     isOnSale: true,
     discount: 10,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
@@ -67,7 +67,7 @@ export const products: Product[] = [
     subcategory: 'comfort',
     rating: 4.8,
     reviews: 28,
-    inStock: true,
+    in_stock: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Grey', 'Black'],
     tags: ['comfort', 'home', 'soft']
@@ -84,7 +84,7 @@ export const products: Product[] = [
     subcategory: 'luxury',
     rating: 4.9,
     reviews: 35,
-    inStock: true,
+    in_stock: true,
     isOnSale: true,
     discount: 14,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
@@ -102,7 +102,7 @@ export const products: Product[] = [
     subcategory: 'winter',
     rating: 4.7,
     reviews: 22,
-    inStock: true,
+    in_stock: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Grey', 'Pink', 'Blue'],
     tags: ['warm', 'fuzzy', 'winter']
@@ -118,7 +118,7 @@ export const products: Product[] = [
     subcategory: 'sport',
     rating: 4.6,
     reviews: 16,
-    inStock: true,
+    in_stock: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Black', 'White', 'Grey'],
     tags: ['sport', 'breathable', 'athletic']
@@ -134,7 +134,7 @@ export const products: Product[] = [
     subcategory: 'classic',
     rating: 4.8,
     reviews: 31,
-    inStock: true,
+    in_stock: true,
     sizes: ['40', '41', '42', '43', '44', '45', '46'],
     // colors: ['Brown', 'Black', 'Tan'],
     // tags: ['classic', 'moccasin', 'traditional']
@@ -152,7 +152,7 @@ export const products: Product[] = [
     subcategory: 'tops',
     rating: 4.5,
     reviews: 15,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['White', 'Black', 'Brown'],
     tags: ['basic', 'cotton', 'casual']
@@ -168,7 +168,7 @@ export const products: Product[] = [
     subcategory: 'zip-up',
     rating: 4.7,
     reviews: 21,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Blue', 'Grey', 'Black'],
     tags: ['casual', 'aesthetic', 'comfortable']
@@ -184,7 +184,7 @@ export const products: Product[] = [
     subcategory: 'sweaters',
     rating: 4.6,
     reviews: 19,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Black', 'Grey', 'Navy'],
     tags: ['Casual', 'cozy', 'comfortable']
@@ -201,7 +201,7 @@ export const products: Product[] = [
     subcategory: 'Zip-ups',
     rating: 4.4,
     reviews: 17,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Khaki', 'Black', 'Olive'],
     // tags: ['cargo', 'durable', 'practical']
@@ -217,7 +217,7 @@ export const products: Product[] = [
     subcategory: 'Zip-ups',
     rating: 4.6,
     reviews: 23,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['White', 'Navy', 'Red'],
     // tags: ['polo', 'classic', 'professional']
@@ -233,7 +233,7 @@ export const products: Product[] = [
     subcategory: 'Zip-up',
     rating: 4.5,
     reviews: 20,
-    inStock: true,
+    in_stock: true,
     sizes: ['M', 'L', 'XL', 'XXL'],
     // colors: ['Black', 'Grey', 'Navy'],
     // tags: ['jogger', 'comfortable', 'casual']
