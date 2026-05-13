@@ -24,6 +24,12 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url)
+  const method = event.request.method
+
+  // Bypass: never intercept upload requests or Supabase Storage
+  if (method === 'POST' || method === 'PUT' || url.href.includes('supabase.co/storage')) {
+    return
+  }
 
   // Let Supabase API calls go straight to network — never cache them
   if (url.hostname.includes('supabase') || url.pathname.startsWith('/rest/')) {

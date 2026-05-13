@@ -6,6 +6,47 @@ import { Product } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { compressCardImage } from '@/utils/imageUtils'
 
+const uploadWithXHR = async (
+  blob: Blob,
+  path: string,
+  onProgress: (pct: number) => void
+): Promise<void> => {
+  const { data: { session } } = await supabase!.auth.getSession()
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+  const token = session?.access_token ?? anonKey
+  const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/product-images/${path}`
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', uploadUrl)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.setRequestHeader('apikey', anonKey)
+    xhr.setRequestHeader('Content-Type', 'image/webp')
+    xhr.setRequestHeader('Cache-Control', '31536000')
+    xhr.setRequestHeader('x-upsert', 'false')
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    })
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        try {
+          const body = JSON.parse(xhr.responseText)
+          reject(new Error(body.message || body.error || `HTTP ${xhr.status}`))
+        } catch {
+          reject(new Error(`HTTP ${xhr.status}`))
+        }
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Network error during upload'))
+    xhr.send(blob)
+  })
+}
+
 interface AddProductFormProps {
   onClose: () => void
 }
@@ -37,6 +78,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null])
   const [imagePreviews, setImagePreviews] = useState<string[]>(['', ''])
   const fileInputRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)]
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'complete' | 'error'>('idle')
+  const [uploadError, setUploadError] = useState('')
 
   const categories = [
     { value: 'slippers', label: 'Slippers' },
@@ -127,27 +171,39 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     }
 
     setIsSubmitting(true)
+    setUploadStatus('idle')
+    setUploadProgress(0)
+    setUploadError('')
 
     const uploadedUrls: string[] = []
-    if (supabase) {
+    const filesToUpload = imageFiles.filter(Boolean)
+    if (supabase && filesToUpload.length > 0) {
+      setUploadStatus('uploading')
+      const fileCount = filesToUpload.length
+      let completedFiles = 0
+
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i]
         if (!file) continue
         try {
           const compressed = await compressCardImage(file)
           const path = `products/${Date.now()}-${i}-${file.name.replace(/\s+/g, '_').replace(/\.[^.]+$/, '')}.webp`
-          const { error: uploadError } = await supabase.storage
-            .from('product-images')
-            .upload(path, compressed, { cacheControl: '31536000', contentType: 'image/webp', upsert: false })
-          if (uploadError) throw uploadError
+          await uploadWithXHR(compressed, path, (pct) => {
+            setUploadProgress(Math.round((completedFiles * 100 + pct) / fileCount))
+          })
+          completedFiles++
           const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
           uploadedUrls.push(urlData.publicUrl)
         } catch (err: any) {
-          alert(`Image ${i + 1} upload failed: ${err?.message || 'Unknown error'}`)
+          setUploadError(`Image ${i + 1} upload failed: ${err?.message || 'Unknown error'}`)
+          setUploadStatus('error')
           setIsSubmitting(false)
           return
         }
       }
+
+      setUploadProgress(100)
+      setUploadStatus('complete')
     }
 
     const primaryUrl = uploadedUrls[0] || formData.image
@@ -176,6 +232,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       onClose()
     } catch (err: any) {
       alert('Failed to add product: ' + (err?.message || 'Unknown error. Check your Supabase RLS policies.'))
+      setUploadStatus('idle')
     } finally {
       setIsSubmitting(false)
     }
@@ -514,22 +571,46 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
             </label>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? (imageFiles.some(Boolean) ? 'Uploading...' : 'Adding...') : 'Add Product'}
-            </button>
+          {/* Submit */}
+          <div className="pt-6 border-t border-gray-200 space-y-3">
+            {uploadStatus === 'uploading' && (
+              <div>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Uploading images…</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary-500 h-2 rounded-full transition-all duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {uploadStatus === 'complete' && (
+              <p className="text-sm font-medium text-green-600">✓ Upload complete</p>
+            )}
+            {uploadStatus === 'error' && (
+              <p className="text-sm text-red-600">{uploadError}</p>
+            )}
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting
+                  ? uploadStatus === 'uploading' ? 'Uploading…' : 'Adding…'
+                  : 'Add Product'}
+              </button>
+            </div>
           </div>
         </form>
       </motion.div>
