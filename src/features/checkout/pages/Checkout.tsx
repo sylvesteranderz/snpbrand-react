@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet, Tag, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -50,10 +50,6 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [orderData, setOrderData] = useState<any>(null)
-  const generateOrderNumber = () => {
-    return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
-  const [orderNumber] = useState(generateOrderNumber())
 
   // Discount state
   const [discountCode, setDiscountCode] = useState('')
@@ -141,19 +137,25 @@ const Checkout = () => {
   // Guard against negative total if items are removed after a discount is applied
   const total = Math.max(0, subtotal - discountAmount)
 
-  const paystackConfig = {
+  // Stable ref so we can mutate fields inside handleSubmit right before opening the
+  // popup — this guarantees Paystack always receives the values that were actually
+  // stored in the DB, not a stale render-time snapshot.
+  const paystackConfigRef = useRef({
     publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
-    email: formData.email || 'guest@example.com',
-    amount: Math.round(total * 100), // in pesewas — uses discounted total
+    email: '',
+    amount: 0,
     currency: PAYSTACK_CONFIG.CURRENCY,
     metadata: {
       custom_fields: [
-        { display_name: "Order Number", variable_name: "order_number", value: orderNumber }
+        { display_name: 'Order Number', variable_name: 'order_number', value: '' }
       ]
     }
-  }
+  })
 
-  const initializePayment = usePaystackPayment(paystackConfig)
+  // Hook must stay at component level (React rules). usePaystackPayment receives the
+  // ref object — because the ref is the same object across every render, the closure
+  // inside the returned initializePayment always sees the latest mutated values.
+  const initializePayment = usePaystackPayment(paystackConfigRef.current)
 
   const handleApplyDiscount = async () => {
     if (!discountInput.trim() || !supabase) return
@@ -240,17 +242,21 @@ const Checkout = () => {
         Name: `${formData.firstName} ${formData.lastName}`.trim()
       }
 
-      // Create order payload for Supabase
+      // Generate order_number fresh on every attempt (not at component mount) so
+      // a cancelled-then-retried payment never collides with the previous insert.
+      const clientOrderNumber = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      // STEP 1 — Insert order into Supabase first
       const orderPayload = {
         user_id: user?.id || null,
-        order_number: orderNumber,
-        customer_info: submissionData, // Stored as JSONB
+        order_number: clientOrderNumber,
+        customer_info: submissionData,
         shipping_address: {
           address: formData.deliveryMethod === 'delivery' ? formData.address : `Pickup at ${formData.campus === 'legon' ? 'Legon Campus' : 'KNUST Campus'}`,
           city: formData.deliveryMethod === 'delivery' ? formData.city : formData.campus,
           delivery_method: formData.deliveryMethod
         },
-        items: orderItems, // Stored as JSONB snapshot
+        items: orderItems,
         payment_method: formData.paymentMethod,
         payment_status: 'pending',
         status: 'pending',
@@ -260,10 +266,17 @@ const Checkout = () => {
         created_at: new Date().toISOString()
       }
 
-      // Submit to Supabase (with retry for auth lock contention)
       const createdOrder = await retryOnAbort(() => OrderService.createOrder(orderPayload))
+      if (!createdOrder) throw new Error('Order creation failed')
 
-      if (!createdOrder) throw new Error("Order creation failed")
+      // STEP 2 — Resolve the confirmed order_number from the DB response
+      const confirmedOrderNumber: string = createdOrder.order_number ?? clientOrderNumber
+
+      // STEP 3 — Validate amount (must be a positive integer in pesewas)
+      const pesewas = Math.round(total * 100)
+      if (!Number.isInteger(pesewas) || pesewas <= 0) {
+        throw new Error(`Invalid payment amount: GH₵${total} → ${pesewas} pesewas`)
+      }
 
       // Calculate estimated delivery for UI
       const deliveryDate = new Date()
@@ -276,7 +289,7 @@ const Checkout = () => {
       })
 
       const uiOrderData = {
-        orderNumber,
+        orderNumber: confirmedOrderNumber,
         customerInfo: formData,
         items: items.map(item => ({
           id: item.id,
@@ -296,72 +309,44 @@ const Checkout = () => {
       }
 
       if (formData.paymentMethod === 'paystack') {
+        // STEP 4 — Write fresh values into the config ref right before opening the popup.
+        // The initializePayment closure spreads paystackConfigRef.current at call time,
+        // so it picks up whatever is in the ref at this exact moment.
+        paystackConfigRef.current.email = formData.email
+        paystackConfigRef.current.amount = pesewas
+        paystackConfigRef.current.metadata.custom_fields[0].value = confirmedOrderNumber
+
         initializePayment({
-          onSuccess: (referenceData: any) => {
-            // Paystack's onSuccess ONLY fires on genuine successful payment.
-            // Show confirmation immediately — don't block the user on verification.
+          onSuccess: (_referenceData: any) => {
+            // Payment confirmed — show success screen immediately.
+            // paystack-webhook handles payment_status update + confirmation email.
             setOrderData(uiOrderData)
             setIsComplete(true)
             clearCart()
 
-            // Run post-payment tasks sequentially in the background.
-            // Discount recording is awaited first — payment already succeeded so we
-            // log any failure loudly for manual reconciliation but don't block the user.
-            if (supabase) {
-              ;(async () => {
-                if (discountData && user?.id) {
-                  const { error: rpcError } = await supabase.rpc('record_discount_use', {
-                    p_code_id: discountData.code_id,
-                    p_user_id: user.id,
-                    p_order_number: orderNumber,
-                    p_cart_total: subtotal,
+            // Record discount use in the background (webhook doesn't know about discounts)
+            if (supabase && discountData && user?.id) {
+              supabase.rpc('record_discount_use', {
+                p_code_id: discountData.code_id,
+                p_user_id: user.id,
+                p_order_number: confirmedOrderNumber,
+                p_cart_total: subtotal,
+              }).then(({ error: rpcError }) => {
+                if (rpcError) {
+                  console.error('[checkout] CRITICAL — discount not recorded after payment. Manual reconciliation required.', {
+                    order_number: confirmedOrderNumber,
+                    code_id: discountData.code_id,
+                    error: rpcError.message,
                   })
-                  if (rpcError) {
-                    console.error('[checkout] CRITICAL — discount not recorded after payment. Manual reconciliation required.', {
-                      order_number: orderNumber,
-                      code_id: discountData.code_id,
-                      error: rpcError.message,
-                    })
-                  }
                 }
-
-                supabase.functions.invoke('verify-payment', {
-                  body: { reference: referenceData.reference, order_number: orderNumber }
-                }).then(({ error: verifyError }) => {
-                  if (verifyError) {
-                    console.error('Background verification failed:', verifyError)
-                    // Order is still in DB with payment_status: 'pending'
-                    // Admin can reconcile via Paystack dashboard
-                  }
-                })
-
-                supabase.functions.invoke('send-confirmation', {
-                  body: {
-                    orderNumber,
-                    customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                    email: formData.email,
-                    items: orderItems,
-                    total,
-                    deliveryMethod: formData.deliveryMethod,
-                    address: formData.deliveryMethod === 'delivery'
-                      ? `${formData.address}, ${formData.city}`
-                      : null,
-                    campus: formData.deliveryMethod === 'pickup'
-                      ? formData.campus
-                      : null,
-                    estimatedDelivery: uiOrderData.estimatedDelivery
-                  }
-                }).catch((emailErr) => {
-                  console.error('Confirmation email failed silently:', emailErr)
-                })
-              })()
+              })
             }
           },
           onClose: () => {
-            alert('Payment cancelled by user.');
-            setIsProcessing(false);
+            alert('Payment cancelled by user.')
+            setIsProcessing(false)
           }
-        });
+        })
       } /* else {
         setOrderData(uiOrderData)
         setIsComplete(true)

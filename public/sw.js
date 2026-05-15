@@ -1,60 +1,50 @@
 const CACHE = 'snp-admin-v1'
 
-// Cache the app shell on install
 self.addEventListener('install', event => {
   self.skipWaiting()
   event.waitUntil(
     caches.open(CACHE).then(cache =>
       cache.addAll(['/', '/new-order'])
-    ).catch(() => {}) // don't fail install if caching fails
+    ).catch(() => {})
   )
 })
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    Promise.all([
-      clients.claim(),
-      // Remove old caches
-      caches.keys().then(keys =>
-        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-      ),
-    ])
-  )
+  event.waitUntil(clients.claim())
 })
 
 self.addEventListener('fetch', event => {
+  // 1. Bypass all non-GET requests immediately (POST, PUT, DELETE, etc.)
+  if (event.request.method !== 'GET') return
+
   const url = new URL(event.request.url)
-  const method = event.request.method
 
-  // Bypass: never intercept upload requests or Supabase Storage
-  if (method === 'POST' || method === 'PUT' || url.href.includes('supabase.co/storage')) {
-    return
-  }
+  // Let Supabase API and Storage calls go straight to the network
+  if (url.hostname.includes('supabase') || url.pathname.startsWith('/rest/')) return
 
-  // Let Supabase API calls go straight to network — never cache them
-  if (url.hostname.includes('supabase') || url.pathname.startsWith('/rest/')) {
-    return
-  }
-
-  // For navigation requests: network-first, fall back to cache (enables offline shell)
+  // Navigation: network-first, fall back to cached shell
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() =>
-        caches.match('/') .then(r => r ?? new Response('Offline', { status: 503 }))
+        caches.match('/').then(r => r ?? new Response('Offline', { status: 503 }))
       )
     )
     return
   }
 
-  // For static assets: cache-first
+  // Static assets: cache-first
   event.respondWith(
-    caches.match(event.request).then(cached =>
-      cached ?? fetch(event.request).then(response => {
+    caches.match(event.request).then(cached => {
+      if (cached) return cached
+
+      return fetch(event.request).then(response => {
         if (response.ok) {
-          caches.open(CACHE).then(cache => cache.put(event.request, response.clone()))
+          // 2. Clone synchronously before returning so the body is not yet consumed
+          const toCache = response.clone()
+          caches.open(CACHE).then(cache => cache.put(event.request, toCache))
         }
         return response
       })
-    )
+    })
   )
 })
