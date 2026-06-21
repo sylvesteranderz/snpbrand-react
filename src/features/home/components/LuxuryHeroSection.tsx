@@ -8,7 +8,19 @@ import 'swiper/css/effect-fade'
 import 'swiper/css/parallax'
 
 const LuxuryHeroSection = () => {
-  const slides = [
+  const slides: Array<{
+    id: number
+    title?: string
+    titleHighlight?: string
+    subtitle?: string
+    description?: string
+    image?: string
+    buttonText?: string
+    fullscreen?: boolean
+    mobileImage?: string
+    type?: string
+    features?: Array<{ id: number; icon: React.ReactNode; text: string }>
+  }> = [
     {
       id: 1,
       title: 'SnP BRAND',
@@ -137,7 +149,7 @@ const LuxuryHeroSection = () => {
                             stiffness: 120
                           }}
                         >
-                          {slide.subtitle.split(' ').map((word, index) => (
+                          {(slide.subtitle || '').split(' ').map((word, index) => (
                             <motion.span
                               key={index}
                               initial={{ opacity: 0, y: 50 }}
@@ -455,7 +467,7 @@ const LuxuryHeroSection = () => {
                                 textShadow: slide.fullscreen ? "0 0 20px rgba(255,255,255,0.5)" : "0 0 20px rgba(0,0,0,0.3)"
                               }}
                             >
-                              {slide.subtitle.split(' ').map((word, index) => (
+                              {(slide.subtitle || '').split(' ').map((word, index) => (
                                 <motion.span
                                   key={index}
                                   initial={{ opacity: 0, y: 50 }}

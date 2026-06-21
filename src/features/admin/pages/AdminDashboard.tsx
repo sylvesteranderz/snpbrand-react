@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   BarChart3,
@@ -27,7 +27,7 @@ import { formatPrice } from '@/utils/currency'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
 import AddProductForm from '@/features/products/components/AddProductForm'
 import { OrderService, UserProfileService } from '@/services/supabaseService'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { Product } from '@/types'
 import DiscountCodesTab from '@/features/admin/components/DiscountCodesTab'
 import RestockModal     from '@/features/admin/components/RestockModal'
@@ -35,6 +35,9 @@ import AdjustStockModal from '@/features/admin/components/AdjustStockModal'
 import InventoryLog     from '@/features/admin/components/InventoryLog'
 import ExpenseLogger    from '@/features/admin/components/ExpenseLogger'
 import ProfitLoss       from '@/features/admin/components/ProfitLoss'
+import OrderDetailDrawer from '@/components/admin/OrderDetailDrawer'
+import AdminBottomTabBar from '@/features/admin/components/AdminBottomTabBar'
+import MetricGrid from '@/features/admin/components/MetricGrid'
 
 const getProductStatusInfo = (product: Product) => {
   const sizeStock = product.size_stock || {};
@@ -157,7 +160,7 @@ interface Order {
   customerPhone: string
   customerAddress: string
   date: string
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'expired'
   paymentStatus: string
   total: number
   items: Array<{
@@ -183,19 +186,61 @@ interface User {
   status: 'active' | 'inactive'
 }
 
+const timeAgo = (dateStr: string): string => {
+  try {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  } catch {
+    return '';
+  }
+};
+
+
+
 const AdminDashboard = () => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { products, refreshProducts } = useProducts()
-  const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts' | 'inventory' | 'finance'>('overview')
+
+  // activeTab is driven by the URL ?tab= param so the bottom bar stays in sync
+  type AdminTab = 'overview' | 'orders' | 'products' | 'users' | 'analytics' | 'discounts' | 'inventory' | 'finance'
+  const VALID_TABS: AdminTab[] = ['overview', 'orders', 'products', 'users', 'analytics', 'discounts', 'inventory', 'finance']
+  const rawTab = searchParams.get('tab')
+  const activeTab: AdminTab = (rawTab && VALID_TABS.includes(rawTab as AdminTab))
+    ? (rawTab as AdminTab)
+    : 'overview'
+
+  // Update URL param — Finance still navigates to its own page
+  const handleSetTab = (tab: AdminTab) => {
+    if (tab === 'finance') {
+      navigate('/admin/finance')
+    } else if (tab === 'overview') {
+      // Remove ?tab param entirely for a clean /admin URL
+      setSearchParams({})
+    } else {
+      setSearchParams({ tab })
+    }
+  }
   const [searchTerm, setSearchTerm] = useState('')
-  const [orderTab, setOrderTab] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all')
+  const [orderTab, setOrderTab] = useState<'fulfil' | 'processing' | 'fulfilled' | 'abandoned'>('fulfil')
 
   const [showAddProductForm, setShowAddProductForm] = useState(false)
+  const [showDiscountForm, setShowDiscountForm] = useState(false)
   const [stockModalProduct, setStockModalProduct] = useState<Product | null>(null)
   const [restockModalProduct, setRestockModalProduct]     = useState<Product | null>(null)
   const [adjustStockModalProduct, setAdjustStockModalProduct] = useState<Product | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+
+
 
   const productMetrics = useMemo(() => {
     const metrics = { total: products.length, inStock: 0, lowStock: 0, outOfStock: 0 };
@@ -208,51 +253,56 @@ const AdminDashboard = () => {
     return metrics;
   }, [products]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch orders
-        const ordersData = await OrderService.getAllOrders()
-        const mappedOrders: Order[] = ordersData.map((order: any) => ({
-          id: order.id,
-          orderNumber: order.order_number,
-          customerName: order.customer_info?.Name || (order.customer_info?.firstName ? `${order.customer_info.firstName} ${order.customer_info.lastName}`.trim() : order.user_profiles?.name) || 'Unknown',
-          customerEmail: order.customer_info?.email || order.user_profiles?.email || 'Unknown',
-          customerPhone: order.customer_info?.phone || order.user_profiles?.phone || 'Unknown',
-          customerAddress: order.customer_info?.address && order.customer_info?.city
-            ? `${order.customer_info.address}, ${order.customer_info.city}`
-            : typeof order.shipping_address === 'string'
-              ? order.shipping_address
-              : order.shipping_address?.address ? `${order.shipping_address.address}, ${order.shipping_address.city}` : 'No address provided',
-          date: order.created_at,
-          status: order.status || 'pending',
-          paymentStatus: order.payment_status || 'completed',
-          total: order.total_amount,
-          items: order.items || [],
-          paymentMethod: order.payment_method
-        }))
-        setOrders(mappedOrders)
+  const fetchData = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      // Fetch orders
+      const ordersData = await OrderService.getAllOrders()
+      const mappedOrders: Order[] = ordersData.map((order: any) => ({
+        id: order.id,
+        orderNumber: order.order_number,
+        customerName: order.customer_info?.Name || (order.customer_info?.firstName ? `${order.customer_info.firstName} ${order.customer_info.lastName}`.trim() : order.user_profiles?.name) || 'Unknown',
+        customerEmail: order.customer_info?.email || order.user_profiles?.email || 'Unknown',
+        customerPhone: order.customer_info?.phone || order.user_profiles?.phone || 'Unknown',
+        customerAddress: order.customer_info?.address && order.customer_info?.city
+          ? `${order.customer_info.address}, ${order.customer_info.city}`
+          : typeof order.shipping_address === 'string'
+            ? order.shipping_address
+            : order.shipping_address?.address ? `${order.shipping_address.address}, ${order.shipping_address.city}` : 'No address provided',
+        date: order.created_at,
+        status: order.status || 'pending',
+        paymentStatus: order.payment_status || 'completed',
+        total: order.total_amount,
+        items: order.items || [],
+        paymentMethod: order.payment_method
+      }))
+      setOrders(mappedOrders)
 
-        // Fetch users
-        const usersData = await UserProfileService.getAllProfiles()
-        const mappedUsers: User[] = usersData.map((user: any) => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || 'N/A',
-          joinDate: user.created_at,
-          totalOrders: 0, // TODO: Calculate this
-          totalSpent: 0, // TODO: Calculate this
-          status: 'active' // Default to active
-        }))
-        setUsers(mappedUsers)
-      } catch (error) {
-        console.error('Error fetching admin data:', error)
-      }
+      // Fetch users
+      const usersData = await UserProfileService.getAllProfiles()
+      const mappedUsers: User[] = usersData.map((user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || 'N/A',
+        joinDate: user.created_at,
+        totalOrders: 0, // TODO: Calculate this
+        totalSpent: 0, // TODO: Calculate this
+        status: 'active' // Default to active
+      }))
+      setUsers(mappedUsers)
+    } catch (error) {
+      console.error('Error fetching admin data:', error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
   }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -296,18 +346,26 @@ const AdminDashboard = () => {
     }
   }
 
+  const tabFilter = (order: Order) => {
+    switch (orderTab) {
+      case 'fulfil':
+        return order.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(order.status)
+      case 'processing':
+        return ['processing', 'shipped'].includes(order.status)
+      case 'fulfilled':
+        return order.status === 'delivered'
+      case 'abandoned':
+        return order.status === 'expired' || order.status === 'cancelled' ||
+          (order.status === 'pending' && order.paymentStatus !== 'paid')
+    }
+  }
+
   const filteredOrders = orders.filter(order => {
     const searchLower = searchTerm.toLowerCase()
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchLower) ||
       order.customerName.toLowerCase().includes(searchLower) ||
       (order.customerPhone || '').toLowerCase().includes(searchLower)
-    
-    let matchesTab = true;
-    if (orderTab !== 'all') {
-      matchesTab = order.status === orderTab
-    }
-    
-    return matchesSearch && matchesTab
+    return matchesSearch && tabFilter(order)
   })
 
   const tabs = [
@@ -330,6 +388,29 @@ const AdminDashboard = () => {
     lowStockProducts: products.filter(p => !p.in_stock).length
   }
 
+  // Today-scoped metrics
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const ordersToday = orders.filter(o => new Date(o.date) >= todayStart)
+  const revenueToday = ordersToday.reduce((sum, o) => sum + o.total, 0)
+
+  // Low stock = products with at least one size where qty > 0 && qty <= 3
+  const lowStockCount = useMemo(() => {
+    return products.filter(p => {
+      const sizeStock = p.size_stock || {}
+      const sizes = (p.sizes && p.sizes.length > 0) ? p.sizes : Object.keys(sizeStock)
+      if (sizes.length === 0) return (p.stockQuantity ?? 0) > 0 && (p.stockQuantity ?? 0) <= 3
+      let totalQty = 0
+      let hasLow = false
+      sizes.forEach(size => {
+        const qty = sizeStock[size] || 0
+        totalQty += qty
+        if (qty > 0 && qty <= 3) hasLow = true
+      })
+      return totalQty > 0 && hasLow
+    }).length
+  }, [products])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -343,23 +424,51 @@ const AdminDashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="py-8"
+          className="py-8 flex items-center justify-between border-b border-gray-200 mb-6"
         >
-          <h1 className="text-3xl font-chilanka font-normal text-gray-900 mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Manage your e-commerce store efficiently
-          </p>
+          <div>
+            <h1 className="text-3xl font-chilanka font-normal text-gray-900 capitalize">
+              {activeTab === 'discounts' ? 'Discount Codes' : activeTab === 'overview' ? 'Overview' : activeTab}
+            </h1>
+          </div>
+          <div>
+            {activeTab === 'orders' && (
+              <button
+                onClick={() => navigate('/new-order')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#DEAD6F] hover:bg-[#d4a83d] text-black font-semibold rounded-xl shadow-sm transition-colors"
+              >
+                <ClipboardList className="w-4 h-4" />
+                <span>New Order</span>
+              </button>
+            )}
+            {activeTab === 'products' && (
+              <button
+                onClick={() => setShowAddProductForm(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#DEAD6F] hover:bg-[#d4a83d] text-black font-semibold rounded-xl shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Product</span>
+              </button>
+            )}
+            {activeTab === 'discounts' && (
+              <button
+                onClick={() => setShowDiscountForm(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#DEAD6F] hover:bg-[#d4a83d] text-black font-semibold rounded-xl shadow-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Code</span>
+              </button>
+            )}
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Sidebar — hidden on mobile, visible on md+ */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
+            className="hidden md:block md:col-span-1"
           >
             <div className="bg-white rounded-lg shadow-sm border sticky top-8">
               <div className="p-6 border-b">
@@ -374,7 +483,13 @@ const AdminDashboard = () => {
                     return (
                       <li key={tab.id}>
                         <button
-                          onClick={() => setActiveTab(tab.id as any)}
+                          onClick={() => {
+                            if (tab.id === 'finance') {
+                              navigate('/admin/finance');
+                            } else {
+                              handleSetTab(tab.id as AdminTab);
+                            }
+                          }}
                           className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${activeTab === tab.id
                             ? 'bg-primary-50 text-primary-600'
                             : 'text-gray-600 hover:bg-gray-50'
@@ -396,128 +511,123 @@ const AdminDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-3"
+            className="md:col-span-3 pb-16 md:pb-0"
           >
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
+
+                {/* Task 3: 2×2 Metric Grid */}
+                <MetricGrid cols={2}>
+                  <div className="bg-white rounded-lg shadow-sm p-5 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <ShoppingCart className="w-6 h-6 text-blue-600" />
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <DollarSign className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Total Orders</p>
-                        <p className="text-2xl font-semibold text-gray-900">{stats.totalOrders}</p>
+                        <p className="text-xs text-gray-500">Revenue Today</p>
+                        {isLoading
+                          ? <div className="h-7 w-24 bg-gray-200 animate-pulse rounded mt-1" />
+                          : <p className="text-xl font-bold text-gray-900">{formatPrice(revenueToday)}</p>
+                        }
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
+                  <div className="bg-white rounded-lg shadow-sm p-5 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-6 h-6 text-green-600" />
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <ShoppingCart className="w-5 h-5 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Total Revenue</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {formatPrice(stats.totalRevenue)}
-                        </p>
+                        <p className="text-xs text-gray-500">Orders Today</p>
+                        {isLoading
+                          ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mt-1" />
+                          : <p className="text-xl font-bold text-gray-900">{ordersToday.length}</p>
+                        }
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
+                  <div className="bg-white rounded-lg shadow-sm p-5 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Package className="w-6 h-6 text-purple-600" />
+                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <Users className="w-5 h-5 text-orange-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Total Products</p>
-                        <p className="text-2xl font-semibold text-gray-900">{stats.totalProducts}</p>
+                        <p className="text-xs text-gray-500">Total Customers</p>
+                        {isLoading
+                          ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mt-1" />
+                          : <p className="text-xl font-bold text-gray-900">{stats.totalUsers}</p>
+                        }
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
+                  <div className="bg-white rounded-lg shadow-sm p-5 border">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                        <Users className="w-6 h-6 text-orange-600" />
+                      <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Total Users</p>
-                        <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
+                        <p className="text-xs text-gray-500">Low Stock</p>
+                        <p className="text-xl font-bold text-gray-900">{lowStockCount}</p>
                       </div>
                     </div>
                   </div>
+                </MetricGrid>
 
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                        <Clock className="w-6 h-6 text-primary-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Pending Orders</p>
-                        <p className="text-2xl font-semibold text-gray-900">{stats.pendingOrders}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-lg shadow-sm p-6 border">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                        <AlertCircle className="w-6 h-6 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Low Stock</p>
-                        <p className="text-2xl font-semibold text-gray-900">{stats.lowStockProducts}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Orders */}
+                {/* Task 4: Recent Orders — plain data list */}
                 <div className="bg-white rounded-lg shadow-sm border">
-                  <div className="p-6 border-b">
-                    <h2 className="text-xl font-semibold text-gray-900">Recent Orders</h2>
+                  <div className="p-4 border-b">
+                    <h2 className="text-base font-semibold text-gray-900">Recent Orders</h2>
                   </div>
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      {orders.slice(0, 5).map((order, index) => (
-                        <motion.div
-                          key={order.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: index * 0.1 }}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                              <ShoppingCart className="w-5 h-5 text-gray-600" />
+                  <div className="divide-y">
+                    {isLoading ? (
+                      Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="flex items-center justify-between px-4 py-3">
+                          <div className="space-y-1.5">
+                            <div className="h-4 w-32 bg-gray-200 animate-pulse rounded" />
+                            <div className="h-3 w-20 bg-gray-100 animate-pulse rounded" />
+                          </div>
+                          <div className="h-4 w-16 bg-gray-200 animate-pulse rounded" />
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        {orders.length === 0 && (
+                          <p className="p-4 text-sm text-gray-400">No orders yet.</p>
+                        )}
+                        {orders.slice(0, 5).map((order) => (
+                          <div
+                            key={order.id}
+                            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{order.customerName}</p>
+                              <p className="text-xs text-gray-500 capitalize">{order.status} · {timeAgo(order.date)}</p>
                             </div>
-                            <div>
-                              <h3 className="font-medium text-gray-900">{order.orderNumber}</h3>
-                              <p className="text-sm text-gray-500">{order.customerName}</p>
+                            <div className="flex items-center gap-3 ml-4 shrink-0">
+                              <span className="text-sm font-bold text-gray-900">{formatPrice(order.total)}</span>
+                              <button
+                                onClick={() => setSelectedOrderId(order.id)}
+                                className="p-1.5 text-gray-400 hover:text-primary-500 transition-colors"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(order.status)}`}>
-                              {order.status}
-                            </span>
-                            <span className="font-semibold text-gray-900">
-                              {formatPrice(order.total)}
-                            </span>
-                            <button className="p-2 text-gray-400 hover:text-primary-500 transition-colors">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
+
+                <OrderDetailDrawer
+                  orderId={selectedOrderId}
+                  onClose={() => setSelectedOrderId(null)}
+                  onOrderUpdated={fetchData}
+                />
               </div>
             )}
 
@@ -525,53 +635,54 @@ const AdminDashboard = () => {
             {activeTab === 'orders' && (
               <div className="space-y-6">
 
-                {/* Tab header with New Order button */}
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">Orders</h2>
-                  <button
-                    onClick={() => navigate('/new-order')}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-[#DEAD6F] hover:bg-[#d4a83d] text-black font-semibold rounded-xl shadow-sm transition-colors"
-                  >
-                    <ClipboardList className="w-4 h-4" />
-                    <span>New Order</span>
-                  </button>
-                </div>
-
                 {/* Orders Summary Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricGrid cols={4}>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Total Orders</span>
-                    <span className="text-2xl font-bold text-gray-900 mt-2">{orders.length}</span>
+                    {isLoading
+                      ? <div className="h-8 w-16 bg-gray-200 animate-pulse rounded mt-2" />
+                      : <span className="text-2xl font-bold text-gray-900 mt-2">{orders.length}</span>
+                    }
                   </div>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Pending Count</span>
-                    <span className="text-2xl font-bold text-orange-600 mt-2">
-                      {orders.filter(o => o.status === 'pending').length}
-                    </span>
+                    {isLoading
+                      ? <div className="h-8 w-12 bg-gray-200 animate-pulse rounded mt-2" />
+                      : <span className="text-2xl font-bold text-orange-600 mt-2">{orders.filter(o => o.status === 'pending').length}</span>
+                    }
                   </div>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Delivered Count</span>
-                    <span className="text-2xl font-bold text-green-600 mt-2">
-                      {orders.filter(o => o.status === 'delivered').length}
-                    </span>
+                    {isLoading
+                      ? <div className="h-8 w-12 bg-gray-200 animate-pulse rounded mt-2" />
+                      : <span className="text-2xl font-bold text-green-600 mt-2">{orders.filter(o => o.status === 'delivered').length}</span>
+                    }
                   </div>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Total Revenue (GH₵)</span>
-                    <span className="text-2xl font-bold text-gray-900 mt-2">
-                      {formatPrice(orders.reduce((sum, order) => sum + order.total, 0))}
-                    </span>
+                    {isLoading
+                      ? <div className="h-8 w-24 bg-gray-200 animate-pulse rounded mt-2" />
+                      : <span className="text-2xl font-bold text-gray-900 mt-2">{formatPrice(orders.reduce((sum, order) => sum + order.total, 0))}</span>
+                    }
                   </div>
-                </div>
+                </MetricGrid>
 
                 {/* Filters & Header */}
                 <div className="bg-white rounded-lg shadow-sm border p-4">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     {/* Filter Tabs */}
                     <div className="flex bg-gray-100 p-1 rounded-lg self-start md:self-auto w-full md:w-auto overflow-x-auto">
-                      {(['all', 'pending', 'delivered', 'cancelled'] as const).map(tab => {
-                        const count = tab === 'all' 
-                          ? orders.length 
-                          : orders.filter(o => o.status === tab).length;
+                      {(['fulfil', 'processing', 'fulfilled', 'abandoned'] as const).map(tab => {
+                        let count = 0;
+                        if (tab === 'fulfil') {
+                          count = orders.filter(o => o.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(o.status)).length;
+                        } else if (tab === 'processing') {
+                          count = orders.filter(o => ['processing', 'shipped'].includes(o.status)).length;
+                        } else if (tab === 'fulfilled') {
+                          count = orders.filter(o => o.status === 'delivered').length;
+                        } else if (tab === 'abandoned') {
+                          count = orders.filter(o => o.status === 'expired' || o.status === 'cancelled' || (o.status === 'pending' && o.paymentStatus !== 'paid')).length;
+                        }
                           
                         return (
                           <button
@@ -766,7 +877,7 @@ const AdminDashboard = () => {
             {/* Products Tab */}
             {activeTab === 'products' && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <MetricGrid cols={4}>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Total Products</span>
                     <span className="text-2xl font-bold text-gray-900 mt-2">{productMetrics.total}</span>
@@ -783,17 +894,11 @@ const AdminDashboard = () => {
                     <span className="text-gray-500 text-sm font-medium">Out of Stock</span>
                     <span className="text-2xl font-bold text-red-600 mt-2">{productMetrics.outOfStock}</span>
                   </div>
-                </div>
+                </MetricGrid>
 
                 <div className="bg-white rounded-lg shadow-sm border">
                   <div className="p-6 border-b">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                      <h2 className="text-xl font-semibold text-gray-900">Product Management</h2>
-                      <button onClick={() => setShowAddProductForm(true)} className="btn-primary flex items-center space-x-2">
-                        <Plus className="w-4 h-4" />
-                        <span>Add Product</span>
-                      </button>
-                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Product List</h2>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -890,69 +995,83 @@ const AdminDashboard = () => {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {users.map((user, index) => (
-                        <motion.tr
-                          key={user.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, delay: index * 0.1 }}
-                          className="hover:bg-gray-50"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                              <div className="text-sm text-gray-500">ID: {user.id}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="text-sm text-gray-900">{user.email}</div>
-                              <div className="text-sm text-gray-500">{user.phone}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(user.joinDate).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {user.totalOrders}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatPrice(user.totalSpent)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(user.status)}`}>
-                              {user.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button className="text-primary-600 hover:text-primary-900">
-                                <Eye className="w-4 h-4" />
-                              </button>
-                              <button className="text-gray-600 hover:text-gray-900">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {isLoading ? (
+                  <div className="divide-y">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="px-6 py-4 flex items-center gap-4">
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-4 w-40 bg-gray-200 animate-pulse rounded" />
+                          <div className="h-3 w-56 bg-gray-100 animate-pulse rounded" />
+                        </div>
+                        <div className="h-4 w-24 bg-gray-200 animate-pulse rounded" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Spent</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {users.map((user, index) => (
+                          <motion.tr
+                            key={user.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: index * 0.1 }}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                <div className="text-sm text-gray-500">ID: {user.id}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm text-gray-900">{user.email}</div>
+                                <div className="text-sm text-gray-500">{user.phone}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(user.joinDate).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {user.totalOrders}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {formatPrice(user.totalSpent)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(user.status)}`}>
+                                {user.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button className="text-primary-600 hover:text-primary-900">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button className="text-gray-600 hover:text-gray-900">
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -992,9 +1111,12 @@ const AdminDashboard = () => {
             )}
 
             {/* Discounts Tab */}
-            {activeTab === 'discounts' && <DiscountCodesTab />}
+            {activeTab === 'discounts' && <DiscountCodesTab showForm={showDiscountForm} setShowForm={setShowDiscountForm} />}
           </motion.div>
         </div>
+
+        {/* Mobile bottom tab bar — shared component, visible only on md-down */}
+        <AdminBottomTabBar />
 
       {showAddProductForm && (
         <AddProductForm onClose={() => setShowAddProductForm(false)} />

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Tag, Plus, X, RefreshCw, ToggleLeft, ToggleRight, Trash2, Copy, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
+import MetricGrid from '@/features/admin/components/MetricGrid'
 
 interface DiscountCode {
   id: string
@@ -34,10 +35,20 @@ const defaultForm = {
   expires_at: '',
 }
 
-const DiscountCodesTab = () => {
+const DiscountCodesTab = ({
+  showForm: externalShowForm,
+  setShowForm: externalSetShowForm,
+}: {
+  showForm?: boolean
+  setShowForm?: (val: boolean) => void
+}) => {
   const [codes, setCodes] = useState<DiscountCode[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [localShowForm, setLocalShowForm] = useState(false)
+
+  const showForm = externalShowForm !== undefined ? externalShowForm : localShowForm
+  const setShowForm = externalSetShowForm !== undefined ? externalSetShowForm : setLocalShowForm
+
   const [form, setForm] = useState(defaultForm)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState('')
@@ -132,7 +143,7 @@ const DiscountCodesTab = () => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <MetricGrid cols={3}>
         {[
           { label: 'Total Codes', value: stats.total, color: 'text-gray-900' },
           { label: 'Active Codes', value: stats.active, color: 'text-green-600' },
@@ -143,7 +154,7 @@ const DiscountCodesTab = () => {
             <span className={`text-2xl font-bold mt-2 ${stat.color}`}>{stat.value}</span>
           </div>
         ))}
-      </div>
+      </MetricGrid>
 
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border">
@@ -152,13 +163,15 @@ const DiscountCodesTab = () => {
             <h2 className="text-xl font-semibold text-gray-900">Discount Codes</h2>
             <p className="text-sm text-gray-500 mt-0.5">Create and manage promotional codes</p>
           </div>
-          <button
-            onClick={() => { setShowForm(true); setFormError('') }}
-            className="btn-primary flex items-center gap-2 w-fit"
-          >
-            <Plus className="w-4 h-4" />
-            Create Code
-          </button>
+          {externalShowForm === undefined && (
+            <button
+              onClick={() => { setShowForm(true); setFormError('') }}
+              className="btn-primary flex items-center gap-2 w-fit"
+            >
+              <Plus className="w-4 h-4" />
+              Create Code
+            </button>
+          )}
         </div>
 
         {/* Table */}

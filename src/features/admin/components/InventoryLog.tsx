@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, Filter } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { InventoryTransaction, TransactionType } from '@/types'
+import MetricGrid from '@/features/admin/components/MetricGrid'
 
 const TYPE_LABELS: Record<TransactionType | 'all', string> = {
   all:        'All Types',
@@ -74,7 +75,7 @@ const InventoryLog: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <MetricGrid cols={3} className="gap-3">
         {[
           { label: 'Restocked today',       value: `${restockedToday} units` },
           { label: 'Restocked this month',  value: `${restockedMonth} units` },
@@ -85,7 +86,7 @@ const InventoryLog: React.FC = () => {
             <p className="text-lg font-bold text-gray-900 mt-0.5">{c.value}</p>
           </div>
         ))}
-      </div>
+      </MetricGrid>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
