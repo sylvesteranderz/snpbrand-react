@@ -57,7 +57,7 @@ const PulseBar = () => {
           <span className="animate-pulse-pipeline absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
-        <span>Live Order Pipeline:</span>
+        
         {loading ? (
           <span className="text-gray-400 font-normal">Loading pipeline...</span>
         ) : (
