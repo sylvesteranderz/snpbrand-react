@@ -37,7 +37,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      image: '/public/images/bg-2.JPG',
+      image: '/images/bg-2.JPG',
       // title: 'SnP BRAND',
       titleHighlight: 'Complete',
       subtitle: "Your Look",
@@ -68,7 +68,7 @@ const LuxuryHeroSection = () => {
       subtitle: "Feel and walk confidently",
       description: 'Style that rises to make every eye fall',
       image: '/images/FeetBackground.jpg',
-      mobileImage: '/public/images/bg-2.JPG', // Add mobile-specific image
+      mobileImage: '/images/bg-2.JPG', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
