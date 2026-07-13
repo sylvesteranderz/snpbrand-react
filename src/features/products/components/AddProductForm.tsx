@@ -60,6 +60,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     originalPrice: '',
     description: '',
     category: 'slippers',
+    subcategory: 'male',
     image: '',
     rating: '0',
     reviews: '0',
@@ -91,10 +92,25 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }))
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      }
+      
+      // Auto-set sensible default subcategory when category changes
+      if (name === 'category') {
+        if (value === 'slippers') {
+          next.subcategory = 'male'
+        } else if (value === 'apparel') {
+          next.subcategory = 'quarterneck'
+        } else {
+          next.subcategory = ''
+        }
+      }
+      
+      return next
+    })
   }
 
   const addSize = () => {
@@ -214,6 +230,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
       description: formData.description,
       category: formData.category,
+      subcategory: formData.subcategory || undefined,
       image: primaryUrl,
       images: uploadedUrls.length > 0 ? uploadedUrls : undefined,
       rating: parseFloat(formData.rating),
@@ -313,6 +330,33 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
                   ))}
                 </select>
               </div>
+
+              {/* Subcategory */}
+              {(formData.category === 'slippers' || formData.category === 'apparel') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subcategory
+                  </label>
+                  <select
+                    name="subcategory"
+                    value={formData.subcategory}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    {formData.category === 'slippers' ? (
+                      <>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="quarterneck">Quarterneck</option>
+                        <option value="zipup">Zip-up</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

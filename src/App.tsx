@@ -71,7 +71,7 @@ const AppContent = () => {
     <div className="min-h-screen bg-white">
       <GoogleOneTap />
       {isAdminRoute ? <AdminHeader /> : <Header />}
-      <main>
+      <main className={isAdminRoute ? "admin-dashboard-root" : ""}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />

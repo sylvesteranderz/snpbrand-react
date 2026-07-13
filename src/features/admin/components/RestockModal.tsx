@@ -17,18 +17,32 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
   const [sizeQtys, setSizeQtys]   = useState<Record<string, string>>({})
   const [sizes, setSizes]         = useState<string[]>([])
   const [loadingSizes, setLoadingSizes] = useState(true)
+  // Current on-hand per size from stock_levels (single source of truth)
+  const [stockLevels, setStockLevels] = useState<Record<string, number>>({})
+  // TODO: location picker once hub UI exists
+  const [kumasiId, setKumasiId]   = useState<string | null>(null)
 
   const [unitCost, setUnitCost]   = useState('')
   const [note, setNote]           = useState('')
   const [date, setDate]           = useState(today())
   const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-  const [error, setError]         = useState('')
+  const [error, setError]         = useState('')  // pre-submit validation only
+  // Per-size results shown after the submit loop completes
+  const [sizeResults, setSizeResults] = useState<{ size: string; success: boolean; error?: string }[]>([])
 
-  // Fetch authoritative sizes from the products table on open
+  // Fetch Kumasi location id, authoritative sizes, and current stock_levels on open
   useEffect(() => {
     const fetchSizes = async () => {
       setLoadingSizes(true)
+
+      // TODO: location picker once hub UI exists
+      const { data: loc } = await supabase!
+        .from('locations')
+        .select('id')
+        .eq('name', 'Kumasi')
+        .single()
+      if (loc?.id) setKumasiId(loc.id)
+
       const { data } = await supabase!
         .from('products')
         .select('sizes, size_stock')
@@ -43,14 +57,25 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
       } else if (product.sizes && product.sizes.length > 0) {
         fetchedSizes = product.sizes
       }
-
-      // Fallback: at least one "General" slot so the form is never empty
       if (fetchedSizes.length === 0) fetchedSizes = ['General']
 
       setSizes(fetchedSizes)
       const initial: Record<string, string> = {}
       fetchedSizes.forEach(s => { initial[s] = '' })
       setSizeQtys(initial)
+
+      // Read current on-hand from stock_levels
+      if (loc?.id) {
+        const { data: levels } = await supabase!
+          .from('stock_levels')
+          .select('size, quantity')
+          .eq('product_id', product.id)
+          .eq('location_id', loc.id)
+        const map: Record<string, number> = {}
+        ;(levels ?? []).forEach((r: any) => { map[r.size] = r.quantity })
+        setStockLevels(map)
+      }
+
       setLoadingSizes(false)
     }
     fetchSizes()
@@ -67,41 +92,51 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSizeResults([])
 
     const unitCostNum = parseFloat(unitCost)
     if (!unitCostNum || unitCostNum <= 0) { setError('Unit cost must be greater than 0'); return }
     if (totalUnits < 1) { setError('Enter at least 1 unit for one size'); return }
+    if (!kumasiId) { setError('Could not resolve location. Please try again.'); return }
 
     setSaving(true)
-    try {
-      // Build one row per size where qty > 0
-      const rows = sizes
-        .map(size => ({ size, qty: parseInt(sizeQtys[size]) || 0 }))
-        .filter(r => r.qty > 0)
-        .map(r => ({
-          product_id: product.id,
-          type:       'restock',
-          size:       r.size,
-          quantity:   r.qty,
-          unit_cost:  unitCostNum,
-          note:       note.trim() || null,
-          created_at: new Date(date).toISOString(),
-        }))
 
-      const { error: dbErr } = await supabase!
-        .from('inventory_transactions')
-        .insert(rows)
-      if (dbErr) throw dbErr
+    const toRestock = sizes
+      .map(size => ({ size, qty: parseInt(sizeQtys[size]) || 0 }))
+      .filter(r => r.qty > 0)
 
-      // Show success state briefly so the user knows it worked,
-      // then let the parent close and refresh
-      setSaved(true)
-      setTimeout(() => {
-        onSuccess()
-      }, 1000)
-    } catch (err: any) {
-      setError(err?.message || 'Failed to save restock. Try again.')
-      setSaving(false)
+    const results: { size: string; success: boolean; error?: string }[] = []
+
+    for (const { size, qty } of toRestock) {
+      try {
+        const { error: rpcErr } = await supabase!
+          .rpc('apply_stock_change', {
+            p_product_id:  product.id,
+            p_size:        size,
+            p_location_id: kumasiId,
+            p_delta:       qty,          // positive — stock IN
+            p_type:        'restock',
+            p_note:        note.trim() || null,
+            p_unit_cost:   unitCostNum,
+          })
+        if (rpcErr) throw new Error(rpcErr.message)
+        // Success: patch local stockLevels immediately so display reflects reality
+        setStockLevels(prev => ({ ...prev, [size]: (prev[size] ?? 0) + qty }))
+        // Clear input for this size to prevent double-submitting on retry
+        setSizeQtys(prev => ({ ...prev, [size]: '' }))
+        results.push({ size, success: true })
+      } catch (err: any) {
+        // Do NOT abort — continue to next size
+        results.push({ size, success: false, error: err?.message ?? 'Unknown error' })
+      }
+    }
+
+    setSizeResults(results)
+    setSaving(false)
+
+    // Only trigger onSuccess if every size succeeded
+    if (results.every(r => r.success)) {
+      setTimeout(() => { onSuccess() }, 1000)
     }
   }
 
@@ -156,6 +191,9 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
                       <label className="text-xs font-medium text-gray-600 mb-1 text-center">
                         {size}
                       </label>
+                      <p className="text-xs text-gray-400 text-center mb-1">
+                        on-hand: {loadingSizes ? '…' : (stockLevels[size] ?? 0)}
+                      </p>
                       <input
                         type="number"
                         min="0"
@@ -225,10 +263,26 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
               <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
             )}
 
-            {saved && (
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
-                <span className="text-green-600 font-bold text-base">✓</span>
-                <span className="text-sm font-medium text-green-700">Restock saved successfully!</span>
+            {/* Per-size results shown after the loop completes */}
+            {sizeResults.length > 0 && (
+              <div className="space-y-1">
+                {sizeResults.map(r => (
+                  <div
+                    key={r.size}
+                    className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 border ${
+                      r.success
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-red-50 border-red-200 text-red-700'
+                    }`}
+                  >
+                    <span className="font-bold shrink-0">
+                      {r.success ? '✓' : '✗'} Size {r.size}
+                    </span>
+                    {!r.success && (
+                      <span className="break-words">{r.error}</span>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -240,12 +294,10 @@ const RestockModal: React.FC<RestockModalProps> = ({ product, onClose, onSuccess
                 Cancel
               </button>
               <button
-                type="submit" disabled={saving || loadingSizes || saved}
-                className={`flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-75 ${
-                  saved ? 'bg-green-500' : 'bg-primary-500 hover:bg-primary-600'
-                }`}
+                type="submit" disabled={saving || loadingSizes || !kumasiId}
+                className="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-75 bg-primary-500 hover:bg-primary-600"
               >
-                {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Confirm Restock'}
+                {saving ? 'Saving…' : 'Confirm Restock'}
               </button>
             </div>
           </form>

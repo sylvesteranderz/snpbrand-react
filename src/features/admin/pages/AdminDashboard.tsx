@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { formatPrice } from '@/utils/currency'
+import { supabase } from '@/lib/supabase'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
 import AddProductForm from '@/features/products/components/AddProductForm'
 import { OrderService, UserProfileService } from '@/services/supabaseService'
@@ -65,39 +66,88 @@ const getProductStatusInfo = (product: Product) => {
 }
 
 const AddStockModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
-  const { updateProduct } = useProducts()
   const [additions, setAdditions] = useState<Record<string, number | ''>>({})
-  const [isSaving, setIsSaving] = useState(false)
-  
+  const [isSaving, setIsSaving]   = useState(false)
+  const [error, setError]         = useState('')  // pre-submit validation only
+  // TODO: location picker once hub UI exists
+  const [kumasiId, setKumasiId]   = useState<string | null>(null)
+  // Current stock per size read directly from stock_levels (single source of truth)
+  const [stockLevels, setStockLevels] = useState<Record<string, number>>({})
+  const [loadingStock, setLoadingStock] = useState(true)
+  // Per-size results shown after the submit loop completes
+  const [sizeResults, setSizeResults] = useState<{ size: string; success: boolean; error?: string }[]>([])
+
   const sizes = Array.from(new Set([...(product.sizes || []), ...Object.keys(product.size_stock || {})]))
 
+  // Fetch Kumasi location id + current stock_levels on mount
+  useEffect(() => {
+    const load = async () => {
+      setLoadingStock(true)
+      // TODO: location picker once hub UI exists
+      const { data: loc } = await supabase!
+        .from('locations')
+        .select('id')
+        .eq('name', 'Kumasi')
+        .single()
+      if (loc?.id) setKumasiId(loc.id)
+
+      const { data: levels } = await supabase!
+        .from('stock_levels')
+        .select('size, quantity')
+        .eq('product_id', product.id)
+        .eq('location_id', loc?.id ?? '')
+      const map: Record<string, number> = {}
+      ;(levels ?? []).forEach((r: any) => { map[r.size] = r.quantity })
+      setStockLevels(map)
+      setLoadingStock(false)
+    }
+    load()
+  }, [product.id])
+
   const handleSave = async () => {
+    setError('')
+    setSizeResults([])
+    if (!kumasiId) { setError('Could not resolve location. Please try again.'); return }
+
+    const toAdd = Object.entries(additions)
+      .map(([size, qty]) => ({ size, qty: Number(qty) }))
+      .filter(({ qty }) => !isNaN(qty) && qty > 0)
+
+    if (toAdd.length === 0) { onClose(); return }
+
     setIsSaving(true)
-    try {
-      const currentSizeStock = product.size_stock || {};
-      const newSizeStock = { ...currentSizeStock };
-      
-      let hasChanges = false;
-      Object.entries(additions).forEach(([size, addQty]) => {
-        const qty = Number(addQty);
-        if (!isNaN(qty) && qty > 0) {
-          newSizeStock[size] = (newSizeStock[size] ?? 0) + qty;
-          hasChanges = true;
-        }
-      });
 
-      if (!hasChanges) {
-        onClose();
-        return;
+    const results: { size: string; success: boolean; error?: string }[] = []
+
+    for (const { size, qty } of toAdd) {
+      try {
+        const { error: rpcErr } = await supabase!
+          .rpc('apply_stock_change', {
+            p_product_id:  product.id,
+            p_size:        size,
+            p_location_id: kumasiId,
+            p_delta:       qty,        // positive — stock IN
+            p_type:        'restock',
+            p_note:        null,
+          })
+        if (rpcErr) throw new Error(rpcErr.message)
+        // Success: patch local stockLevels immediately so re-opens see real number
+        setStockLevels(prev => ({ ...prev, [size]: (prev[size] ?? 0) + qty }))
+        // Clear input for this size to prevent double-submitting on retry
+        setAdditions(prev => ({ ...prev, [size]: '' }))
+        results.push({ size, success: true })
+      } catch (err: any) {
+        // Do NOT abort — continue to next size
+        results.push({ size, success: false, error: err?.message ?? 'Unknown error' })
       }
+    }
 
-      // DB trigger auto-updates stock_quantity and in_stock, only update size_stock!
-      await updateProduct(product.id, { size_stock: newSizeStock })
+    setSizeResults(results)
+    setIsSaving(false)
+
+    // Only auto-close if every size succeeded
+    if (results.every(r => r.success)) {
       onClose()
-    } catch (error) {
-      alert("Failed to update stock.")
-    } finally {
-      setIsSaving(false)
     }
   }
 
@@ -120,9 +170,11 @@ const AddStockModal = ({ product, onClose }: { product: Product, onClose: () => 
             sizes.map(size => (
               <div key={size} className="flex items-center justify-between gap-4 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
                 <span className="text-sm font-semibold text-gray-700 min-w-[3rem]">Size {size}</span>
-                <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Current: {product.size_stock?.[size] ?? 0}</span>
-                <input 
-                  type="number" 
+                <span className="text-xs font-medium text-gray-500 whitespace-nowrap">
+                  {loadingStock ? '…' : `Current: ${stockLevels[size] ?? 0}`}
+                </span>
+                <input
+                  type="number"
                   min="0"
                   placeholder="Add qty"
                   value={additions[size] ?? ''}
@@ -132,14 +184,47 @@ const AddStockModal = ({ product, onClose }: { product: Product, onClose: () => 
               </div>
             ))
           ) : (
-             <p className="text-gray-500 italic">No sizes mapped for this product.</p>
+            <p className="text-gray-500 italic">No sizes mapped for this product.</p>
           )}
         </div>
 
+        {error && (
+          <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+        )}
+
         <div className="mt-6 flex justify-end space-x-3">
           <button onClick={onClose} disabled={isSaving} className="px-4 py-2 border text-gray-600 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">{isSaving ? 'Saving...' : 'Add Stock'}</button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || loadingStock || !kumasiId}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-60"
+          >
+            {isSaving ? 'Saving...' : 'Add Stock'}
+          </button>
         </div>
+
+        {/* Per-size results shown after the loop completes */}
+        {sizeResults.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {sizeResults.map(r => (
+              <div
+                key={r.size}
+                className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 border ${
+                  r.success
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-red-50 border-red-200 text-red-700'
+                }`}
+              >
+                <span className="font-bold shrink-0">
+                  {r.success ? '✓' : '✗'} Size {r.size}
+                </span>
+                {!r.success && (
+                  <span className="break-words">{r.error}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )

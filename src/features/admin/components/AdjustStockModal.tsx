@@ -12,7 +12,7 @@ interface AdjustStockModalProps {
 
 interface SizeRow {
   size:    string
-  current: number   // live sum from inventory_transactions
+  current: number   // quantity from stock_levels (single source of truth)
   target:  string   // what admin wants it to be (string for controlled input)
 }
 
@@ -20,14 +20,25 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
   const [rows, setRows]       = useState<SizeRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
-  const [saved, setSaved]     = useState(false)
-  const [error, setError]     = useState('')
+  const [error, setError]     = useState('')  // pre-submit validation only
   const [note, setNote]       = useState('')
+  // TODO: location picker once hub UI exists
+  const [kumasiId, setKumasiId] = useState<string | null>(null)
+  // Per-size results shown after the submit loop completes
+  const [sizeResults, setSizeResults] = useState<{ size: string; success: boolean; error?: string }[]>([])
 
-  // Load authoritative sizes + compute current per-size stock from the ledger
+  // Load authoritative sizes + current per-size stock from stock_levels
   useEffect(() => {
     const load = async () => {
       setLoading(true)
+
+      // TODO: location picker once hub UI exists
+      const { data: loc } = await supabase!
+        .from('locations')
+        .select('id')
+        .eq('name', 'Kumasi')
+        .single()
+      if (loc?.id) setKumasiId(loc.id)
 
       // 1. Get the product's size list
       const { data: prod } = await supabase!
@@ -46,23 +57,22 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
       }
       if (sizes.length === 0) sizes = ['General']
 
-      // 2. Sum inventory_transactions per size to get live current stock
-      const { data: txns } = await supabase!
-        .from('inventory_transactions')
-        .select('size, quantity')
-        .eq('product_id', product.id)
-
-      const ledger: Record<string, number> = {}
-      ;(txns ?? []).forEach((t: any) => {
-        const s = t.size && t.size !== 'unknown' ? t.size : null
-        if (s) ledger[s] = (ledger[s] ?? 0) + (t.quantity ?? 0)
-      })
+      // 2. Read current on-hand from stock_levels (single source of truth)
+      const stockMap: Record<string, number> = {}
+      if (loc?.id) {
+        const { data: levels } = await supabase!
+          .from('stock_levels')
+          .select('size, quantity')
+          .eq('product_id', product.id)
+          .eq('location_id', loc.id)
+        ;(levels ?? []).forEach((r: any) => { stockMap[r.size] = r.quantity })
+      }
 
       setRows(
         sizes.map(size => ({
           size,
-          current: ledger[size] ?? 0,
-          target:  String(ledger[size] ?? 0),
+          current: stockMap[size] ?? 0,
+          target:  String(stockMap[size] ?? 0),
         }))
       )
       setLoading(false)
@@ -73,6 +83,7 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSizeResults([])
 
     // Only process sizes where target differs from current
     const adjustments = rows
@@ -91,28 +102,41 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
       return
     }
 
+    if (!kumasiId) { setError('Could not resolve location. Please try again.'); return }
+
     setSaving(true)
-    try {
-      const adjRows = adjustments.map(a => ({
-        product_id: product.id,
-        type:       'adjustment',
-        size:       a.size,
-        quantity:   a.delta,                // positive = stock up, negative = stock down
-        unit_cost:  null,
-        note:       note.trim() || 'Manual stock adjustment',
-        created_at: new Date().toISOString(),
-      }))
+    const results: { size: string; success: boolean; error?: string }[] = []
 
-      const { error: dbErr } = await supabase!
-        .from('inventory_transactions')
-        .insert(adjRows)
-      if (dbErr) throw dbErr
+    for (const { size, delta } of adjustments) {
+      try {
+        const { error: rpcErr } = await supabase!
+          .rpc('apply_stock_change', {
+            p_product_id:  product.id,
+            p_size:        size,
+            p_location_id: kumasiId,
+            p_delta:       delta,        // signed: positive = up, negative = down
+            p_type:        'adjustment',
+            p_note:        note.trim() || 'Manual stock adjustment',
+          })
+        if (rpcErr) throw new Error(rpcErr.message)
 
-      setSaved(true)
+        // Success: update that size's entry in local state immediately
+        setRows(prev =>
+          prev.map(row =>
+            row.size === size ? { ...row, current: row.current + delta } : row
+          )
+        )
+        results.push({ size, success: true })
+      } catch (err: any) {
+        results.push({ size, success: false, error: err?.message || 'Failed to adjust stock' })
+      }
+    }
+
+    setSizeResults(results)
+    setSaving(false)
+
+    if (results.every(r => r.success)) {
       setTimeout(() => { onSuccess() }, 1200)
-    } catch (err: any) {
-      setError(err?.message || 'Failed to save adjustment. Try again.')
-      setSaving(false)
     }
   }
 
@@ -231,10 +255,25 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
               <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
             )}
 
-            {saved && (
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
-                <span className="text-green-600 font-bold text-base">✓</span>
-                <span className="text-sm font-medium text-green-700">Stock adjusted successfully!</span>
+            {sizeResults.length > 0 && (
+              <div className="space-y-1">
+                {sizeResults.map(r => (
+                  <div
+                    key={r.size}
+                    className={`flex items-start gap-2 text-xs rounded-lg px-3 py-2 border ${
+                      r.success
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-red-50 border-red-200 text-red-700'
+                    }`}
+                  >
+                    <span className="font-bold shrink-0">
+                      {r.success ? '✓' : '✗'} Size {r.size}
+                    </span>
+                    {!r.success && (
+                      <span className="break-words">{r.error}</span>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -246,12 +285,10 @@ const AdjustStockModal: React.FC<AdjustStockModalProps> = ({ product, onClose, o
                 Cancel
               </button>
               <button
-                type="submit" disabled={saving || loading || saved || !hasChanges}
-                className={`flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 ${
-                  saved ? 'bg-green-500' : 'bg-amber-500 hover:bg-amber-600'
-                }`}
+                type="submit" disabled={saving || loading || !kumasiId || !hasChanges}
+                className="flex-1 px-4 py-2.5 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 bg-amber-500 hover:bg-amber-600"
               >
-                {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Apply Adjustment'}
+                {saving ? 'Saving…' : 'Apply Adjustment'}
               </button>
             </div>
           </form>

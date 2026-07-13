@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
-import * as crypto from "https://deno.land/std@0.177.0/crypto/mod.ts";
+
 
 // ---------------------------------------------------------------------------
 // Background handler — runs after 200 is returned to Paystack
@@ -30,6 +30,45 @@ async function handleChargeSuccess(order_number: string, reference: string) {
   }
 
   console.log(`[webhook] Order ${order_number} marked as paid`)
+
+  // Log transactions to ensure stock is decremented and finance records created
+  if (order?.id) {
+    const today = new Date().toISOString().slice(0, 10)
+
+    // 1. Log the sale into financial_transactions
+    const { error: finErr } = await supabase
+      .from('financial_transactions')
+      .insert({
+        type:         'sale',
+        amount:       order.total_amount,
+        description:  `Order #${order_number}`,
+        reference_id: order.id,
+        date:         today,
+      })
+    if (finErr) {
+      console.error('[webhook] financial_transactions insert failed:', finErr.message)
+    }
+
+    // 2. Log each line item into inventory_transactions with size
+    const items: any[] = Array.isArray(order.items) ? order.items : []
+    if (items.length > 0) {
+      const invRows = items.map((item: any) => ({
+        product_id: item.product_id,
+        type:       'sale',
+        size:       item.selected_size || item.selectedSize || 'unknown',
+        quantity:   -(item.quantity ?? 1),
+        unit_cost:  null,
+        note:       `Order #${order_number}`,
+        created_at: new Date().toISOString(),
+      }))
+      const { error: invErr } = await supabase
+        .from('inventory_transactions')
+        .insert(invRows)
+      if (invErr) {
+        console.error('[webhook] inventory_transactions insert failed:', invErr.message)
+      }
+    }
+  }
 
   // Build confirmation email payload from stored order data
   const customerInfo = order.customer_info || {}

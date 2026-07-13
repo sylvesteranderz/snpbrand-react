@@ -27,6 +27,8 @@ interface Order {
   customer_name?: string | null;
   customer_phone?: string | null;
   created_at: string;
+  gift_bag?: boolean | null;
+  gift_note?: string | null;
   user_profiles?: {
     name: string;
     email: string;
@@ -391,6 +393,27 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* Gift Bag Section — shown when customer requested a gift bag */}
+                  {order.gift_bag && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        Gift Bag
+                      </h4>
+                      <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs space-y-2">
+                        <div className="flex items-center gap-2 font-semibold text-amber-800">
+                          <span>🎁</span>
+                          <span>Gift bag requested — include when packing</span>
+                        </div>
+                        {order.gift_note && (
+                          <div className="mt-2 pt-2 border-t border-amber-200">
+                            <p className="text-gray-500 font-medium mb-0.5">Message:</p>
+                            <p className="text-gray-800 italic">"{order.gift_note}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Payment Section */}
                   {(order.payment_method || order.payment_status) && (

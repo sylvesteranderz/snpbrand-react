@@ -63,6 +63,10 @@ const Checkout = () => {
   const [discountError, setDiscountError] = useState('')
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
 
+  // Gift bag state (follows same pattern as discountCode/discountData)
+  const [giftBag, setGiftBag] = useState(false)
+  const [giftNote, setGiftNote] = useState('')
+
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -132,10 +136,14 @@ const Checkout = () => {
 
   const { user } = useAuth()
 
+  // GH₵ flat fee per order for gift bag packaging
+  const GIFT_BAG_PRICE = 15
+
   const subtotal = totalPrice
   const discountAmount = discountData?.discount_amount ?? 0
-  // Guard against negative total if items are removed after a discount is applied
-  const total = Math.max(0, subtotal - discountAmount)
+  // Gift bag price is added AFTER discount is subtracted.
+  // Discount codes apply to the product subtotal only — NOT to the gift bag fee.
+  const total = Math.max(0, subtotal - discountAmount + (giftBag ? GIFT_BAG_PRICE : 0))
 
   // Stable ref so we can mutate fields inside handleSubmit right before opening the
   // popup — this guarantees Paystack always receives the values that were actually
@@ -263,6 +271,8 @@ const Checkout = () => {
         total_amount: total,
         discount_code: discountCode || null,
         discount_amount: discountAmount,
+        gift_bag: giftBag,
+        gift_note: giftBag ? (giftNote.trim() || null) : null,
         created_at: new Date().toISOString()
       }
 
@@ -317,7 +327,28 @@ const Checkout = () => {
         paystackConfigRef.current.metadata.custom_fields[0].value = confirmedOrderNumber
 
         initializePayment({
-          onSuccess: (_referenceData: any) => {
+          onSuccess: (referenceData: any) => {
+            // Call verify-payment Edge Function immediately from the client side
+            try {
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                  reference: referenceData.reference,
+                  order_number: confirmedOrderNumber,
+                }),
+              }).then((res) => {
+                if (!res.ok) {
+                  res.text().then(t => console.error('[checkout] verify-payment failed:', t));
+                }
+              }).catch(e => console.error('[checkout] verify-payment request failed:', e));
+            } catch (err) {
+              console.error('[checkout] verify-payment API error:', err);
+            }
+
             // Payment confirmed — show success screen immediately.
             // paystack-webhook handles payment_status update + confirmation email.
             setOrderData(uiOrderData)
@@ -837,6 +868,14 @@ const Checkout = () => {
                     <span className="font-medium">- {formatPrice(discountAmount)}</span>
                   </div>
                 )}
+                {giftBag && (
+                  <div className="flex justify-between items-center text-gray-700">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      🎁 Gift bag
+                    </span>
+                    <span className="font-medium">+ {formatPrice(GIFT_BAG_PRICE)}</span>
+                  </div>
+                )}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
@@ -883,6 +922,42 @@ const Checkout = () => {
                   )}
                 </div>
               )}
+
+              {/* Gift Bag Option — available to all users */}
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="gift-bag-toggle"
+                    checked={giftBag}
+                    onChange={e => {
+                      setGiftBag(e.target.checked)
+                      if (!e.target.checked) setGiftNote('')
+                    }}
+                    className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    🎁 Add a gift bag{' '}
+                    <span className="text-gray-500">(+{formatPrice(GIFT_BAG_PRICE)})</span>
+                  </span>
+                </label>
+                {giftBag && (
+                  <div className="mt-3">
+                    <label htmlFor="gift-note" className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Gift message <span className="text-gray-400">(optional)</span>
+                    </label>
+                    <textarea
+                      id="gift-note"
+                      value={giftNote}
+                      onChange={e => setGiftNote(e.target.value)}
+                      placeholder="e.g. Happy Birthday! Enjoy your gift 🎉"
+                      rows={3}
+                      maxLength={300}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                    />
+                  </div>
+                )}
+              </div>
 
               <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
