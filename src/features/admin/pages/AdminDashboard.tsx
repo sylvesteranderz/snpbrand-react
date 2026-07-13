@@ -403,6 +403,8 @@ const AdminDashboard = () => {
         return 'text-green-600 bg-green-100'
       case 'cancelled':
         return 'text-red-600 bg-red-100'
+      case 'expired':
+        return 'text-orange-600 bg-orange-100'
       case 'active':
         return 'text-green-600 bg-green-100'
       case 'inactive':
@@ -735,6 +737,10 @@ const AdminDashboard = () => {
                       ? <div className="h-8 w-12 bg-gray-200 animate-pulse rounded mt-2" />
                       : <span className="text-2xl font-bold text-orange-600 mt-2">{orders.filter(o => o.status === 'pending').length}</span>
                     }
+                    <span className="text-gray-500 text-sm font-medium">To Fulfil</span>
+                    <span className="text-2xl font-bold text-blue-600 mt-2">
+                      {orders.filter(o => o.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(o.status)).length}
+                    </span>
                   </div>
                   <div className="bg-white rounded-lg shadow-sm p-5 border flex flex-col">
                     <span className="text-gray-500 text-sm font-medium">Delivered Count</span>
@@ -752,46 +758,38 @@ const AdminDashboard = () => {
                   </div>
                 </MetricGrid>
 
-                {/* Filters & Header */}
-                <div className="bg-white rounded-lg shadow-sm border p-4">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    {/* Filter Tabs */}
-                    <div className="flex bg-gray-100 p-1 rounded-lg self-start md:self-auto w-full md:w-auto overflow-x-auto">
-                      {(['fulfil', 'processing', 'fulfilled', 'abandoned'] as const).map(tab => {
-                        let count = 0;
-                        if (tab === 'fulfil') {
-                          count = orders.filter(o => o.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(o.status)).length;
-                        } else if (tab === 'processing') {
-                          count = orders.filter(o => ['processing', 'shipped'].includes(o.status)).length;
-                        } else if (tab === 'fulfilled') {
-                          count = orders.filter(o => o.status === 'delivered').length;
-                        } else if (tab === 'abandoned') {
-                          count = orders.filter(o => o.status === 'expired' || o.status === 'cancelled' || (o.status === 'pending' && o.paymentStatus !== 'paid')).length;
-                        }
-                          
-                        return (
-                          <button
-                            key={tab}
-                            onClick={() => setOrderTab(tab)}
-                            className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center gap-2 ${
-                              orderTab === tab 
-                                ? 'bg-white text-gray-900 shadow-sm' 
-                                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-                            }`}
-                          >
-                            <span className="capitalize">{tab}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${
-                              orderTab === tab ? 'bg-gray-100 text-gray-900' : 'bg-gray-200 text-gray-600'
-                            }`}>
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                {/* Order Tabs & Search */}
+                <div className="bg-white rounded-lg shadow-sm border">
+                  {/* Tab Bar */}
+                  <div className="flex border-b overflow-x-auto">
+                    {([
+                      { id: 'fulfil',     label: 'To Fulfil',   count: orders.filter(o => o.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(o.status)).length, accent: 'border-blue-500 text-blue-600' },
+                      { id: 'processing', label: 'Processing',  count: orders.filter(o => ['processing', 'shipped'].includes(o.status)).length,                               accent: 'border-purple-500 text-purple-600' },
+                      { id: 'fulfilled',  label: 'Fulfilled',   count: orders.filter(o => o.status === 'delivered').length,                                                   accent: 'border-green-500 text-green-600' },
+                      { id: 'abandoned',  label: 'Abandoned',   count: orders.filter(o => o.status === 'expired' || o.status === 'cancelled' || (o.status === 'pending' && o.paymentStatus !== 'paid')).length, accent: 'border-red-500 text-red-600' },
+                    ] as const).map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setOrderTab(tab.id)}
+                        className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                          orderTab === tab.id
+                            ? `${tab.accent} bg-white`
+                            : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                      >
+                        {tab.label}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          orderTab === tab.id ? 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {tab.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
 
-                    {/* Search */}
-                    <div className="relative w-full md:w-auto min-w-[280px]">
+                  {/* Search */}
+                  <div className="p-4">
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
@@ -946,6 +944,12 @@ const AdminDashboard = () => {
                                 <div className="mt-auto bg-red-50 text-red-700 border border-red-200 rounded-lg p-3 text-sm flex items-start gap-2">
                                   <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                                   <span>Order was cancelled.</span>
+                                </div>
+                              )}
+                              {order.status === 'expired' && (
+                                <div className="mt-auto bg-orange-50 text-orange-700 border border-orange-200 rounded-lg p-3 text-sm flex items-start gap-2">
+                                  <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+                                  <span>Order expired (unpaid after 24 h).</span>
                                 </div>
                               )}
                             </div>
