@@ -7,7 +7,6 @@ import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 import { OrderService } from '@/services/supabaseService'
 import { formatPrice } from '@/utils/currency'
 import OrderConfirmation from '@/features/checkout/pages/OrderConfirmation'
-import { usePaystackPayment } from 'react-paystack'
 import { PAYSTACK_CONFIG } from '@/config/paystack'
 import { supabase } from '@/lib/supabase'
 
@@ -145,16 +144,10 @@ const Checkout = () => {
   // Discount codes apply to the product subtotal only — NOT to the gift bag fee.
   const total = Math.max(0, subtotal - discountAmount + (giftBag ? GIFT_BAG_PRICE : 0))
 
-  // usePaystackPayment must be called at component level (React rules).
-  // We pass only the static parts of the config here. Dynamic values (email, amount,
-  // order_number) are injected directly at call time via initializePayment({ config })
-  // — react-paystack merges them on top of this base config at that moment.
-  const initializePayment = usePaystackPayment({
-    publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
-    email: '',
-    amount: 0,
-    currency: PAYSTACK_CONFIG.CURRENCY,
-  })
+  // Paystack is loaded via <script src="https://js.paystack.co/v2/inline.js"> in index.html.
+  // We call window.PaystackPop.newTransaction() directly at submit time so we can
+  // pass the exact live values (email, amount, order_number) without any library
+  // abstraction or hook snapshot timing issues.
 
   const handleApplyDiscount = async () => {
     if (!discountInput.trim() || !supabase) return
@@ -310,27 +303,26 @@ const Checkout = () => {
       }
 
       if (formData.paymentMethod === 'paystack') {
-        // STEP 4 — Pass all dynamic values directly into initializePayment at call time.
-        // react-paystack merges this config on top of the base config supplied to the hook,
-        // guaranteeing Paystack receives the real email, amount, and order number —
-        // not the empty placeholder values that were present at component mount.
         console.log('Paystack payload:', {
+          key: PAYSTACK_CONFIG.PUBLIC_KEY,
           email: formData.email,
           amount: pesewas,
           currency: PAYSTACK_CONFIG.CURRENCY,
           order_number: confirmedOrderNumber,
         })
 
-        initializePayment({
-          config: {
-            email: formData.email,
-            amount: pesewas,
-            currency: PAYSTACK_CONFIG.CURRENCY,
-            metadata: {
-              custom_fields: [
-                { display_name: 'Order Number', variable_name: 'order_number', value: confirmedOrderNumber }
-              ]
-            }
+        // Call Paystack SDK directly — window.PaystackPop is loaded from index.html.
+        // This guarantees the SDK receives the exact live values at call time with no
+        // library wrapper or hook snapshot in between.
+        ;(window as any).PaystackPop.newTransaction({
+          key: PAYSTACK_CONFIG.PUBLIC_KEY,
+          email: formData.email,
+          amount: pesewas,
+          currency: PAYSTACK_CONFIG.CURRENCY,
+          metadata: {
+            custom_fields: [
+              { display_name: 'Order Number', variable_name: 'order_number', value: confirmedOrderNumber }
+            ]
           },
           onSuccess: (referenceData: any) => {
             // Call verify-payment Edge Function immediately from the client side
@@ -355,12 +347,11 @@ const Checkout = () => {
             }
 
             // Payment confirmed — show success screen immediately.
-            // paystack-webhook handles payment_status update + confirmation email.
             setOrderData(uiOrderData)
             setIsComplete(true)
             clearCart()
 
-            // Record discount use in the background (webhook doesn't know about discounts)
+            // Record discount use in the background
             if (supabase && discountData && user?.id) {
               supabase.rpc('record_discount_use', {
                 p_code_id: discountData.code_id,
@@ -369,7 +360,7 @@ const Checkout = () => {
                 p_cart_total: subtotal,
               }).then(({ error: rpcError }) => {
                 if (rpcError) {
-                  console.error('[checkout] CRITICAL — discount not recorded after payment. Manual reconciliation required.', {
+                  console.error('[checkout] CRITICAL — discount not recorded after payment.', {
                     order_number: confirmedOrderNumber,
                     code_id: discountData.code_id,
                     error: rpcError.message,
@@ -378,7 +369,7 @@ const Checkout = () => {
               })
             }
           },
-          onClose: () => {
+          onCancel: () => {
             alert('Payment cancelled by user.')
             setIsProcessing(false)
           }
