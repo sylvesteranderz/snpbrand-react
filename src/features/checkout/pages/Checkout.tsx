@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet, Tag, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -145,25 +145,16 @@ const Checkout = () => {
   // Discount codes apply to the product subtotal only — NOT to the gift bag fee.
   const total = Math.max(0, subtotal - discountAmount + (giftBag ? GIFT_BAG_PRICE : 0))
 
-  // Stable ref so we can mutate fields inside handleSubmit right before opening the
-  // popup — this guarantees Paystack always receives the values that were actually
-  // stored in the DB, not a stale render-time snapshot.
-  const paystackConfigRef = useRef({
+  // usePaystackPayment must be called at component level (React rules).
+  // We pass only the static parts of the config here. Dynamic values (email, amount,
+  // order_number) are injected directly at call time via initializePayment({ config })
+  // — react-paystack merges them on top of this base config at that moment.
+  const initializePayment = usePaystackPayment({
     publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
     email: '',
     amount: 0,
     currency: PAYSTACK_CONFIG.CURRENCY,
-    metadata: {
-      custom_fields: [
-        { display_name: 'Order Number', variable_name: 'order_number', value: '' }
-      ]
-    }
   })
-
-  // Hook must stay at component level (React rules). usePaystackPayment receives the
-  // ref object — because the ref is the same object across every render, the closure
-  // inside the returned initializePayment always sees the latest mutated values.
-  const initializePayment = usePaystackPayment(paystackConfigRef.current)
 
   const handleApplyDiscount = async () => {
     if (!discountInput.trim() || !supabase) return
@@ -319,14 +310,28 @@ const Checkout = () => {
       }
 
       if (formData.paymentMethod === 'paystack') {
-        // STEP 4 — Write fresh values into the config ref right before opening the popup.
-        // The initializePayment closure spreads paystackConfigRef.current at call time,
-        // so it picks up whatever is in the ref at this exact moment.
-        paystackConfigRef.current.email = formData.email
-        paystackConfigRef.current.amount = pesewas
-        paystackConfigRef.current.metadata.custom_fields[0].value = confirmedOrderNumber
+        // STEP 4 — Pass all dynamic values directly into initializePayment at call time.
+        // react-paystack merges this config on top of the base config supplied to the hook,
+        // guaranteeing Paystack receives the real email, amount, and order number —
+        // not the empty placeholder values that were present at component mount.
+        console.log('Paystack payload:', {
+          email: formData.email,
+          amount: pesewas,
+          currency: PAYSTACK_CONFIG.CURRENCY,
+          order_number: confirmedOrderNumber,
+        })
 
         initializePayment({
+          config: {
+            email: formData.email,
+            amount: pesewas,
+            currency: PAYSTACK_CONFIG.CURRENCY,
+            metadata: {
+              custom_fields: [
+                { display_name: 'Order Number', variable_name: 'order_number', value: confirmedOrderNumber }
+              ]
+            }
+          },
           onSuccess: (referenceData: any) => {
             // Call verify-payment Edge Function immediately from the client side
             try {
@@ -342,11 +347,11 @@ const Checkout = () => {
                 }),
               }).then((res) => {
                 if (!res.ok) {
-                  res.text().then(t => console.error('[checkout] verify-payment failed:', t));
+                  res.text().then(t => console.error('[checkout] verify-payment failed:', t))
                 }
-              }).catch(e => console.error('[checkout] verify-payment request failed:', e));
+              }).catch(e => console.error('[checkout] verify-payment request failed:', e))
             } catch (err) {
-              console.error('[checkout] verify-payment API error:', err);
+              console.error('[checkout] verify-payment API error:', err)
             }
 
             // Payment confirmed — show success screen immediately.
