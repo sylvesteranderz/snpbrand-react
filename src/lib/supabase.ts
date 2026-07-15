@@ -55,6 +55,7 @@ export interface Database {
           in_stock: boolean
           is_new: boolean
           is_on_sale: boolean
+          is_active: boolean
           discount: number
           sizes: string[]
           colors: string[]
@@ -75,6 +76,7 @@ export interface Database {
           in_stock?: boolean
           is_new?: boolean
           is_on_sale?: boolean
+          is_active?: boolean
           discount?: number
           sizes?: string[]
           colors?: string[]
@@ -95,10 +97,40 @@ export interface Database {
           in_stock?: boolean
           is_new?: boolean
           is_on_sale?: boolean
+          is_active?: boolean
           discount?: number
           sizes?: string[]
           colors?: string[]
           tags?: string[]
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      product_variants: {
+        Row: {
+          id: string
+          product_id: string
+          size: string
+          quantity: number
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          size: string
+          quantity?: number
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          size?: string
+          quantity?: number
+          sort_order?: number
           created_at?: string
           updated_at?: string
         }
@@ -138,37 +170,64 @@ export interface Database {
       orders: {
         Row: {
           id: string
-          user_id: string
+          user_id: string | null
           order_number: string
           total_amount: number
           status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
           payment_method: 'paystack' | 'pay_on_delivery'
           shipping_address: any
           items: any[]
+          customer_info: any
+          customer_name: string | null
+          customer_phone: string | null
+          product_type: string | null
+          size: string | null
+          quantity: number | null
+          order_channel: string | null
+          notes: string | null
+          source: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id?: string | null
           order_number: string
           total_amount: number
           status?: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
           payment_method: 'paystack' | 'pay_on_delivery'
           shipping_address: any
           items: any[]
+          customer_info?: any
+          customer_name?: string | null
+          customer_phone?: string | null
+          product_type?: string | null
+          size?: string | null
+          quantity?: number | null
+          order_channel?: string | null
+          notes?: string | null
+          source?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          user_id?: string
+          user_id?: string | null
           order_number?: string
           total_amount?: number
           status?: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
           payment_method?: 'paystack' | 'pay_on_delivery'
           shipping_address?: any
           items?: any[]
+          customer_info?: any
+          customer_name?: string | null
+          customer_phone?: string | null
+          product_type?: string | null
+          size?: string | null
+          quantity?: number | null
+          order_channel?: string | null
+          notes?: string | null
+          source?: string | null
           created_at?: string
           updated_at?: string
         }

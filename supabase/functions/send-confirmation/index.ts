@@ -3,8 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 // Using the newly verified domain!
 const FROM_EMAIL = 'noreply@orders.snpbrand.com'
-const ADMIN_EMAIL = 'Sylvesteranderson726t@gmail.com'
-
+const ADMIN_EMAILS = ['sylvesteranderson726t@gmail.com', 'snpslides@gmail.com']
 const ALLOWED_ORIGINS = [
   'https://snpbrand.com',
   'https://www.snpbrand.com',
@@ -29,7 +28,7 @@ serve(async (req) => {
     // A Supabase Database Webhook payload looks like: { type, table, record, old_record, schema }
     // A direct frontend invocation via supabase.functions.invoke sends a flat payload
     const payload = await req.json()
-    
+
     let orderNumber, email, customerName, items, total, deliveryMethod, address, campus, estimatedDelivery
 
     // If payload contains 'record', it was invoked by a database trigger (Webhook)
@@ -260,7 +259,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           from: `SnpBrand System <${FROM_EMAIL}>`,
-          to: [ADMIN_EMAIL],
+          to: ADMIN_EMAILS,
           subject: `🚨 NEW ORDER: ${orderNumber} - GH₵ ${total.toFixed(2)}`,
           html: adminHtml
         })

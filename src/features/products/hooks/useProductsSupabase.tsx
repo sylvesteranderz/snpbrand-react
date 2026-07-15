@@ -88,6 +88,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
             originalPrice: newProductData.original_price,
             description: newProductData.description,
             in_stock: newProductData.in_stock,
+            subcategory: newProductData.subcategory,
             size_stock: newProductData.size_stock || {},
             stockQuantity: newProductData.stock_quantity || 0,
             sizes: newProductData.sizes || [],

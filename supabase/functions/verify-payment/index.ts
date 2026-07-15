@@ -72,16 +72,57 @@ serve(async (req) => {
         // Update order status in Supabase — query by order_number (a stable,
         // unique string) rather than the DB-generated UUID id, since guest
         // checkout does not return the UUID from the insert (RLS blocks read-back).
-        const { error: updateError } = await supabase
+        const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
             .update({
                 payment_status: 'paid',
                 payment_reference: reference,
             })
             .eq('order_number', order_number)
+            .select('id, total_amount, items')
+            .maybeSingle()
 
         if (updateError) {
             throw updateError
+        }
+
+        if (updatedOrder?.id) {
+            const today = new Date().toISOString().slice(0, 10)
+
+            // 1. Log the sale into financial_transactions
+            const { error: finErr } = await supabase
+                .from('financial_transactions')
+                .insert({
+                    type:         'sale',
+                    amount:       updatedOrder.total_amount,
+                    description:  `Order #${order_number}`,
+                    reference_id: updatedOrder.id,
+                    date:         today,
+                })
+            if (finErr) {
+                console.error('financial_transactions insert failed:', finErr.message)
+            }
+
+            // 2. Log each line item into inventory_transactions with size
+            //    items is a JSONB snapshot: [{product_id, name, quantity, selected_size, price}]
+            const items: any[] = Array.isArray(updatedOrder.items) ? updatedOrder.items : []
+            if (items.length > 0) {
+                const invRows = items.map((item: any) => ({
+                    product_id: item.product_id,
+                    type:       'sale',
+                    size:       item.selected_size || item.selectedSize || 'unknown',
+                    quantity:   -(item.quantity ?? 1),   // negative = stock OUT
+                    unit_cost:  null,
+                    note:       `Order #${order_number}`,
+                    created_at: new Date().toISOString(),
+                }))
+                const { error: invErr } = await supabase
+                    .from('inventory_transactions')
+                    .insert(invRows)
+                if (invErr) {
+                    console.error('inventory_transactions insert failed:', invErr.message)
+                }
+            }
         }
 
         return new Response(

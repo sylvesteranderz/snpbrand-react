@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+.admin-dashboard-root {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -887,6 +893,25 @@
   }
 }
 
+@keyframes pulse-pipeline {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-pulse-pipeline {
+  animation: pulse-pipeline 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-pipeline {
+    animation: none;
+  }
+}
+
 /* Swiper customizations */
 .swiper-pagination-bullet {
   @apply border border-dark-800 bg-transparent opacity-100 w-4 h-4 relative inline-block p-10;
@@ -1043,8 +1068,8 @@
   /* Enhanced mobile scrolling fix */
   html,
   body {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    /* overscroll-behavior: contain removed — was blocking vertical scroll chaining from swiper to document on Android */
+    overscroll-behavior-x: none; /* only prevent horizontal rubber-band; vertical chaining must remain intact */
     height: auto;
     overflow-x: hidden;
   }
@@ -1052,18 +1077,16 @@
   /* Fix main container scrolling */
   .main-swiper,
   .luxury-hero-section {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    height: 100vh;
-    height: 100dvh;
+    /* height: 100dvh removed — was locking swiper into a full-height overflow context that confused Android scroll routing */
+    /* overscroll-behavior: contain removed — was double-blocking vertical scroll chaining */
+    /* -webkit-overflow-scrolling: touch removed — only valid on document/body, harmful on child divs */
     overflow-x: hidden;
   }
 
   /* Fix iOS Safari viewport issues */
   .main-swiper {
     position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* min-height: 100dvh removed — Swiper handles its own height; forcing it here creates a scroll container conflict */
   }
 
   /* Allow normal scrolling on mobile */
@@ -1072,14 +1095,14 @@
     width: 100%;
     height: auto;
     overflow-x: hidden;
-    overflow-y: auto;
+    /* overflow-y: auto removed — body should not be an explicit scroller; document handles vertical scroll */
   }
 
   #root {
     height: auto;
     overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    /* overflow-y: auto removed — #root is not a scroll container; this was creating a sub-document scroller */
+    /* -webkit-overflow-scrolling: touch removed — only valid on the document itself; on #root it causes ghost-scroll on Android */
   }
 
   /* Ensure main content can scroll */

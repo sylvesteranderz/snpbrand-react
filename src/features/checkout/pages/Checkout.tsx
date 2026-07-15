@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet } from 'lucide-react'
+import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet, Tag, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 import { OrderService } from '@/services/supabaseService'
 import { formatPrice } from '@/utils/currency'
 import OrderConfirmation from '@/features/checkout/pages/OrderConfirmation'
-import { usePaystackPayment } from 'react-paystack'
 import { PAYSTACK_CONFIG } from '@/config/paystack'
 import { supabase } from '@/lib/supabase'
 
@@ -50,10 +49,22 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [orderData, setOrderData] = useState<any>(null)
-  const generateOrderNumber = () => {
-    return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
-  const [orderNumber] = useState(generateOrderNumber())
+
+  // Discount state
+  const [discountCode, setDiscountCode] = useState('')
+  const [discountInput, setDiscountInput] = useState('')
+  const [discountData, setDiscountData] = useState<{
+    code_id: string
+    discount_amount: number
+    min_order_value: number
+    message: string
+  } | null>(null)
+  const [discountError, setDiscountError] = useState('')
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
+
+  // Gift bag state (follows same pattern as discountCode/discountData)
+  const [giftBag, setGiftBag] = useState(false)
+  const [giftNote, setGiftNote] = useState('')
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -124,22 +135,54 @@ const Checkout = () => {
 
   const { user } = useAuth()
 
-  const subtotal = totalPrice
-  const total = subtotal
+  // GH₵ flat fee per order for gift bag packaging
+  const GIFT_BAG_PRICE = 15
 
-  const paystackConfig = {
-    publicKey: PAYSTACK_CONFIG.PUBLIC_KEY,
-    email: formData.email || 'guest@example.com',
-    amount: Math.round(total * 100), // in pesewas
-    currency: PAYSTACK_CONFIG.CURRENCY,
-    metadata: {
-      custom_fields: [
-        { display_name: "Order Number", variable_name: "order_number", value: orderNumber }
-      ]
+  const subtotal = totalPrice
+  const discountAmount = discountData?.discount_amount ?? 0
+  // Gift bag price is added AFTER discount is subtracted.
+  // Discount codes apply to the product subtotal only — NOT to the gift bag fee.
+  const total = Math.max(0, subtotal - discountAmount + (giftBag ? GIFT_BAG_PRICE : 0))
+
+  // Paystack is loaded via <script src="https://js.paystack.co/v2/inline.js"> in index.html.
+  // We call window.PaystackPop.newTransaction() directly at submit time so we can
+  // pass the exact live values (email, amount, order_number) without any library
+  // abstraction or hook snapshot timing issues.
+
+  const handleApplyDiscount = async () => {
+    if (!discountInput.trim() || !supabase) return
+    setIsApplyingDiscount(true)
+    setDiscountError('')
+    setDiscountData(null)
+    try {
+      // user_id is intentionally omitted — the edge function extracts it from the verified JWT
+      const { data, error } = await supabase.functions.invoke('validate-discount', {
+        body: { code: discountInput.trim(), cart_total: subtotal }
+      })
+      if (error || !data?.valid) {
+        setDiscountError(data?.message || 'Invalid discount code.')
+      } else {
+        setDiscountData({
+          code_id: data.code_id,
+          discount_amount: data.discount_amount,
+          min_order_value: data.min_order_value ?? 0,
+          message: data.message,
+        })
+        setDiscountCode(discountInput.trim().toUpperCase())
+      }
+    } catch {
+      setDiscountError('Could not reach the server. Please try again.')
+    } finally {
+      setIsApplyingDiscount(false)
     }
   }
 
-  const initializePayment = usePaystackPayment(paystackConfig)
+  const handleRemoveDiscount = () => {
+    setDiscountData(null)
+    setDiscountCode('')
+    setDiscountInput('')
+    setDiscountError('')
+  }
 
   const handleSubmit = async () => {
     if (!validateStep(3)) return
@@ -147,8 +190,32 @@ const Checkout = () => {
     setIsProcessing(true)
 
     try {
-      // Calculate totals
-      // Variables hoisted outside handleSubmit for paystack config
+      // Re-validate the discount code immediately before creating the order.
+      // The code may have expired, been deactivated, or reached max_uses since the user applied it.
+      if (discountData && discountCode && supabase) {
+        if (subtotal < discountData.min_order_value) {
+          handleRemoveDiscount()
+          setIsProcessing(false)
+          alert(`Your cart no longer meets the minimum order value for this discount code. The discount has been removed.`)
+          return
+        }
+        try {
+          const { data: recheck, error: recheckErr } = await supabase.functions.invoke('validate-discount', {
+            body: { code: discountCode, cart_total: subtotal }
+          })
+          if (recheckErr || !recheck?.valid) {
+            handleRemoveDiscount()
+            setIsProcessing(false)
+            alert(recheck?.message || 'Your discount code is no longer valid. Please review your total and try again.')
+            return
+          }
+        } catch {
+          handleRemoveDiscount()
+          setIsProcessing(false)
+          alert('Could not verify your discount code. Please try applying it again.')
+          return
+        }
+      }
 
       // Create snapshot of items
       const orderItems = items.map(item => ({
@@ -167,28 +234,43 @@ const Checkout = () => {
         Name: `${formData.firstName} ${formData.lastName}`.trim()
       }
 
-      // Create order payload for Supabase
+      // Generate order_number fresh on every attempt (not at component mount) so
+      // a cancelled-then-retried payment never collides with the previous insert.
+      const clientOrderNumber = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      // STEP 1 — Insert order into Supabase first
       const orderPayload = {
-        user_id: user?.id || null, // Null for guest checkout
-        order_number: orderNumber,
-        customer_info: submissionData, // Stored as JSONB
+        user_id: user?.id || null,
+        order_number: clientOrderNumber,
+        customer_info: submissionData,
         shipping_address: {
           address: formData.deliveryMethod === 'delivery' ? formData.address : `Pickup at ${formData.campus === 'legon' ? 'Legon Campus' : 'KNUST Campus'}`,
           city: formData.deliveryMethod === 'delivery' ? formData.city : formData.campus,
           delivery_method: formData.deliveryMethod
         },
-        items: orderItems, // Stored as JSONB snapshot
+        items: orderItems,
         payment_method: formData.paymentMethod,
         payment_status: 'pending',
         status: 'pending',
         total_amount: total,
+        discount_code: discountCode || null,
+        discount_amount: discountAmount,
+        gift_bag: giftBag,
+        gift_note: giftBag ? (giftNote.trim() || null) : null,
         created_at: new Date().toISOString()
       }
 
-      // Submit to Supabase (with retry for auth lock contention)
       const createdOrder = await retryOnAbort(() => OrderService.createOrder(orderPayload))
+      if (!createdOrder) throw new Error('Order creation failed')
 
-      if (!createdOrder) throw new Error("Order creation failed")
+      // STEP 2 — Resolve the confirmed order_number from the DB response
+      const confirmedOrderNumber: string = createdOrder.order_number ?? clientOrderNumber
+
+      // STEP 3 — Validate amount (must be a positive integer in pesewas)
+      const pesewas = Math.round(total * 100)
+      if (!Number.isInteger(pesewas) || pesewas <= 0) {
+        throw new Error(`Invalid payment amount: GH₵${total} → ${pesewas} pesewas`)
+      }
 
       // Calculate estimated delivery for UI
       const deliveryDate = new Date()
@@ -201,7 +283,7 @@ const Checkout = () => {
       })
 
       const uiOrderData = {
-        orderNumber,
+        orderNumber: confirmedOrderNumber,
         customerInfo: formData,
         items: items.map(item => ({
           id: item.id,
@@ -215,57 +297,88 @@ const Checkout = () => {
         paymentMethod: formData.paymentMethod,
         total,
         subtotal,
+        discountCode: discountCode || null,
+        discountAmount: discountAmount || 0,
         estimatedDelivery
       }
 
       if (formData.paymentMethod === 'paystack') {
-        initializePayment({
+        console.log('Paystack payload:', {
+          key: PAYSTACK_CONFIG.PUBLIC_KEY,
+          email: formData.email,
+          amount: pesewas,
+          currency: PAYSTACK_CONFIG.CURRENCY,
+          order_number: confirmedOrderNumber,
+        })
+
+        // PaystackPop v2 is a class constructor — must instantiate with `new` before
+        // calling newTransaction(). window.PaystackPop is loaded from the <script>
+        // tag in index.html, so it is always available before any user interaction.
+        const PaystackPopClass = (window as any).PaystackPop
+        if (!PaystackPopClass) {
+          throw new Error('Paystack SDK not loaded. Please refresh the page and try again.')
+        }
+        const paystackInstance = new PaystackPopClass()
+        paystackInstance.newTransaction({
+          key: PAYSTACK_CONFIG.PUBLIC_KEY,
+          email: formData.email,
+          amount: pesewas,
+          currency: PAYSTACK_CONFIG.CURRENCY,
+          metadata: {
+            custom_fields: [
+              { display_name: 'Order Number', variable_name: 'order_number', value: confirmedOrderNumber }
+            ]
+          },
           onSuccess: (referenceData: any) => {
-            // Paystack's onSuccess ONLY fires on genuine successful payment.
-            // Show confirmation immediately — don't block the user on verification.
+            // Call verify-payment Edge Function immediately from the client side
+            try {
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                  reference: referenceData.reference,
+                  order_number: confirmedOrderNumber,
+                }),
+              }).then((res) => {
+                if (!res.ok) {
+                  res.text().then(t => console.error('[checkout] verify-payment failed:', t))
+                }
+              }).catch(e => console.error('[checkout] verify-payment request failed:', e))
+            } catch (err) {
+              console.error('[checkout] verify-payment API error:', err)
+            }
+
+            // Payment confirmed — show success screen immediately.
             setOrderData(uiOrderData)
             setIsComplete(true)
             clearCart()
 
-            // Verify and update order status in the background (non-blocking)
-            if (supabase) {
-              supabase.functions.invoke('verify-payment', {
-                body: { reference: referenceData.reference, order_number: orderNumber }
-              }).then(({ error: verifyError }) => {
-                if (verifyError) {
-                  console.error('Background verification failed:', verifyError)
-                  // Order is still recorded in DB with payment_status: 'pending'
-                  // Admin can reconcile manually via Paystack dashboard
+            // Record discount use in the background
+            if (supabase && discountData && user?.id) {
+              supabase.rpc('record_discount_use', {
+                p_code_id: discountData.code_id,
+                p_user_id: user.id,
+                p_order_number: confirmedOrderNumber,
+                p_cart_total: subtotal,
+              }).then(({ error: rpcError }) => {
+                if (rpcError) {
+                  console.error('[checkout] CRITICAL — discount not recorded after payment.', {
+                    order_number: confirmedOrderNumber,
+                    code_id: discountData.code_id,
+                    error: rpcError.message,
+                  })
                 }
-              })
-
-              // Send confirmation email (also non-blocking)
-              supabase.functions.invoke('send-confirmation', {
-                body: {
-                  orderNumber,
-                  customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-                  email: formData.email,
-                  items: orderItems,
-                  total,
-                  deliveryMethod: formData.deliveryMethod,
-                  address: formData.deliveryMethod === 'delivery'
-                    ? `${formData.address}, ${formData.city}`
-                    : null,
-                  campus: formData.deliveryMethod === 'pickup'
-                    ? formData.campus
-                    : null,
-                  estimatedDelivery: uiOrderData.estimatedDelivery
-                }
-              }).catch((emailErr) => {
-                console.error('Confirmation email failed silently:', emailErr)
               })
             }
           },
-          onClose: () => {
-            alert('Payment cancelled by user.');
-            setIsProcessing(false);
+          onCancel: () => {
+            alert('Payment cancelled by user.')
+            setIsProcessing(false)
           }
-        });
+        })
       } /* else {
         setOrderData(uiOrderData)
         setIsComplete(true)
@@ -747,11 +860,104 @@ const Checkout = () => {
                   <span className="text-gray-600">Shipping</span>
                   <span className="font-medium text-primary-600 text-sm italic">Would be calculated</span>
                 </div>
+                {discountData && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      {discountCode}
+                    </span>
+                    <span className="font-medium">- {formatPrice(discountAmount)}</span>
+                  </div>
+                )}
+                {giftBag && (
+                  <div className="flex justify-between items-center text-gray-700">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      🎁 Gift bag
+                    </span>
+                    <span className="font-medium">+ {formatPrice(GIFT_BAG_PRICE)}</span>
+                  </div>
+                )}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
+              </div>
+
+              {/* Discount Code Input — signed-in users only */}
+              {user && (
+                <div className="mb-6">
+                  {discountData ? (
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-700">{discountData.message}</span>
+                      </div>
+                      <button onClick={handleRemoveDiscount} className="text-green-600 hover:text-green-800">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={discountInput}
+                          onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError('') }}
+                          onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
+                          placeholder="Discount code"
+                          className="flex-1 px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 uppercase"
+                        />
+                        <button
+                          onClick={handleApplyDiscount}
+                          disabled={isApplyingDiscount || !discountInput.trim()}
+                          className="px-4 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isApplyingDiscount ? '...' : 'Apply'}
+                        </button>
+                      </div>
+                      {discountError && (
+                        <p className="text-red-500 text-xs mt-1.5">{discountError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Gift Bag Option — available to all users */}
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer select-none p-3 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="gift-bag-toggle"
+                    checked={giftBag}
+                    onChange={e => {
+                      setGiftBag(e.target.checked)
+                      if (!e.target.checked) setGiftNote('')
+                    }}
+                    className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    🎁 Add a gift bag{' '}
+                    <span className="text-gray-500">(+{formatPrice(GIFT_BAG_PRICE)})</span>
+                  </span>
+                </label>
+                {giftBag && (
+                  <div className="mt-3">
+                    <label htmlFor="gift-note" className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Gift message <span className="text-gray-400">(optional)</span>
+                    </label>
+                    <textarea
+                      id="gift-note"
+                      value={giftNote}
+                      onChange={e => setGiftNote(e.target.value)}
+                      placeholder="e.g. Happy Birthday! Enjoy your gift 🎉"
+                      rows={3}
+                      maxLength={300}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mb-6 p-3 bg-gray-50 rounded-lg">

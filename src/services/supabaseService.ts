@@ -53,6 +53,7 @@ export class ProductService {
           originalPrice: dbProduct.original_price,
           description: dbProduct.description,
           category: (dbProduct.category || '').toLowerCase(),
+          subcategory: dbProduct.subcategory,
           image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
@@ -100,6 +101,7 @@ export class ProductService {
           originalPrice: data.original_price,
           description: data.description,
           category: (data.category || '').toLowerCase(),
+          subcategory: data.subcategory,
           image: Array.isArray(data.image_url) ? data.image_url[0] : data.image_url,
           rating: data.rating,
           reviews: data.reviews,
@@ -147,6 +149,7 @@ export class ProductService {
           originalPrice: dbProduct.original_price,
           description: dbProduct.description,
           category: (dbProduct.category || '').toLowerCase(),
+          subcategory: dbProduct.subcategory,
           image: Array.isArray(dbProduct.image_url) ? dbProduct.image_url[0] : dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
@@ -182,6 +185,7 @@ export class ProductService {
           original_price: productData.originalPrice,
           description: productData.description,
           category: productData.category,
+          subcategory: productData.subcategory,
           image_url: [productData.image],
           rating: productData.rating || 0,
           reviews: productData.reviews || 0,
@@ -215,6 +219,7 @@ export class ProductService {
           originalPrice: data.original_price,
           description: data.description,
           category: data.category,
+          subcategory: data.subcategory,
           image: data.image_url,
           rating: data.rating,
           reviews: data.reviews,
@@ -250,6 +255,7 @@ export class ProductService {
         if (updates.originalPrice !== undefined) dbUpdates.original_price = updates.originalPrice
         if (updates.description !== undefined) dbUpdates.description = updates.description
         if (updates.category !== undefined) dbUpdates.category = updates.category
+        if (updates.subcategory !== undefined) dbUpdates.subcategory = updates.subcategory
         if (updates.image !== undefined) dbUpdates.image_url = [updates.image]
         if (updates.rating !== undefined) dbUpdates.rating = updates.rating
         if (updates.reviews !== undefined) dbUpdates.reviews = updates.reviews
@@ -283,6 +289,7 @@ export class ProductService {
           originalPrice: data.original_price,
           description: data.description,
           category: data.category,
+          subcategory: data.subcategory,
           image: data.image_url,
           rating: data.rating,
           reviews: data.reviews,
@@ -350,6 +357,7 @@ export class ProductService {
           originalPrice: dbProduct.original_price,
           description: dbProduct.description,
           category: dbProduct.category,
+          subcategory: dbProduct.subcategory,
           image: dbProduct.image_url,
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,

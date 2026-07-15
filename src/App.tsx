@@ -12,6 +12,10 @@ import Checkout from '@/features/checkout/pages/Checkout'
 import OrderTracking from '@/features/orders/pages/OrderTracking'
 import Account from '@/features/auth/pages/Account'
 import AdminDashboard from '@/features/admin/pages/AdminDashboard'
+import NewOrderForm from '@/features/admin/pages/NewOrderForm'
+import FinancePage from '@/pages/admin/FinancePage'
+import MorePage from '@/features/admin/pages/MorePage'
+import AdminHeader from '@/features/admin/components/AdminHeader'
 import Login from '@/features/auth/pages/Login'
 import Signup from '@/features/auth/pages/Signup'
 import Orders from '@/features/orders/pages/Orders'
@@ -30,6 +34,23 @@ import { ProductProvider } from '@/features/products/hooks/useProductsSupabase'
 // Component to handle footer visibility
 const AppContent = () => {
   const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
+  // Pages that render their own full-screen layout (no site chrome)
+  if (location.pathname.startsWith('/new-order')) {
+    return (
+      <Routes>
+        <Route
+          path="/new-order"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <NewOrderForm />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    )
+  }
 
   // Pages where footer should be hidden on mobile
   const hideFooterOnMobile = [
@@ -50,8 +71,8 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-white">
       <GoogleOneTap />
-      <Header />
-      <main>
+      {isAdminRoute ? <AdminHeader /> : <Header />}
+      <main className={isAdminRoute ? "admin-dashboard-root" : ""}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -73,13 +94,29 @@ const AppContent = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/finance"
+            element={
+              <ProtectedRoute requireAdmin={true} >
+                <FinancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/more"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <MorePage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
         </Routes>
       </main>
-      <Footer className={shouldHideFooterOnMobile ? 'hidden md:block' : ''} />
+      {!isAdminRoute && <Footer className={shouldHideFooterOnMobile ? 'hidden md:block' : ''} />}
     </div>
   )
 }

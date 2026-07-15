@@ -399,3 +399,9 @@ entrypoint = "./functions/send-confirmation/index.ts"
 
 [functions.resend-auth-hook]
 verify_jwt = false
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false

@@ -1,8 +1,51 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, UploadCloud } from 'lucide-react'
 import { useProducts } from '@/features/products/hooks/useProductsSupabase'
 import { Product } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { compressCardImage } from '@/utils/imageUtils'
+
+const uploadWithXHR = async (
+  blob: Blob,
+  path: string,
+  onProgress: (pct: number) => void
+): Promise<void> => {
+  const { data: { session } } = await supabase!.auth.getSession()
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+  const token = session?.access_token ?? anonKey
+  const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/product-images/${path}`
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', uploadUrl)
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.setRequestHeader('apikey', anonKey)
+    xhr.setRequestHeader('Content-Type', 'image/webp')
+    xhr.setRequestHeader('Cache-Control', '31536000')
+    xhr.setRequestHeader('x-upsert', 'false')
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    })
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve()
+      } else {
+        try {
+          const body = JSON.parse(xhr.responseText)
+          reject(new Error(body.message || body.error || `HTTP ${xhr.status}`))
+        } catch {
+          reject(new Error(`HTTP ${xhr.status}`))
+        }
+      }
+    }
+
+    xhr.onerror = () => reject(new Error('Network error during upload'))
+    xhr.send(blob)
+  })
+}
 
 interface AddProductFormProps {
   onClose: () => void
@@ -17,6 +60,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     originalPrice: '',
     description: '',
     category: 'slippers',
+    subcategory: 'male',
     image: '',
     rating: '0',
     reviews: '0',
@@ -32,6 +76,12 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
   const [newSize, setNewSize] = useState('')
   const [newColor, setNewColor] = useState('')
   const [newTag, setNewTag] = useState('')
+  const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null])
+  const [imagePreviews, setImagePreviews] = useState<string[]>(['', ''])
+  const fileInputRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)]
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'complete' | 'error'>('idle')
+  const [uploadError, setUploadError] = useState('')
 
   const categories = [
     { value: 'slippers', label: 'Slippers' },
@@ -42,10 +92,25 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }))
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      }
+      
+      // Auto-set sensible default subcategory when category changes
+      if (name === 'category') {
+        if (value === 'slippers') {
+          next.subcategory = 'male'
+        } else if (value === 'apparel') {
+          next.subcategory = 'quarterneck'
+        } else {
+          next.subcategory = ''
+        }
+      }
+      
+      return next
+    })
   }
 
   const addSize = () => {
@@ -99,22 +164,75 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
     }))
   }
 
+  const handleFileChange = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFiles(prev => { const next = [...prev]; next[index] = file; return next })
+    setImagePreviews(prev => { const next = [...prev]; next[index] = URL.createObjectURL(file); return next })
+    if (index === 0) setFormData(prev => ({ ...prev, image: '' }))
+  }
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => { const next = [...prev]; next[index] = null; return next })
+    setImagePreviews(prev => { const next = [...prev]; next[index] = ''; return next })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.name || !formData.price || !formData.image) {
-      alert('Please fill in all required fields')
+    const hasImage = imageFiles[0] !== null || formData.image
+    if (!formData.name || !formData.price || !hasImage) {
+      alert('Please fill in all required fields and add at least one image')
       return
     }
 
     setIsSubmitting(true)
+    setUploadStatus('idle')
+    setUploadProgress(0)
+    setUploadError('')
+
+    const uploadedUrls: string[] = []
+    const filesToUpload = imageFiles.filter(Boolean)
+    if (supabase && filesToUpload.length > 0) {
+      setUploadStatus('uploading')
+      const fileCount = filesToUpload.length
+      let completedFiles = 0
+
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i]
+        if (!file) continue
+        try {
+          const compressed = await compressCardImage(file)
+          const path = `products/${Date.now()}-${i}-${file.name.replace(/\s+/g, '_').replace(/\.[^.]+$/, '')}.webp`
+          await uploadWithXHR(compressed, path, (pct) => {
+            setUploadProgress(Math.round((completedFiles * 100 + pct) / fileCount))
+          })
+          completedFiles++
+          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
+          uploadedUrls.push(urlData.publicUrl)
+        } catch (err: any) {
+          setUploadError(`Image ${i + 1} upload failed: ${err?.message || 'Unknown error'}`)
+          setUploadStatus('error')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
+      setUploadProgress(100)
+      setUploadStatus('complete')
+    }
+
+    const primaryUrl = uploadedUrls[0] || formData.image
+
     const productData: Omit<Product, 'id'> = {
       name: formData.name,
       price: parseFloat(formData.price),
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
       description: formData.description,
       category: formData.category,
-      image: formData.image,
+      subcategory: formData.subcategory || undefined,
+      image: primaryUrl,
+      images: uploadedUrls.length > 0 ? uploadedUrls : undefined,
       rating: parseFloat(formData.rating),
       reviews: parseInt(formData.reviews),
       in_stock: formData.in_stock,
@@ -131,6 +249,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
       onClose()
     } catch (err: any) {
       alert('Failed to add product: ' + (err?.message || 'Unknown error. Check your Supabase RLS policies.'))
+      setUploadStatus('idle')
     } finally {
       setIsSubmitting(false)
     }
@@ -212,19 +331,82 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
                 </select>
               </div>
 
+              {/* Subcategory */}
+              {(formData.category === 'slippers' || formData.category === 'apparel') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subcategory
+                  </label>
+                  <select
+                    name="subcategory"
+                    value={formData.subcategory}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    {formData.category === 'slippers' ? (
+                      <>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="quarterneck">Quarterneck</option>
+                        <option value="zipup">Zip-up</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL *
+                  Product Images * <span className="text-gray-400 font-normal">(up to 2)</span>
                 </label>
-                <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="https://example.com/image.jpg"
-                  required
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1].map((i) => (
+                    <div key={i}>
+                      <input
+                        ref={fileInputRefs[i]}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange(i)}
+                        className="hidden"
+                      />
+                      <div
+                        onClick={() => fileInputRefs[i].current?.click()}
+                        className="relative border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 transition-colors overflow-hidden"
+                      >
+                        {imagePreviews[i] ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreviews[i]}
+                              alt={`Preview ${i + 1}`}
+                              className="w-full h-36 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity gap-3">
+                              <span className="text-white text-xs font-medium">Change</span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); removeImage(i) }}
+                                className="text-white bg-red-500 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                            <UploadCloud className="w-6 h-6 mb-1" />
+                            <span className="text-xs font-medium">
+                              {i === 0 ? 'Main image *' : 'Second image'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP — auto-compressed on upload</p>
               </div>
             </div>
 
@@ -433,22 +615,46 @@ const AddProductForm: React.FC<AddProductFormProps> = ({ onClose }) => {
             </label>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Adding...' : 'Add Product'}
-            </button>
+          {/* Submit */}
+          <div className="pt-6 border-t border-gray-200 space-y-3">
+            {uploadStatus === 'uploading' && (
+              <div>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Uploading images…</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-primary-500 h-2 rounded-full transition-all duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            {uploadStatus === 'complete' && (
+              <p className="text-sm font-medium text-green-600">✓ Upload complete</p>
+            )}
+            {uploadStatus === 'error' && (
+              <p className="text-sm text-red-600">{uploadError}</p>
+            )}
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+              >
+                {isSubmitting
+                  ? uploadStatus === 'uploading' ? 'Uploading…' : 'Adding…'
+                  : 'Add Product'}
+              </button>
+            </div>
           </div>
         </form>
       </motion.div>
