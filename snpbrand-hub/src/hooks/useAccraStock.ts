@@ -18,28 +18,60 @@ export const useAccraStock = (locationId: string | null) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: err } = await supabase
+      // 1. Fetch all products and their sizes
+      const { data: productsData, error: productsErr } = await supabase
+        .from('products')
+        .select('id, name, sizes');
+
+      if (productsErr) throw productsErr;
+
+      // 2. Fetch stock levels for this location
+      const { data: stockData, error: stockErr } = await supabase
         .from('stock_levels')
-        .select(`
-          product_id,
-          size,
-          location_id,
-          quantity,
-          products (
-            name
-          )
-        `)
+        .select('product_id, size, quantity')
         .eq('location_id', locId);
 
-      if (err) throw err;
+      if (stockErr) throw stockErr;
 
-      const formattedStock: StockItem[] = (data || []).map((item: any) => ({
-        product_id: item.product_id,
-        product_name: item.products?.name || 'Unknown Product',
-        size: item.size,
-        location_id: item.location_id,
-        quantity: item.quantity,
-      }));
+      // 3. Map stock levels
+      const stockMap = new Map<string, number>();
+      (stockData || []).forEach((s: any) => {
+        const key = `${s.product_id}::${s.size}`;
+        stockMap.set(key, s.quantity);
+      });
+
+      // 4. Construct complete list for the location
+      const formattedStock: StockItem[] = [];
+      (productsData || []).forEach((p: any) => {
+        let sizesArr: string[] = [];
+        if (Array.isArray(p.sizes)) {
+          sizesArr = p.sizes;
+        } else if (typeof p.sizes === 'string') {
+          try {
+            sizesArr = JSON.parse(p.sizes);
+          } catch {
+            sizesArr = p.sizes.replace(/[{}]/g, '').split(',');
+          }
+        }
+
+        if (sizesArr.length === 0) {
+          sizesArr = ['unknown'];
+        }
+
+        sizesArr.forEach((size: string) => {
+          const cleanSize = size.trim();
+          if (!cleanSize) return;
+          const key = `${p.id}::${cleanSize}`;
+          const qty = stockMap.has(key) ? stockMap.get(key)! : 0;
+          formattedStock.push({
+            product_id: p.id,
+            product_name: p.name,
+            size: cleanSize,
+            location_id: locId,
+            quantity: qty,
+          });
+        });
+      });
 
       setStock(formattedStock);
     } catch (err: any) {
@@ -90,9 +122,10 @@ export const useAccraStock = (locationId: string | null) => {
 
           if (eventType === 'DELETE') {
             setStock((prev) =>
-              prev.filter(
-                (item) =>
-                  !(item.product_id === oldRow.product_id && item.size === oldRow.size)
+              prev.map((item) =>
+                item.product_id === oldRow.product_id && item.size === oldRow.size
+                  ? { ...item, quantity: 0 }
+                  : item
               )
             );
           } else if (eventType === 'INSERT' || eventType === 'UPDATE') {
