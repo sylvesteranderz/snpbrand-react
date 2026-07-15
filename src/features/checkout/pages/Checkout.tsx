@@ -311,10 +311,15 @@ const Checkout = () => {
           order_number: confirmedOrderNumber,
         })
 
-        // Call Paystack SDK directly — window.PaystackPop is loaded from index.html.
-        // This guarantees the SDK receives the exact live values at call time with no
-        // library wrapper or hook snapshot in between.
-        ;(window as any).PaystackPop.newTransaction({
+        // PaystackPop v2 is a class constructor — must instantiate with `new` before
+        // calling newTransaction(). window.PaystackPop is loaded from the <script>
+        // tag in index.html, so it is always available before any user interaction.
+        const PaystackPopClass = (window as any).PaystackPop
+        if (!PaystackPopClass) {
+          throw new Error('Paystack SDK not loaded. Please refresh the page and try again.')
+        }
+        const paystackInstance = new PaystackPopClass()
+        paystackInstance.newTransaction({
           key: PAYSTACK_CONFIG.PUBLIC_KEY,
           email: formData.email,
           amount: pesewas,
