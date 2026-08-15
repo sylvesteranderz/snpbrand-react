@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import Header from '@/features/common/components/Header'
 import Footer from '@/features/common/components/Footer'
 import ScrollToTop from '@/features/common/components/ScrollToTop'
@@ -8,18 +10,22 @@ import ProductDetail from '@/features/products/pages/ProductDetail'
 import Cart from '@/features/cart/pages/Cart'
 import Checkout from '@/features/checkout/pages/Checkout'
 import OrderTracking from '@/features/orders/pages/OrderTracking'
-// import Account from '@/features/auth/pages/Account'
+import Account from '@/features/auth/pages/Account'
 import AdminDashboard from '@/features/admin/pages/AdminDashboard'
+import NewOrderForm from '@/features/admin/pages/NewOrderForm'
+import FinancePage from '@/pages/admin/FinancePage'
+import MorePage from '@/features/admin/pages/MorePage'
+import AdminHeader from '@/features/admin/components/AdminHeader'
 import Login from '@/features/auth/pages/Login'
-// import Signup from '@/features/auth/pages/Signup'
+import Signup from '@/features/auth/pages/Signup'
 import Orders from '@/features/orders/pages/Orders'
 import Wishlist from '@/features/wishlist/pages/Wishlist'
 import Blog from '@/features/blog/pages/Blog'
 import Contact from '@/features/common/pages/Contact'
 import AnimatedSlipperDemo from '@/features/home/pages/AnimatedSlipperDemo'
 import ProtectedRoute from '@/features/auth/components/ProtectedRoute'
-// import GoogleOneTap from '@/features/auth/components/GoogleOneTap'
-// import VerificationPending from '@/features/auth/pages/VerificationPending'
+import GoogleOneTap from '@/features/auth/components/GoogleOneTap'
+import VerificationPending from '@/features/auth/pages/VerificationPending'
 import { CartProvider } from '@/features/cart/hooks/useCartSupabase'
 import { WishlistProvider } from '@/features/wishlist/hooks/useWishlistSupabase'
 import { AuthProvider } from '@/features/auth/hooks/useAuthSupabase'
@@ -28,6 +34,23 @@ import { ProductProvider } from '@/features/products/hooks/useProductsSupabase'
 // Component to handle footer visibility
 const AppContent = () => {
   const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
+  // Pages that render their own full-screen layout (no site chrome)
+  if (location.pathname.startsWith('/new-order')) {
+    return (
+      <Routes>
+        <Route
+          path="/new-order"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <NewOrderForm />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    )
+  }
 
   // Pages where footer should be hidden on mobile
   const hideFooterOnMobile = [
@@ -47,9 +70,9 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* <GoogleOneTap /> */}
-      <Header />
-      <main>
+      <GoogleOneTap />
+      {isAdminRoute ? <AdminHeader /> : <Header />}
+      <main className={isAdminRoute ? "admin-dashboard-root" : ""}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -58,16 +81,32 @@ const AppContent = () => {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/order-confirmation" element={<div>Order Confirmation</div>} />
           <Route path="/order-tracking/:orderNumber" element={<OrderTracking />} />
-          {/* <Route path="/account" element={<Account />} /> */}
+          <Route path="/account" element={<Account />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/login" element={<Login />} />
-          {/* <Route path="/signup" element={<Signup />} /> */}
-          {/* <Route path="/verification-pending" element={<VerificationPending />} /> */}
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verification-pending" element={<VerificationPending />} />
           <Route
             path="/admin"
             element={
               <ProtectedRoute requireAdmin={true} >
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/finance"
+            element={
+              <ProtectedRoute requireAdmin={true} >
+                <FinancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/more"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <MorePage />
               </ProtectedRoute>
             }
           />
@@ -77,7 +116,7 @@ const AppContent = () => {
           <Route path="/animated-slipper" element={<AnimatedSlipperDemo />} />
         </Routes>
       </main>
-      <Footer className={shouldHideFooterOnMobile ? 'hidden md:block' : ''} />
+      {!isAdminRoute && <Footer className={shouldHideFooterOnMobile ? 'hidden md:block' : ''} />}
     </div>
   )
 }
@@ -91,6 +130,8 @@ function App() {
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <ScrollToTop />
               <AppContent />
+              <Analytics />
+              <SpeedInsights />
             </Router>
           </WishlistProvider>
         </CartProvider>

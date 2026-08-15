@@ -85,6 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   })
 
   const isFetchingProfile = useRef(false)
+  const hasInitialized = useRef(false)
 
   // Initialize auth state — single listener, no getInitialSession
   useEffect(() => {
@@ -95,6 +96,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Guard: only process INITIAL_SESSION once on first load.
+        // If the user has already logged in/out during this session,
+        // a page reload firing INITIAL_SESSION should NOT re-authenticate.
+        if (event === 'INITIAL_SESSION') {
+          if (hasInitialized.current) return
+          hasInitialized.current = true
+        }
+
         if (
           session?.user &&
           (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')
@@ -103,8 +112,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // TOKEN_REFRESHED and USER_UPDATED do NOT change the profile —
           // re-fetching on those events causes auth lock contention
           // (AbortError: Lock broken by another request with the 'steal' option)
-          await loadUserProfile(session.user.id)
+          await loadUserProfile(session.user)
         } else if (event === 'SIGNED_OUT' || !session) {
+          hasInitialized.current = false // reset so next login works cleanly
           dispatch({ type: 'LOGOUT' })
         }
       }
@@ -117,15 +127,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 
   // Load user profile from database — no getUser() calls to avoid auth lock contention
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (authUser: any) => {
     if (isFetchingProfile.current) return
     isFetchingProfile.current = true
     try {
-      const profile = await UserProfileService.getUserProfile(userId)
+      let profile = await UserProfileService.getUserProfile(authUser.id)
+      
+      // Auto-create profile if missing (common after email confirmation without DB triggers)
+      if (!profile && authUser) {
+        console.log('Profile missing. Auto-creating from session data...');
+        profile = await UserProfileService.createUserProfile({
+          id: authUser.id,
+          email: authUser.email,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          phone: authUser.user_metadata?.phone || null,
+          role: 'customer'
+        });
+
+        // Fire welcome email — non-blocking, won't affect login if it fails
+        if (profile && supabase) {
+          supabase.functions.invoke('send-welcome', {
+            body: { email: profile.email, name: profile.name }
+          }).catch((err: unknown) => console.error('Welcome email failed (non-critical):', err))
+        }
+      }
+
       if (profile) {
         dispatch({ type: 'SET_USER', payload: profile })
       } else {
-        // No profile found — user needs to sign up to create one
+        // No profile found and creation failed
         dispatch({ type: 'SET_LOADING', payload: false })
       }
     } catch (error) {
@@ -211,26 +241,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     try {
       if (isSupabaseEnabled && supabase) {
-        // Supabase logout
         const { error } = await supabase.auth.signOut()
-
         if (error) {
-          console.error('Supabase logout error:', error)
-          dispatch({ type: 'SET_ERROR', payload: error.message })
-          return
+          console.error('Supabase logout error (forcing local logout anyway):', error)
         }
+      }
+
+      // Force clear Supabase session tokens from local storage just in case
+      if (typeof window !== 'undefined') {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        })
       }
 
       // Clear any cart/wishlist data
       localStorage.removeItem('snpbrand-cart')
       localStorage.removeItem('snpbrand-wishlist')
 
+      // Dispatch logout — onAuthStateChange SIGNED_OUT event also handles this
       dispatch({ type: 'LOGOUT' })
 
-      // Redirect to home page
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
+      // NOTE: Navigation is handled by the calling component (Header)
+      // to avoid a hard page reload which re-triggers INITIAL_SESSION
 
     } catch (error) {
       console.error('Logout error:', error)

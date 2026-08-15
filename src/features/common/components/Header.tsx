@@ -1,25 +1,25 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Search, Heart, ShoppingCart, Menu, X, ChevronDown, Footprints, Shirt, Grid } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Search, Heart, ShoppingCart, ChevronDown, Footprints, Shirt, Grid, User, Settings, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useWishlist } from '@/features/wishlist/hooks/useWishlistSupabase'
-// import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
+import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
 import CartSidebar from '@/features/cart/components/CartSidebar'
 import SearchSidebar from '@/features/common/components/SearchSidebar'
 import { categories } from '@/utils/data'
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
   const { itemCount: cartCount } = useCart()
   const { items: wishlistItems } = useWishlist()
-  // const { user, isAuthenticated, logout, isLoading } = useAuth()
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
 
   // Debug authentication state
   // console.log('Header - Auth State:', { user, isAuthenticated })
@@ -42,7 +42,6 @@ const Header = () => {
 
   // Close mobile menu, cart, and search when route changes
   useEffect(() => {
-    setIsMenuOpen(false)
     setIsCartOpen(false)
     setIsSearchOpen(false)
     setIsProfileOpen(false)
@@ -191,7 +190,7 @@ const Header = () => {
                   </AnimatePresence>
                 </div>
               </div>
-              {/* {isAuthenticated ? (
+              {isAuthenticated ? (
                 <></>
               ) : (
                 <>
@@ -208,10 +207,10 @@ const Header = () => {
                     Sign Up
                   </Link>
                 </>
-              )} */}
+              )}
 
               {/* Profile Dropdown - Desktop */}
-              {/* {isAuthenticated && (
+              {isAuthenticated && (
                 <div className="relative dropdown-container profile-dropdown">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -301,7 +300,7 @@ const Header = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              )} */}
+              )}
 
               <Link
                 to="/wishlist"
@@ -350,7 +349,7 @@ const Header = () => {
               </button>
 
               {/* Mobile Profile/Auth Icon */}
-              {/* <div className="relative">
+              <div className="relative">
                 {isAuthenticated ? (
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -437,6 +436,7 @@ const Header = () => {
                               onClick={async () => {
                                 setIsProfileOpen(false)
                                 await logout()
+                                navigate('/')
                               }}
                               disabled={isLoading}
                               className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-red-400 transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
@@ -483,147 +483,14 @@ const Header = () => {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div> */}
+              </div>
 
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-3 text-gray-300 hover:text-primary-500 hover:bg-primary-500/10 rounded-full transition-all duration-200"
-              >
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
             </div>
           </div>
 
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="lg:hidden bg-gray-900 border-t border-gray-700"
-            >
-              <div className="container mx-auto px-4 py-6">
-                <nav className="space-y-4">
-                  {/* Authentication Links - Top Priority */}
-                  {/* {!isAuthenticated && (
-                    <div className="pb-4 border-b border-gray-700">
-                      <Link
-                        to="/login"
-                        className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 mb-2"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <User className="w-5 h-5" />
-                        <span>Sign In</span>
-                      </Link>
-                      <Link
-                        to="/signup"
-                        className="flex items-center space-x-3 py-3 px-4 bg-primary-500 text-black hover:bg-primary-400 rounded-lg transition-colors duration-200"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <User className="w-5 h-5" />
-                        <span>Sign Up</span>
-                      </Link>
-                    </div>
-                  )} */}
 
-                  {/* Navigation Links */}
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`block py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${isActive(item.href)
-                          ? 'text-primary-500 bg-primary-500/10'
-                          : 'text-gray-300 hover:text-primary-500 hover:bg-gray-800'
-                        }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-
-                  {/* Mobile Categories - Always visible */}
-                  <div className="pt-4 border-t border-gray-700">
-                    <div className="text-sm font-medium text-gray-400 mb-3 px-4">Categories</div>
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        to={`/shop?category=${category.id}`}
-                        className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {getCategoryIcon(category.id)}
-                        <div className="flex-1">
-                          <div className="font-medium">{category.name}</div>
-                          <div className="text-sm text-gray-500">{category.count} items</div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-
-                  {/* Mobile Account Links */}
-                  <div className="pt-4 border-t border-gray-700">
-                    {/* {isAuthenticated ? (
-                      <>
-                        <div className="flex items-center space-x-3 py-3 px-4 text-gray-300">
-                          <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                            <span className="text-black text-sm font-medium">
-                              {user?.name?.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-medium">{user?.name}</div>
-                            <div className="text-xs text-gray-400">{user?.email}</div>
-                          </div>
-                        </div>
-                        <Link
-                          to="/account"
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <User className="w-5 h-5" />
-                          <span>Account</span>
-                        </Link>
-                        {user?.role === 'admin' && (
-                          <Link
-                            to="/admin"
-                            className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                            onClick={() => setIsMenuOpen(false)}
-                          >
-                            <Settings className="w-5 h-5" />
-                            <span>Admin</span>
-                          </Link>
-                        )}
-                        <button
-                          onClick={async () => {
-                            await logout()
-                            setIsMenuOpen(false)
-                          }}
-                          disabled={isLoading}
-                          className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200 w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <LogOut className="w-5 h-5" />
-                          <span>{isLoading ? 'Logging out...' : 'Logout'}</span>
-                        </button>
-                      </>
-                    ) : null} */}
-                    <Link
-                      to="/wishlist"
-                      className="flex items-center space-x-3 py-3 px-4 text-gray-300 hover:text-primary-500 hover:bg-gray-800 rounded-lg transition-colors duration-200"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Heart className="w-5 h-5" />
-                      <span>Wishlist ({wishlistItems.length})</span>
-                    </Link>
-                  </div>
-                </nav>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
       {/* Spacer for fixed header */}

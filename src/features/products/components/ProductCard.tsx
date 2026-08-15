@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Star, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -15,14 +15,18 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
   const [inWishlist, setInWishlist] = useState(false)
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
 
-  // Check wishlist status on mount
+  // Check wishlist status on mount.
+  // product.id is the only stable dep we need; isInWishlist is excluded
+  // deliberately because hooks recreate it on every render, which would
+  // otherwise trigger this effect in a loop.
   useEffect(() => {
-    const checkWishlistStatus = async () => {
-      const status = await isInWishlist(product.id)
-      setInWishlist(status)
-    }
-    checkWishlistStatus()
-  }, [isInWishlist, product.id])
+    let cancelled = false
+    isInWishlist(product.id).then((status) => {
+      if (!cancelled) setInWishlist(status)
+    })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id])
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -37,7 +41,7 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
     }
   }
 
-  const renderStars = (rating: number) => {
+  const renderStars = useCallback((rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
@@ -45,16 +49,14 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
           }`}
       />
     ))
-  }
+  }, [])
 
-  const isActuallyOutOfStock = product.size_stock && Object.keys(product.size_stock).length > 0
-    ? Object.values(product.size_stock).every(v => v === 0)
-    : !product.inStock;
+  const isActuallyOutOfStock = product.in_stock === false;
 
   return (
     <motion.div
-      className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full`}
-      whileHover={{ y: -5 }}
+      className={`group relative ${className} bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-200 w-full ${isActuallyOutOfStock ? 'opacity-50 pointer-events-none' : ''}`}
+      whileHover={isActuallyOutOfStock ? {} : { y: -5 }}
       transition={{ duration: 0.2 }}
     >
       {/* Badges - Top Left */}
@@ -69,21 +71,26 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
             -{product.discount}%
           </div>
         )}
-        {isActuallyOutOfStock && (
-          <div className="bg-gray-500 text-white rounded-md px-2 py-1 text-xs font-medium">
-            Sold
-          </div>
-        )}
       </div>
 
       {/* Product Image */}
-      <Link to={`/product/${product.id}`}>
+      <Link to={`/product/${product.id}`} tabIndex={isActuallyOutOfStock ? -1 : 0}>
         <div className="relative overflow-hidden bg-gray-100 ">
           <img
             src={product.images && product.images.length > 0 ? product.images[0] : product.image}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-40 sm:h-44 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
           />
+
+          {isActuallyOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px] z-30">
+               <span className="bg-black/80 text-white px-4 py-2 rounded-md font-bold text-sm tracking-widest uppercase shadow-xl">
+                 Out of Stock
+               </span>
+            </div>
+          )}
 
           {/* Wishlist Icon */}
           <button
@@ -134,8 +141,8 @@ const ProductCard = ({ product, className = '' }: ProductCardProps) => {
 
         {/* Size Info */}
 
-        <div className="text-xs text-black-500">
-          All sizes available
+        <div className="text-xs text-gray-500">
+          {isActuallyOutOfStock ? 'Out of stock' : null}
         </div>
 
       </div>
