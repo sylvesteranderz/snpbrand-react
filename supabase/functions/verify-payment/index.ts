@@ -87,40 +87,32 @@ serve(async (req) => {
         }
 
         if (updatedOrder?.id) {
+            // Stock: the orders trigger deducts stock and writes the location-tagged ledger
+            // row when payment_status flips to 'paid'. Do NOT write inventory_transactions here.
+            //
+            // Finance: paystack-webhook can also run for the same payment, so record the sale once.
             const today = new Date().toISOString().slice(0, 10)
 
-            // 1. Log the sale into financial_transactions
-            const { error: finErr } = await supabase
+            const { count: existingSales, error: lookupErr } = await supabase
                 .from('financial_transactions')
-                .insert({
-                    type:         'sale',
-                    amount:       updatedOrder.total_amount,
-                    description:  `Order #${order_number}`,
-                    reference_id: updatedOrder.id,
-                    date:         today,
-                })
-            if (finErr) {
-                console.error('financial_transactions insert failed:', finErr.message)
-            }
+                .select('id', { count: 'exact', head: true })
+                .eq('type', 'sale')
+                .eq('reference_id', updatedOrder.id)
 
-            // 2. Log each line item into inventory_transactions with size
-            //    items is a JSONB snapshot: [{product_id, name, quantity, selected_size, price}]
-            const items: any[] = Array.isArray(updatedOrder.items) ? updatedOrder.items : []
-            if (items.length > 0) {
-                const invRows = items.map((item: any) => ({
-                    product_id: item.product_id,
-                    type:       'sale',
-                    size:       item.selected_size || item.selectedSize || 'unknown',
-                    quantity:   -(item.quantity ?? 1),   // negative = stock OUT
-                    unit_cost:  null,
-                    note:       `Order #${order_number}`,
-                    created_at: new Date().toISOString(),
-                }))
-                const { error: invErr } = await supabase
-                    .from('inventory_transactions')
-                    .insert(invRows)
-                if (invErr) {
-                    console.error('inventory_transactions insert failed:', invErr.message)
+            if (lookupErr) {
+                console.error('financial_transactions lookup failed:', lookupErr.message)
+            } else if ((existingSales ?? 0) === 0) {
+                const { error: finErr } = await supabase
+                    .from('financial_transactions')
+                    .insert({
+                        type:         'sale',
+                        amount:       updatedOrder.total_amount,
+                        description:  `Order #${order_number}`,
+                        reference_id: updatedOrder.id,
+                        date:         today,
+                    })
+                if (finErr) {
+                    console.error('financial_transactions insert failed:', finErr.message)
                 }
             }
         }
