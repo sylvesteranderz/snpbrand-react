@@ -217,6 +217,16 @@ const Checkout = () => {
         }
       }
 
+      // A sized product must have a size, otherwise stock cannot be deducted after payment
+      const missingSize = items.find(item =>
+        Array.isArray(item.product.sizes) && item.product.sizes.length > 0 && !item.selectedSize
+      )
+      if (missingSize) {
+        setIsProcessing(false)
+        alert(`Please remove "${missingSize.product.name}" from your cart and add it again with a size selected.`)
+        return
+      }
+
       // Create snapshot of items
       const orderItems = items.map(item => ({
         product_id: item.product.id,
