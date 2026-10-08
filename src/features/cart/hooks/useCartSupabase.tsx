@@ -226,14 +226,18 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (user) {
         // Try Supabase first
         try {
-          const existingItem = state.items.find(item => item.product.id === product.id)
-          
+          const existingItem = state.items.find(item =>
+            item.product.id === product.id &&
+            (item.selectedSize || '') === (selectedSize || '') &&
+            (item.selectedColor || '') === (selectedColor || '')
+          )
+
           if (existingItem) {
-            const newQuantity = existingItem.quantity + quantity
-            await CartService.updateCartItemQuantity(user.id, product.id, newQuantity)
-            dispatch({ type: 'UPDATE_ITEM', payload: { productId: existingItem.id, quantity: newQuantity } })
+            // Persist the same size/colour line, then sync local state from the database
+            await CartService.addToCart(user.id, product.id, quantity, selectedSize, selectedColor)
+            dispatch({ type: 'UPDATE_ITEM', payload: { productId: existingItem.id, quantity: existingItem.quantity + quantity } })
           } else {
-            await CartService.addToCart(user.id, product.id, quantity)
+            await CartService.addToCart(user.id, product.id, quantity, selectedSize, selectedColor)
             dispatch({ type: 'ADD_ITEM', payload: newItem })
           }
           // Show modal after successful add

@@ -408,16 +408,27 @@ export class CartService {
     return []
   }
 
-  static async addToCart(userId: string, productId: string, quantity: number = 1) {
+  static async addToCart(
+    userId: string,
+    productId: string,
+    quantity: number = 1,
+    selectedSize?: string,
+    selectedColor?: string
+  ) {
     if (isSupabaseEnabled && supabase) {
       try {
-        // Check if item already exists
-        const { data: existingItem } = await supabase
+        const size = selectedSize || null
+        const color = selectedColor || null
+
+        // A cart line is product + size + color, so two sizes of one product stay separate
+        let lookup = supabase
           .from('cart_items')
           .select('*')
           .eq('user_id', userId)
           .eq('product_id', productId)
-          .single()
+        lookup = size === null ? lookup.is('selected_size', null) : lookup.eq('selected_size', size)
+        lookup = color === null ? lookup.is('selected_color', null) : lookup.eq('selected_color', color)
+        const { data: existingItem } = await lookup.limit(1).maybeSingle()
 
         if (existingItem) {
           // Update quantity
@@ -434,7 +445,9 @@ export class CartService {
             .insert({
               user_id: userId,
               product_id: productId,
-              quantity
+              quantity,
+              selected_size: size,
+              selected_color: color
             })
 
           if (error) throw error
