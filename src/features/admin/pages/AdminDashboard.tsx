@@ -433,6 +433,11 @@ const AdminDashboard = () => {
     }
   }
 
+  // Abandoned = never paid. A confirmed payment is never abandoned, whatever its status.
+  const isAbandoned = (o: Order) =>
+    o.paymentStatus !== 'paid' &&
+    (o.status === 'expired' || o.status === 'cancelled' || o.status === 'pending')
+
   const tabFilter = (order: Order) => {
     switch (orderTab) {
       case 'fulfil':
@@ -442,8 +447,7 @@ const AdminDashboard = () => {
       case 'fulfilled':
         return order.status === 'delivered'
       case 'abandoned':
-        return order.status === 'expired' || order.status === 'cancelled' ||
-          (order.status === 'pending' && order.paymentStatus !== 'paid')
+        return isAbandoned(order)
     }
   }
 
@@ -766,7 +770,7 @@ const AdminDashboard = () => {
                       { id: 'fulfil',     label: 'To Fulfil',   count: orders.filter(o => o.paymentStatus === 'paid' && ['pending', 'confirmed'].includes(o.status)).length, accent: 'border-blue-500 text-blue-600' },
                       { id: 'processing', label: 'Processing',  count: orders.filter(o => ['processing', 'shipped'].includes(o.status)).length,                               accent: 'border-purple-500 text-purple-600' },
                       { id: 'fulfilled',  label: 'Fulfilled',   count: orders.filter(o => o.status === 'delivered').length,                                                   accent: 'border-green-500 text-green-600' },
-                      { id: 'abandoned',  label: 'Abandoned',   count: orders.filter(o => o.status === 'expired' || o.status === 'cancelled' || (o.status === 'pending' && o.paymentStatus !== 'paid')).length, accent: 'border-red-500 text-red-600' },
+                      { id: 'abandoned',  label: 'Abandoned',   count: orders.filter(isAbandoned).length, accent: 'border-red-500 text-red-600' },
                     ] as const).map(tab => (
                       <button
                         key={tab.id}
