@@ -3,3 +3,4 @@ export const PAYSTACK_CONFIG = {
   CURRENCY: 'GHS',
   CHANNELS: ['card', 'mobile_money'],
 }
+console.log('KEY:', import.meta.env.VITE_PAYSTACK_PUBLIC_KEY)

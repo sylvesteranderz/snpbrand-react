@@ -72,16 +72,49 @@ serve(async (req) => {
         // Update order status in Supabase — query by order_number (a stable,
         // unique string) rather than the DB-generated UUID id, since guest
         // checkout does not return the UUID from the insert (RLS blocks read-back).
-        const { error: updateError } = await supabase
+        const { data: updatedOrder, error: updateError } = await supabase
             .from('orders')
             .update({
                 payment_status: 'paid',
                 payment_reference: reference,
             })
             .eq('order_number', order_number)
+            .select('id, total_amount, items')
+            .maybeSingle()
 
         if (updateError) {
             throw updateError
+        }
+
+        if (updatedOrder?.id) {
+            // Stock: the orders trigger deducts stock and writes the location-tagged ledger
+            // row when payment_status flips to 'paid'. Do NOT write inventory_transactions here.
+            //
+            // Finance: paystack-webhook can also run for the same payment, so record the sale once.
+            const today = new Date().toISOString().slice(0, 10)
+
+            const { count: existingSales, error: lookupErr } = await supabase
+                .from('financial_transactions')
+                .select('id', { count: 'exact', head: true })
+                .eq('type', 'sale')
+                .eq('reference_id', updatedOrder.id)
+
+            if (lookupErr) {
+                console.error('financial_transactions lookup failed:', lookupErr.message)
+            } else if ((existingSales ?? 0) === 0) {
+                const { error: finErr } = await supabase
+                    .from('financial_transactions')
+                    .insert({
+                        type:         'sale',
+                        amount:       updatedOrder.total_amount,
+                        description:  `Order #${order_number}`,
+                        reference_id: updatedOrder.id,
+                        date:         today,
+                    })
+                if (finErr) {
+                    console.error('financial_transactions insert failed:', finErr.message)
+                }
+            }
         }
 
         return new Response(
