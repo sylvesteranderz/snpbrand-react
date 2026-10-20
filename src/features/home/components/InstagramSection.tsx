@@ -30,6 +30,8 @@ const InstagramSection = ({ className = '' }: InstagramSectionProps) => {
             <img
               src={image}
               alt={`Instagram post ${index + 1}`}
+              loading="lazy"
+              decoding="async"
               className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
             />
             
