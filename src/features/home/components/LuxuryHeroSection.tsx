@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Star } from 'lucide-react'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -8,6 +9,17 @@ import 'swiper/css/effect-fade'
 import 'swiper/css/parallax'
 
 const LuxuryHeroSection = () => {
+  // Only download a slide's image once it is showing or next in line.
+  // Without this, every slide's image downloads on first page load.
+  const [loadedSlides, setLoadedSlides] = useState<Set<number>>(() => new Set([0, 1]))
+  const markLoaded = (activeIndex: number, total: number) => {
+    setLoadedSlides(prev => {
+      const next = (activeIndex + 1) % total
+      if (prev.has(activeIndex) && prev.has(next)) return prev
+      return new Set([...prev, activeIndex, next])
+    })
+  }
+
   const slides: Array<{
     id: number
     title?: string
@@ -27,7 +39,7 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'Step',
       subtitle: "With Style",
       description: 'Style that rises to make every eye fall',
-      image: '/images/SnPimage.png',
+      image: '/images/SnPimage-1000.webp',
       buttonText: 'SHOP NOW',
       // features: [
       //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -37,7 +49,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      image: '/images/bg-2.JPG',
+      image: '/images/bg-2-900.webp',
       // title: 'SnP BRAND',
       titleHighlight: 'Complete',
       subtitle: "Your Look",
@@ -51,8 +63,8 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
       description: 'Style that rises to make every eye fall',
-      image: '/images/SlippersBg.jpg',
-      mobileImage: '/images/Background2.jpg', // Add mobile-specific image
+      image: '/images/SlippersBg-1920.webp',
+      mobileImage: '/images/Background2-1080.webp', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       // features: [
       //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -67,8 +79,8 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'SLIDES',
       subtitle: "Feel and walk confidently",
       description: 'Style that rises to make every eye fall',
-      image: '/images/FeetBackground.jpg',
-      mobileImage: '/images/bg-2.JPG', // Add mobile-specific image
+      image: '/images/FeetBackground-1920.webp',
+      mobileImage: '/images/bg-2-900.webp', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -95,8 +107,9 @@ const LuxuryHeroSection = () => {
               disableOnInteraction: false,
             }}
             className="main-swiper w-full relative"
+            onSlideChange={(swiper) => markLoaded(swiper.realIndex, slides.length)}
           >
-            {slides.map((slide) => (
+            {slides.map((slide, index) => (
               <SwiperSlide key={slide.id}>
                 {slide.type === 'outfit' ? (
                   // Outfit Slide - Enhanced with better mobile support
@@ -352,7 +365,7 @@ const LuxuryHeroSection = () => {
                         <div
                           className="hidden lg:block absolute inset-0 z-0 bg-center bg-cover bg-no-repeat hero-fullscreen-bg"
                           style={{
-                            backgroundImage: `url(${slide.image})`,
+                            backgroundImage: loadedSlides.has(index) ? `url(${slide.image})` : undefined,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center'
                           }}
@@ -361,7 +374,7 @@ const LuxuryHeroSection = () => {
                         <div
                           className="lg:hidden absolute inset-0 z-0 bg-center bg-cover bg-no-repeat hero-fullscreen-bg"
                           style={{
-                            backgroundImage: `url(${slide.mobileImage || slide.image})`,
+                            backgroundImage: loadedSlides.has(index) ? `url(${slide.mobileImage || slide.image})` : undefined,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center center'
                           }}
@@ -384,8 +397,10 @@ const LuxuryHeroSection = () => {
                               {/* If slide is fullscreen we already use it as background, so hide the inline image */}
                               {slide.fullscreen ? null : (
                                 <img
-                                  src={slide.image}
+                                  src={loadedSlides.has(index) ? slide.image : undefined}
                                   alt={`${slide.title} product`}
+                                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                                  decoding="async"
                                   className="circle-image relative z-10 object-contain max-h-[500px] lg:max-h-[450px] mx-auto"
                                 />
                               )}

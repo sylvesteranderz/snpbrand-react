@@ -111,7 +111,7 @@ const AnimatedOutfitSection = () => {
             >
               <div className="relative shadow-xl overflow-hidden aspect-square">
                 <img
-                  src="/images/BlackZipup1.png"
+                  src="/images/BlackZipup1.webp"
                   alt="Premium Shirt"
                   className="w-full h-full object-cover"
                   loading="lazy"
@@ -137,7 +137,7 @@ const AnimatedOutfitSection = () => {
             >
               <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden aspect-square">
                 <img
-                  src="/images/Shorts.png"
+                  src="/images/Shorts.webp"
                   alt="Stylish Shorts"
                   className="w-full h-full object-cover"
                   loading="lazy"
@@ -163,7 +163,7 @@ const AnimatedOutfitSection = () => {
             >
               <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden aspect-square">
                 <img
-                  src="/images/BrownLeather1.png"
+                  src="/images/BrownLeather1.webp"
                   alt="Signature Slippers"
                   className="w-full h-full object-cover"
                   loading="lazy"
