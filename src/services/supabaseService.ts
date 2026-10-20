@@ -686,6 +686,20 @@ export class OrderService {
     return {}
   }
 
+  // Public order tracking by order number. Returns only status, items,
+  // totals and delivery city: no customer name, phone, email or street.
+  static async getOrderTracking(orderNumber: string) {
+    if (isSupabaseEnabled && supabase) {
+      const { data, error } = await supabase.rpc('get_order_tracking', { p_order_number: orderNumber })
+      if (error) {
+        console.error('Supabase get order tracking error:', error)
+        return null
+      }
+      return data
+    }
+    return null
+  }
+
   static async getOrderById(orderId: string) {
     if (isSupabaseEnabled && supabase) {
       try {

@@ -74,7 +74,7 @@ const Home = () => {
           <BannerSection
             title="Clearance sale !!!"
             subtitle="Up to 40% off"
-            image="/images/set.png"
+            image="/images/set.webp"
             buttonText="Shop Now"
             className="my-6 sm:my-8"
           />
