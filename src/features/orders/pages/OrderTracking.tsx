@@ -54,7 +54,7 @@ const OrderTracking = () => {
 
     setLoading(true)
     try {
-      const data = await OrderService.getOrderById(orderNumber)
+      const data: any = await OrderService.getOrderTracking(orderNumber)
 
       if (data) {
         // Synthesize status history based on current status
@@ -102,17 +102,26 @@ const OrderTracking = () => {
         const mappedOrder: OrderData = {
           orderNumber: data.order_number,
           customerInfo: {
-            firstName: data.user_profiles?.name?.split(' ')[0] || 'Guest',
-            lastName: data.user_profiles?.name?.split(' ').slice(1).join(' ') || '',
-            email: data.user_profiles?.email || '',
-            phone: data.user_profiles?.phone || '',
-            address: data.shipping_address || '',
-            city: data.user_profiles?.city || '',
-            state: data.user_profiles?.state || '',
-            zipCode: data.user_profiles?.zip_code || '',
-            country: data.user_profiles?.country || ''
+            // Not returned by public tracking, and not shown on this page
+            firstName: 'Guest',
+            lastName: '',
+            email: '',
+            phone: '',
+            address: '',
+            city: data.shipping_address?.city || '',
+            state: '',
+            zipCode: '',
+            country: ''
           },
-          items: data.items || [],
+          items: (data.items || []).map((item: any, idx: number) => ({
+            id: `${data.order_number}-${idx}`,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image,
+            selectedSize: item.selected_size || undefined,
+            selectedColor: item.selected_color || undefined,
+          })),
           paymentMethod: data.payment_method,
           total: data.total_amount,
           estimatedDelivery: new Date(baseDate.getTime() + 604800000).toLocaleDateString(), // +7 days
