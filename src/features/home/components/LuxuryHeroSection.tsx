@@ -27,7 +27,7 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'Step',
       subtitle: "With Style",
       description: 'Style that rises to make every eye fall',
-      image: '/images/SnPimage.png',
+      image: '/images/SnPimage-1000.webp',
       buttonText: 'SHOP NOW',
       // features: [
       //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -37,7 +37,7 @@ const LuxuryHeroSection = () => {
     },
     {
       id: 2,
-      image: '/images/bg-2.JPG',
+      image: '/images/bg-2-900.webp',
       // title: 'SnP BRAND',
       titleHighlight: 'Complete',
       subtitle: "Your Look",
@@ -51,8 +51,8 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'Premium',
       subtitle: "WALK DON'T HIDE",
       description: 'Style that rises to make every eye fall',
-      image: '/images/SlippersBg.jpg',
-      mobileImage: '/images/Background2.jpg', // Add mobile-specific image
+      image: '/images/SlippersBg-1920.webp',
+      mobileImage: '/images/Background2-1080.webp', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       // features: [
       //   { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
@@ -67,8 +67,8 @@ const LuxuryHeroSection = () => {
       titleHighlight: 'SLIDES',
       subtitle: "Feel and walk confidently",
       description: 'Style that rises to make every eye fall',
-      image: '/images/FeetBackground.jpg',
-      mobileImage: '/images/bg-2.JPG', // Add mobile-specific image
+      image: '/images/FeetBackground-1920.webp',
+      mobileImage: '/images/bg-2-900.webp', // Add mobile-specific image
       buttonText: 'SHOP NOW',
       features: [
         { id: 1, icon: <Star className="w-6 h-6" />, text: 'Premium Quality' },
