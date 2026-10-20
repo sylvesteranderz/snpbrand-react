@@ -324,6 +324,10 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  // Render orders in pages so opening the tab doesn't load every order's images at once
+  const ORDERS_PAGE_SIZE = 20
+  const [visibleOrderCount, setVisibleOrderCount] = useState(ORDERS_PAGE_SIZE)
+  useEffect(() => { setVisibleOrderCount(ORDERS_PAGE_SIZE) }, [searchTerm, orderTab])
 
 
 
@@ -811,7 +815,7 @@ const AdminDashboard = () => {
                       <p className="text-gray-500 mt-1">Try adjusting your filters or search term.</p>
                     </div>
                   ) : (
-                    filteredOrders.map(order => {
+                    filteredOrders.slice(0, visibleOrderCount).map(order => {
                       const isDelivered = order.status === 'delivered';
 
                       
@@ -877,7 +881,7 @@ const AdminDashboard = () => {
                                   <div key={idx} className="flex gap-3 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
                                     <div className="w-12 h-12 bg-white rounded-md shrink-0 border border-gray-200 overflow-hidden flex items-center justify-center">
                                       {item.image ? (
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                        <img src={item.image} alt={item.name} loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" />
                                       ) : (
                                         <Package className="w-6 h-6 text-gray-300" />
                                       )}
@@ -959,6 +963,15 @@ const AdminDashboard = () => {
                       );
                     })
                   )}
+                  {filteredOrders.length > visibleOrderCount && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleOrderCount(c => c + ORDERS_PAGE_SIZE)}
+                      className="w-full py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Load more ({filteredOrders.length - visibleOrderCount} remaining)
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1014,7 +1027,7 @@ const AdminDashboard = () => {
                             >
                               <td className="px-6 py-5">
                                 <div className="flex items-center space-x-4">
-                                  <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
+                                  <img src={product.image} alt={product.name} loading="lazy" decoding="async" width={48} height={48} className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
                                   <div>
                                     <div className="font-semibold text-gray-900 line-clamp-1">{product.name}</div>
                                     <div className="text-sm text-gray-500 flex items-center gap-2 mt-0.5">

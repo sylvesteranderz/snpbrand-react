@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { OrderService } from '@/services/supabaseService'
+import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/utils/currency'
+
+const POLL_MS = 60_000
 
 const PulseBar = () => {
   const [stats, setStats] = useState({
@@ -13,40 +15,56 @@ const PulseBar = () => {
   useEffect(() => {
     let active = true
 
+    // Fetch only what the bar shows: today's order totals and a pending count.
+    // Previously this downloaded every order (~500 KB) every 30 seconds.
     const fetchStats = async () => {
+      if (!supabase) return
       try {
-        const orders = await OrderService.getAllOrders()
-        if (!active) return
-
         const todayStart = new Date()
         todayStart.setHours(0, 0, 0, 0)
 
-        const todayOrders = orders.filter((o: any) => new Date(o.created_at) >= todayStart)
-        const todayRevenue = todayOrders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0)
-        const pending = orders.filter((o: any) => o.status === 'pending').length
+        const [today, pending] = await Promise.all([
+          supabase.from('orders').select('total_amount').gte('created_at', todayStart.toISOString()),
+          supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        ])
+        if (!active) return
+        if (today.error) throw today.error
+        if (pending.error) throw pending.error
 
+        const todayOrders = today.data || []
         setStats({
-          revenueToday: todayRevenue,
+          revenueToday: todayOrders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0),
           ordersToday: todayOrders.length,
-          pendingCount: pending,
+          pendingCount: pending.count || 0,
         })
       } catch (err) {
         console.error('Failed to fetch pulse bar stats:', err)
       } finally {
-        if (active) {
-          setLoading(false)
-        }
+        if (active) setLoading(false)
       }
     }
 
-    fetchStats()
+    let interval: ReturnType<typeof setInterval> | undefined
+    const start = () => {
+      if (interval) return
+      fetchStats()
+      interval = setInterval(fetchStats, POLL_MS)
+    }
+    const stop = () => {
+      if (interval) clearInterval(interval)
+      interval = undefined
+    }
+    // Pause polling while the tab or phone screen is in the background
+    const onVisibility = () => (document.visibilityState === 'visible' ? start() : stop())
 
-    // Refresh every 30 seconds for live updates
-    const interval = setInterval(fetchStats, 30000)
+    if (document.visibilityState === 'visible') start()
+    else fetchStats()
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       active = false
-      clearInterval(interval)
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
 
