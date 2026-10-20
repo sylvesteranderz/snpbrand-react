@@ -324,6 +324,10 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  // Render orders in pages so opening the tab doesn't load every order's images at once
+  const ORDERS_PAGE_SIZE = 20
+  const [visibleOrderCount, setVisibleOrderCount] = useState(ORDERS_PAGE_SIZE)
+  useEffect(() => { setVisibleOrderCount(ORDERS_PAGE_SIZE) }, [searchTerm, orderTab])
 
 
 
@@ -414,22 +418,41 @@ const AdminDashboard = () => {
     }
   }
 
+  // Shown when a status change fails, so the switch never silently flips back
+  const [statusError, setStatusError] = useState<{ message: string; needsLogin: boolean } | null>(null)
+
   const handleToggleStatus = async (orderId: string, currentStatus: string) => {
-    // Optimistic UI update
     const newStatus = currentStatus === 'delivered' ? 'pending' : 'delivered'
-    
-    setOrders(prev => prev.map(o => 
+    const revert = () => setOrders(prev => prev.map(o =>
+      o.id === orderId ? { ...o, status: currentStatus as any } : o
+    ))
+    setStatusError(null)
+
+    // Optimistic UI update
+    setOrders(prev => prev.map(o =>
       o.id === orderId ? { ...o, status: newStatus as any } : o
     ))
-    
+
     try {
+      // An expired admin session makes the update match 0 rows (RLS), so check first
+      const { data: { session } } = await supabase!.auth.getSession()
+      if (!session) {
+        const { data: refreshed } = await supabase!.auth.refreshSession()
+        if (!refreshed.session) {
+          revert()
+          setStatusError({ message: 'Your admin login has expired, so the change was not saved. Log in again and retry.', needsLogin: true })
+          return
+        }
+      }
       await OrderService.updateOrderStatus(orderId, newStatus)
-    } catch (err) {
-      // Revert if error
-      setOrders(prev => prev.map(o => 
-        o.id === orderId ? { ...o, status: currentStatus as any } : o
-      ))
-      console.error("Failed to update status")
+    } catch (err: any) {
+      revert()
+      // PGRST116 = update matched no rows: the database didn't recognise you as an admin
+      const notAllowed = err?.code === 'PGRST116' || err?.code === '42501'
+      setStatusError(notAllowed
+        ? { message: 'The change was not saved: your session is no longer recognised as admin. Log in again and retry.', needsLogin: true }
+        : { message: `The change was not saved${err?.message ? `: ${err.message}` : ''}. Check your connection and try again.`, needsLogin: false })
+      console.error('Failed to update status', err)
     }
   }
 
@@ -721,6 +744,22 @@ const AdminDashboard = () => {
             {/* Orders Tab */}
             {activeTab === 'orders' && (
               <div className="space-y-6">
+                {statusError && (
+                  <div role="alert" className="sticky top-2 z-30 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">
+                    <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="flex-1">{statusError.message}</div>
+                    {statusError.needsLogin && (
+                      <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 font-semibold text-white hover:bg-red-700"
+                      >
+                        Log in
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setStatusError(null)} aria-label="Dismiss" className="shrink-0 text-red-500 hover:text-red-700">✕</button>
+                  </div>
+                )}
 
                 {/* Orders Summary Stats */}
                 <MetricGrid cols={4}>
@@ -811,7 +850,7 @@ const AdminDashboard = () => {
                       <p className="text-gray-500 mt-1">Try adjusting your filters or search term.</p>
                     </div>
                   ) : (
-                    filteredOrders.map(order => {
+                    filteredOrders.slice(0, visibleOrderCount).map(order => {
                       const isDelivered = order.status === 'delivered';
 
                       
@@ -877,7 +916,7 @@ const AdminDashboard = () => {
                                   <div key={idx} className="flex gap-3 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
                                     <div className="w-12 h-12 bg-white rounded-md shrink-0 border border-gray-200 overflow-hidden flex items-center justify-center">
                                       {item.image ? (
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                        <img src={item.image} alt={item.name} loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" />
                                       ) : (
                                         <Package className="w-6 h-6 text-gray-300" />
                                       )}
@@ -959,6 +998,15 @@ const AdminDashboard = () => {
                       );
                     })
                   )}
+                  {filteredOrders.length > visibleOrderCount && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleOrderCount(c => c + ORDERS_PAGE_SIZE)}
+                      className="w-full py-3 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Load more ({filteredOrders.length - visibleOrderCount} remaining)
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1014,7 +1062,7 @@ const AdminDashboard = () => {
                             >
                               <td className="px-6 py-5">
                                 <div className="flex items-center space-x-4">
-                                  <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
+                                  <img src={product.image} alt={product.name} loading="lazy" decoding="async" width={48} height={48} className="w-12 h-12 object-cover rounded-lg border border-gray-100" />
                                   <div>
                                     <div className="font-semibold text-gray-900 line-clamp-1">{product.name}</div>
                                     <div className="text-sm text-gray-500 flex items-center gap-2 mt-0.5">

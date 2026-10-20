@@ -4,7 +4,7 @@ import { MapPin, User, ArrowLeft, Lock, CheckCircle, Truck, Wallet, Tag, X } fro
 import { Link } from 'react-router-dom'
 import { useCart } from '@/features/cart/hooks/useCartSupabase'
 import { useAuth } from '@/features/auth/hooks/useAuthSupabase'
-import { OrderService } from '@/services/supabaseService'
+import { OrderService, firstImage } from '@/services/supabaseService'
 import { formatPrice } from '@/utils/currency'
 import OrderConfirmation from '@/features/checkout/pages/OrderConfirmation'
 import { PAYSTACK_CONFIG } from '@/config/paystack'
@@ -235,7 +235,7 @@ const Checkout = () => {
         quantity: item.quantity,
         selected_size: item.selectedSize,
         selected_color: item.selectedColor,
-        image: item.product.image
+        image: firstImage(item.product.image || item.product.images)
       }))
 
       // Combine names for backend
