@@ -16,7 +16,7 @@ import 'swiper/css/navigation'
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>()
-  const { products } = useProducts()
+  const { storeProducts: products } = useProducts()
   const [product, setProduct] = useState<Product | undefined>(undefined)
   // const [isLoading, setIsLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)

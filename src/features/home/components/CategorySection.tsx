@@ -15,7 +15,7 @@ const CategorySection = ({ className = '' }: CategorySectionProps) => {
   const navigate = useNavigate()
   const [activeCategory, setActiveCategory] = useState('all')
   const [activeSubcategory, setActiveSubcategory] = useState('all')
-  const { products, isLoading } = useProducts()
+  const { storeProducts: products, isLoading } = useProducts()
 
   // Handle URL parameters
   useEffect(() => {

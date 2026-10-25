@@ -19,6 +19,9 @@ export interface Product {
   tags?: string[]
   imagePosition?: string
   size_stock?: Record<string, number>
+  /** false = hidden from the shop (no photos yet / not launched). Admins still see it. */
+  show_on_website?: boolean
+  is_active?: boolean
   stockQuantity?: number
 }
 
