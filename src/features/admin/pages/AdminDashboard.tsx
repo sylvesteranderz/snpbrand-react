@@ -258,6 +258,7 @@ interface Order {
     selected_size?: string
   }>
   paymentMethod: 'paystack' | 'pay_on_delivery'
+  paymentReference?: string | null
 }
 
 interface User {
@@ -359,7 +360,8 @@ const AdminDashboard = () => {
         paymentStatus: order.payment_status || 'completed',
         total: order.total_amount,
         items: order.items || [],
-        paymentMethod: order.payment_method
+        paymentMethod: order.payment_method,
+        paymentReference: order.payment_reference ?? null
       }))
       setOrders(mappedOrders)
 
@@ -411,6 +413,36 @@ const AdminDashboard = () => {
         return 'text-gray-600 bg-gray-100'
       default:
         return 'text-gray-600 bg-gray-100'
+    }
+  }
+
+  // Mark a Paystack order paid from the reference on the receipt. The server checks
+  // the reference with Paystack (successful, enough money, same order) first.
+  const [paidRefs, setPaidRefs] = useState<Record<string, string>>({})
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null)
+  const handleMarkPaid = async (order: Order) => {
+    const reference = (paidRefs[order.id] || '').trim()
+    if (!reference) { alert('Paste the Paystack reference from the receipt first.'); return }
+    if (!supabase) return
+    setMarkingPaid(order.id)
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mark-paid', {
+        body: { order_id: order.id, reference }
+      })
+      let message: string | undefined = data?.error
+      if (error && !message) {
+        try { message = (await (error as any).context.json()).error } catch { message = error.message }
+      }
+      if (message) throw new Error(message)
+      setPaidRefs(prev => ({ ...prev, [order.id]: '' }))
+      setOrders(prev => prev.map(o => o.id === order.id
+        ? { ...o, paymentStatus: 'paid', paymentReference: reference, status: o.status === 'expired' ? 'pending' : o.status }
+        : o))
+      alert(`${order.orderNumber} marked paid (GH₵${Number(data.amount).toFixed(2)} confirmed by Paystack).`)
+    } catch (err: any) {
+      alert(`Couldn't mark ${order.orderNumber} paid: ${err?.message || err}`)
+    } finally {
+      setMarkingPaid(null)
     }
   }
 
@@ -927,6 +959,33 @@ const AdminDashboard = () => {
                                   </svg>
                                   WhatsApp Customer
                                 </a>
+                              )}
+
+                              {order.paymentMethod === 'paystack' && (order.paymentStatus !== 'paid' || !order.paymentReference) && !['cancelled', 'delivered'].includes(order.status) && (
+                                <div className="mt-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                                  <div className="text-sm font-medium text-amber-900">
+                                    {order.paymentStatus === 'paid' ? 'Add the Paystack reference' : "Customer paid but it didn't register?"}
+                                  </div>
+                                  <p className="text-xs text-amber-800 mt-1">Paste the reference from the Paystack receipt. It's checked with Paystack before anything changes.</p>
+                                  <div className="mt-2 flex gap-2">
+                                    <input
+                                      type="text"
+                                      aria-label="Paystack reference"
+                                      placeholder="e.g. T123456789012345"
+                                      value={paidRefs[order.id] || ''}
+                                      onChange={e => setPaidRefs(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                      className="flex-1 min-w-0 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkPaid(order)}
+                                      disabled={markingPaid === order.id}
+                                      className="shrink-0 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                                    >
+                                      {markingPaid === order.id ? 'Checking…' : order.paymentStatus === 'paid' ? 'Save' : 'Mark paid'}
+                                    </button>
+                                  </div>
+                                </div>
                               )}
 
                               <div className="mt-2 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
