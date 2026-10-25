@@ -238,6 +238,24 @@ const Checkout = () => {
         image: item.product.image
       }))
 
+      // Re-check stock right before payment. A cart can hold items that sold out
+      // after they were added (e.g. before a stock count), and the customer must
+      // never be charged for something we can't send.
+      if (supabase) {
+        const { data: shortItems, error: stockErr } = await supabase.rpc('check_cart_stock', { p_items: orderItems })
+        if (!stockErr && Array.isArray(shortItems) && shortItems.length > 0) {
+          setIsProcessing(false)
+          const lines = shortItems.map((s: any) =>
+            s.available > 0
+              ? `${s.name} (size ${s.size}): only ${s.available} left`
+              : `${s.name} (size ${s.size}): sold out`
+          ).join('\n')
+          alert(`Sorry, some items in your cart are no longer available:\n\n${lines}\n\nPlease remove them or change the size, then try again. You have not been charged.`)
+          return
+        }
+        if (stockErr) console.warn('Stock check unavailable, continuing:', stockErr.message)
+      }
+
       // Combine names for backend
       const submissionData = {
         ...formData,
@@ -395,10 +413,15 @@ const Checkout = () => {
         clearCart()
       } */
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Checkout failed:', err)
-      // Display error to user (you might want to add an error state/toast here)
-      alert('Failed to place order. Please try again.')
+      const msg: string = err?.message || ''
+      if (msg.includes('OUT_OF_STOCK')) {
+        // The database refused the order because a size sold out moments ago
+        alert(`Sorry, this just sold out: ${msg.replace(/^.*OUT_OF_STOCK:\s*/, '')}.\n\nPlease remove it or change the size, then try again. You have not been charged.`)
+      } else {
+        alert('Failed to place order. Please try again.')
+      }
       setIsProcessing(false)
     }
   }
