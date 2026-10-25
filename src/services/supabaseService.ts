@@ -29,6 +29,11 @@ const parseImages = (dbImages: any, mainImage?: string): string[] => {
   return parsed.filter(Boolean);
 };
 
+// Always returns a single image URL, whatever shape image_url arrives in
+// (array, JSON-array string, Postgres array string or plain string).
+// Storing the raw value is how order items ended up with links like '["…png"]'.
+export const firstImage = (dbImages: any): string => parseImages(dbImages)[0] || ''
+
 // Product Service
 export class ProductService {
   // Get all products
@@ -224,7 +229,7 @@ export class ProductService {
           description: data.description,
           category: data.category,
           subcategory: data.subcategory,
-          image: data.image_url,
+          image: firstImage(data.image_url),
           rating: data.rating,
           reviews: data.reviews,
           in_stock: data.in_stock,
@@ -294,7 +299,7 @@ export class ProductService {
           description: data.description,
           category: data.category,
           subcategory: data.subcategory,
-          image: data.image_url,
+          image: firstImage(data.image_url),
           rating: data.rating,
           reviews: data.reviews,
           in_stock: data.in_stock,
@@ -362,7 +367,7 @@ export class ProductService {
           description: dbProduct.description,
           category: dbProduct.category,
           subcategory: dbProduct.subcategory,
-          image: dbProduct.image_url,
+          image: firstImage(dbProduct.image_url),
           rating: dbProduct.rating,
           reviews: dbProduct.reviews,
           in_stock: dbProduct.in_stock,

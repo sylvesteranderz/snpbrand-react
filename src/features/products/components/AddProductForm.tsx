@@ -22,7 +22,7 @@ const uploadWithXHR = async (
     xhr.setRequestHeader('Authorization', `Bearer ${token}`)
     xhr.setRequestHeader('apikey', anonKey)
     xhr.setRequestHeader('Content-Type', 'image/webp')
-    xhr.setRequestHeader('Cache-Control', '31536000')
+    xhr.setRequestHeader('Cache-Control', 'max-age=31536000') // must be a full directive: a bare number is ignored by browsers
     xhr.setRequestHeader('x-upsert', 'false')
 
     xhr.upload.addEventListener('progress', (e) => {
