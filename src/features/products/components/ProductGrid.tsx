@@ -21,7 +21,7 @@ const ProductGrid = ({
   showViewAll = false, 
   className = '' 
 }: ProductGridProps) => {
-  const { products } = useProducts()
+  const { storeProducts: products } = useProducts()
   const [activeFilter, setActiveFilter] = useState('all')
   const navigate = useNavigate()
 
