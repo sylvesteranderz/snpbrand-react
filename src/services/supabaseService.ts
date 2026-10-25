@@ -71,6 +71,8 @@ export class ProductService {
           tags: dbProduct.tags || [],
           images: parseImages(dbProduct.image_url),
           size_stock: dbProduct.size_stock || {},
+          show_on_website: dbProduct.show_on_website !== false,
+          is_active: dbProduct.is_active !== false,
           stockQuantity: dbProduct.stock_quantity || 0
         }))
 
@@ -167,6 +169,8 @@ export class ProductService {
           tags: dbProduct.tags || [],
           images: parseImages(dbProduct.image_url),
           size_stock: dbProduct.size_stock || {},
+          show_on_website: dbProduct.show_on_website !== false,
+          is_active: dbProduct.is_active !== false,
           stockQuantity: dbProduct.stock_quantity || 0
         }))
 

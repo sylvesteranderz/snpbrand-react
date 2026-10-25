@@ -258,6 +258,7 @@ interface Order {
     selected_size?: string
   }>
   paymentMethod: 'paystack' | 'pay_on_delivery'
+  paymentReference?: string | null
 }
 
 interface User {
@@ -363,7 +364,8 @@ const AdminDashboard = () => {
         paymentStatus: order.payment_status || 'completed',
         total: order.total_amount,
         items: order.items || [],
-        paymentMethod: order.payment_method
+        paymentMethod: order.payment_method,
+        paymentReference: order.payment_reference ?? null
       }))
       setOrders(mappedOrders)
 
@@ -418,15 +420,40 @@ const AdminDashboard = () => {
     }
   }
 
-  // Shown when a status change fails, so the switch never silently flips back
-  const [statusError, setStatusError] = useState<{ message: string; needsLogin: boolean } | null>(null)
+  // Mark a Paystack order paid from the reference on the receipt. The server checks
+  // the reference with Paystack (successful, enough money, same order) first.
+  const [paidRefs, setPaidRefs] = useState<Record<string, string>>({})
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null)
+  const handleMarkPaid = async (order: Order) => {
+    const reference = (paidRefs[order.id] || '').trim()
+    if (!reference) { alert('Paste the Paystack reference from the receipt first.'); return }
+    if (!supabase) return
+    setMarkingPaid(order.id)
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-mark-paid', {
+        body: { order_id: order.id, reference }
+      })
+      let message: string | undefined = data?.error
+      if (error && !message) {
+        try { message = (await (error as any).context.json()).error } catch { message = error.message }
+      }
+      if (message) throw new Error(message)
+      setPaidRefs(prev => ({ ...prev, [order.id]: '' }))
+      setOrders(prev => prev.map(o => o.id === order.id
+        ? { ...o, paymentStatus: 'paid', paymentReference: reference, status: o.status === 'expired' ? 'pending' : o.status }
+        : o))
+      alert(`${order.orderNumber} marked paid (GH₵${Number(data.amount).toFixed(2)} confirmed by Paystack).`)
+    } catch (err: any) {
+      alert(`Couldn't mark ${order.orderNumber} paid: ${err?.message || err}`)
+    } finally {
+      setMarkingPaid(null)
+    }
+  }
 
   const handleToggleStatus = async (orderId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'delivered' ? 'pending' : 'delivered'
-    const revert = () => setOrders(prev => prev.map(o =>
-      o.id === orderId ? { ...o, status: currentStatus as any } : o
-    ))
-    setStatusError(null)
+    // Un-delivering is almost always a mis-tap, and it does not put stock back
+    if (newStatus === 'pending' && !window.confirm('Move this order back to pending? Stock already taken for it will not be put back.')) return
 
     // Optimistic UI update
     setOrders(prev => prev.map(o =>
@@ -446,13 +473,17 @@ const AdminDashboard = () => {
       }
       await OrderService.updateOrderStatus(orderId, newStatus)
     } catch (err: any) {
-      revert()
-      // PGRST116 = update matched no rows: the database didn't recognise you as an admin
-      const notAllowed = err?.code === 'PGRST116' || err?.code === '42501'
-      setStatusError(notAllowed
-        ? { message: 'The change was not saved: your session is no longer recognised as admin. Log in again and retry.', needsLogin: true }
-        : { message: `The change was not saved${err?.message ? `: ${err.message}` : ''}. Check your connection and try again.`, needsLogin: false })
+      // Revert, and say why: the database refuses a delivery when the item isn't in stock
+      setOrders(prev => prev.map(o =>
+        o.id === orderId ? { ...o, status: currentStatus as any } : o
+      ))
+      const msg: string = err?.message || String(err)
       console.error('Failed to update status', err)
+      alert(
+        /insufficient stock|no stock row/i.test(msg)
+          ? "Couldn't mark this order delivered: the item isn't in stock at the hub. If it really went out, fix the count in Inventory (Correct count) first."
+          : `Couldn't update this order: ${msg}`
+      )
     }
   }
 
@@ -958,6 +989,33 @@ const AdminDashboard = () => {
                                   </svg>
                                   WhatsApp Customer
                                 </a>
+                              )}
+
+                              {order.paymentMethod === 'paystack' && (order.paymentStatus !== 'paid' || !order.paymentReference) && !['cancelled', 'delivered'].includes(order.status) && (
+                                <div className="mt-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                                  <div className="text-sm font-medium text-amber-900">
+                                    {order.paymentStatus === 'paid' ? 'Add the Paystack reference' : "Customer paid but it didn't register?"}
+                                  </div>
+                                  <p className="text-xs text-amber-800 mt-1">Paste the reference from the Paystack receipt. It's checked with Paystack before anything changes.</p>
+                                  <div className="mt-2 flex gap-2">
+                                    <input
+                                      type="text"
+                                      aria-label="Paystack reference"
+                                      placeholder="e.g. T123456789012345"
+                                      value={paidRefs[order.id] || ''}
+                                      onChange={e => setPaidRefs(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                      className="flex-1 min-w-0 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkPaid(order)}
+                                      disabled={markingPaid === order.id}
+                                      className="shrink-0 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                                    >
+                                      {markingPaid === order.id ? 'Checking…' : order.paymentStatus === 'paid' ? 'Save' : 'Mark paid'}
+                                    </button>
+                                  </div>
+                                </div>
                               )}
 
                               <div className="mt-2 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">

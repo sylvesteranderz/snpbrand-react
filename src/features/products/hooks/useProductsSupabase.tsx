@@ -6,6 +6,8 @@ import { supabase, isSupabaseEnabled } from '@/lib/supabase'
 // Product Management Context
 interface ProductContextType {
   products: Product[]
+  /** What shoppers may see: active and shown on the website. Admin screens use `products`. */
+  storeProducts: Product[]
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -184,6 +186,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const value: ProductContextType = {
     products: state.products,
+    storeProducts: state.products.filter(p => p.is_active !== false && p.show_on_website !== false),
     addProduct,
     updateProduct,
     deleteProduct,
