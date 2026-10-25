@@ -415,21 +415,29 @@ const AdminDashboard = () => {
   }
 
   const handleToggleStatus = async (orderId: string, currentStatus: string) => {
-    // Optimistic UI update
     const newStatus = currentStatus === 'delivered' ? 'pending' : 'delivered'
-    
-    setOrders(prev => prev.map(o => 
+    // Un-delivering is almost always a mis-tap, and it does not put stock back
+    if (newStatus === 'pending' && !window.confirm('Move this order back to pending? Stock already taken for it will not be put back.')) return
+
+    // Optimistic UI update
+    setOrders(prev => prev.map(o =>
       o.id === orderId ? { ...o, status: newStatus as any } : o
     ))
-    
+
     try {
       await OrderService.updateOrderStatus(orderId, newStatus)
-    } catch (err) {
-      // Revert if error
-      setOrders(prev => prev.map(o => 
+    } catch (err: any) {
+      // Revert, and say why: the database refuses a delivery when the item isn't in stock
+      setOrders(prev => prev.map(o =>
         o.id === orderId ? { ...o, status: currentStatus as any } : o
       ))
-      console.error("Failed to update status")
+      const msg: string = err?.message || String(err)
+      console.error('Failed to update status', err)
+      alert(
+        /insufficient stock|no stock row/i.test(msg)
+          ? "Couldn't mark this order delivered: the item isn't in stock at the hub. If it really went out, fix the count in Inventory (Correct count) first."
+          : `Couldn't update this order: ${msg}`
+      )
     }
   }
 
