@@ -39,6 +39,8 @@ const BannerSection = ({
               <img
                 src={image}
                 alt={title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto rounded-lg shadow-lg"
               />
             </motion.div>

@@ -12,6 +12,8 @@
   "dependencies": {
     "@medusajs/js-sdk": "^2.11.3",
     "@supabase/supabase-js": "^2.98.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.0.0",
     "framer-motion": "^10.16.16",
     "gsap": "^3.13.0",
@@ -20,6 +22,7 @@
     "react-dom": "^18.2.0",
     "react-paystack": "^6.0.0",
     "react-router-dom": "^6.20.1",
+    "recharts": "^3.8.1",
     "swiper": "^12.1.3",
     "tailwind-merge": "^2.2.0"
   },

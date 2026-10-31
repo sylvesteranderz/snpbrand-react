@@ -23,7 +23,7 @@ const ProductCarousel = ({
   className = '',
   limit
 }: ProductCarouselProps) => {
-  const { products, isLoading } = useProducts()
+  const { storeProducts: products, isLoading } = useProducts()
   const navigate = useNavigate()
 
   // Filter products by category if specified

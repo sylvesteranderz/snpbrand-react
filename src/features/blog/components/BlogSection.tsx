@@ -62,6 +62,8 @@ const BlogSection = ({ className = '' }: BlogSectionProps) => {
                   <img
                     src={post.image}
                     alt={post.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </Link>

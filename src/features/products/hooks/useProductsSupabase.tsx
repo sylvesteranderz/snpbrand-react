@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
 import { Product } from '@/types'
 import { ProductService } from '@/services/supabaseService'
+import { supabase, isSupabaseEnabled } from '@/lib/supabase'
 
 // Product Management Context
 interface ProductContextType {
   products: Product[]
+  /** What shoppers may see: active and shown on the website. Admin screens use `products`. */
+  storeProducts: Product[]
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -68,9 +71,48 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
     error: null
   })
 
-  // Load products on mount
+  // Load products and setup realtime subscription
   useEffect(() => {
     loadProducts()
+
+    if (!isSupabaseEnabled || !supabase) return;
+
+    const channel = supabase
+      .channel('products-stock')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'products' },
+        (payload) => {
+          const newProductData = payload.new as any;
+          const mappedUpdates: Partial<Product> = {
+            name: newProductData.name,
+            price: newProductData.price,
+            originalPrice: newProductData.original_price,
+            description: newProductData.description,
+            in_stock: newProductData.in_stock,
+            subcategory: newProductData.subcategory,
+            size_stock: newProductData.size_stock || {},
+            stockQuantity: newProductData.stock_quantity || 0,
+            sizes: newProductData.sizes || [],
+            isNew: newProductData.is_new,
+            isOnSale: newProductData.is_on_sale,
+            discount: newProductData.discount,
+          };
+          
+          if (newProductData.image_url) {
+            mappedUpdates.image = Array.isArray(newProductData.image_url) 
+              ? newProductData.image_url[0] 
+              : newProductData.image_url;
+          }
+
+          dispatch({ type: 'UPDATE_PRODUCT', payload: { id: newProductData.id, updates: mappedUpdates } })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase?.removeChannel(channel)
+    }
   }, [])
 
   // Load products
@@ -144,6 +186,7 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const value: ProductContextType = {
     products: state.products,
+    storeProducts: state.products.filter(p => p.is_active !== false && p.show_on_website !== false),
     addProduct,
     updateProduct,
     deleteProduct,

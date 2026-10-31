@@ -1,212 +1,76 @@
-# SnP Brand - React E-commerce Store
+# SnP Brand — E-commerce Platform
 
-A modern, responsive e-commerce website built with React, TypeScript, and Tailwind CSS. This project is a complete migration and improvement of the original HTML/CSS/JavaScript SnP Brand website.
+> A production e-commerce platform built to solve a real scaling problem: managing 2,000+ product sales without being chained to WhatsApp.
 
-<!-- Deployment fix: TypeScript build errors resolved -->
+## The Problem
 
-## 🚀 Features
+SnP Brand sells premium slippers and shirts in Ghana. As sales grew past 2,000 units, manually handling every customer inquiry and order over WhatsApp became a bottleneck. Subscribing to Shopify or similar platforms was not financially viable. So I built one.
 
-### Modern Tech Stack
-- **React 18** with TypeScript for type safety
-- **Vite** for fast development and building
-- **Tailwind CSS** for utility-first styling
-- **Framer Motion** for smooth animations
-- **React Router** for client-side routing
-- **Swiper.js** for carousels and sliders
+## What It Does
 
-### E-commerce Features
-- 🛒 **Shopping Cart** with persistent state management
-- ❤️ **Wishlist** functionality
-- 🔍 **Product Search** and filtering
-- 📱 **Responsive Design** for all devices
-- 🎨 **Modern UI/UX** with smooth animations
-- ⚡ **Performance Optimized** with lazy loading
-- 🌙 **Dark Mode Ready** (easily implementable)
+A full-stack e-commerce platform handling real customer transactions end-to-end:
 
-### Pages & Components
-- **Home Page** with hero slider, product carousels, and featured sections
-- **Shop Page** with advanced filtering and sorting
-- **Product Detail** with image gallery and product options
-- **Cart & Wishlist** with full functionality
-- **Blog** with article listings
-- **Contact** with form and business information
+- Customers browse, filter, and purchase products with a seamless checkout flow
+- Payments are processed live via **Paystack** integration (real transactions)
+- Order confirmation emails are automatically triggered via **Supabase Edge Functions** and sent through **Resend**
+- An internal inventory dashboard lets co-owners track stock levels, orders, and sales in real time
+- The platform is live and serving real customers
 
-## 🛠️ Installation & Setup
+## Tech Stack
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn package manager
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Tailwind CSS, Framer Motion |
+| Backend | Supabase (PostgreSQL), Edge Functions |
+| Payments | Paystack API |
+| Email | Resend (via Edge Function triggers) |
+| Build | Vite |
 
-### Installation Steps
-
-1. **Clone or navigate to the project directory:**
-   ```bash
-   cd snpbrand-react
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. **Open your browser:**
-   Navigate to `http://localhost:3000` to view the application.
-
-### Build for Production
-
-```bash
-npm run build
-# or
-yarn build
-```
-
-The built files will be in the `dist` directory.
-
-## 📁 Project Structure
+## Architecture
 
 ```
-snpbrand-react/
-├── public/
-│   └── images/          # Static images and assets
-├── src/
-│   ├── components/      # Reusable React components
-│   │   ├── sections/    # Page sections (Hero, ProductGrid, etc.)
-│   │   ├── Header.tsx
-│   │   ├── Footer.tsx
-│   │   ├── ProductCard.tsx
-│   │   └── ...
-│   ├── pages/          # Page components
-│   │   ├── Home.tsx
-│   │   ├── Shop.tsx
-│   │   ├── ProductDetail.tsx
-│   │   └── ...
-│   ├── hooks/          # Custom React hooks
-│   │   ├── useCart.tsx
-│   │   └── useWishlist.tsx
-│   ├── types/          # TypeScript type definitions
-│   ├── utils/          # Utility functions and data
-│   ├── App.tsx         # Main App component
-│   ├── main.tsx        # Application entry point
-│   └── index.css       # Global styles and Tailwind imports
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── vite.config.ts
+Customer Browser
+      │
+      ▼
+React Frontend (Vite + TypeScript)
+      │
+      ├──▶ Supabase DB (products, orders, inventory)
+      │
+      ├──▶ Paystack API (payment processing)
+      │
+      └──▶ Supabase Edge Functions
+                  │
+                  └──▶ Resend API (order confirmation emails)
 ```
 
-## 🎨 Design Improvements
+## Key Technical Challenges
 
-### Visual Enhancements
-- **Modern Color Palette** with primary and accent colors
-- **Improved Typography** with custom font combinations
-- **Smooth Animations** using Framer Motion
-- **Better Spacing** and layout consistency
-- **Enhanced Product Cards** with hover effects
-- **Professional Forms** with better UX
+**Payment Integration**
+Integrating Paystack required handling async payment verification, webhook callbacks, and ensuring orders only confirmed after successful payment — not just after redirect.
 
-### User Experience
-- **Faster Loading** with optimized images and code splitting
-- **Better Navigation** with clear visual hierarchy
-- **Mobile-First Design** that works on all devices
-- **Accessibility Improvements** with proper ARIA labels
-- **Interactive Elements** with hover and focus states
+**Edge Function Triggers**
+Built serverless Edge Functions that fire automatically on order creation to dispatch confirmation emails via Resend, keeping the frontend decoupled from email logic.
 
-### Performance Optimizations
-- **Code Splitting** for faster initial load
-- **Image Optimization** with proper sizing
-- **Lazy Loading** for better performance
-- **Efficient State Management** with React Context
-- **Optimized Bundle Size** with tree shaking
+**Backend-Frontend Data Sync**
+Designed the Supabase schema and real-time queries to keep the customer-facing store and the internal inventory dashboard in sync without duplication.
 
-## 🛒 E-commerce Features
+## Inventory Dashboard
 
-### Shopping Cart
-- Add/remove products
-- Quantity management
-- Persistent state across sessions
-- Real-time total calculation
-- Sidebar cart with smooth animations
+A separate internal dashboard for co-owners to:
+- View current stock levels per product
+- Track orders and fulfilment status
+- Monitor sales over time
 
-### Wishlist
-- Save favorite products
-- Quick add to cart from wishlist
-- Persistent storage
-- Visual feedback for wishlist status
+*Actively being improved.*
 
-### Product Management
-- Product filtering by category
-- Price range filtering
-- Search functionality
-- Sorting options (name, price, rating)
-- Product variants (size, color)
+## What I Learned
 
-## 🎯 Key Improvements Over Original
+This was my first full-stack production project. I had no prior experience with backend integration, payment APIs, or serverless functions — I learned each layer by solving a real problem I owned. The constraint of building for a live business with real customers forced a standard of reliability I wouldn't have held myself to on a tutorial project.
 
-1. **Modern Framework**: Migrated from vanilla HTML/CSS/JS to React with TypeScript
-2. **Better Performance**: Optimized loading and rendering
-3. **Enhanced UX**: Smooth animations and better interactions
-4. **Mobile Responsive**: Improved mobile experience
-5. **State Management**: Proper cart and wishlist state handling
-6. **Code Organization**: Clean, maintainable component structure
-7. **Type Safety**: Full TypeScript implementation
-8. **Modern Styling**: Tailwind CSS for consistent design system
+## Live
 
-## 🚀 Deployment
+The platform is live and actively used. Link available on request.
+ 
+## Built by
 
-The project is ready for deployment on platforms like:
-- Vercel
-- Netlify
-- AWS Amplify
-- GitHub Pages
-
-Simply run `npm run build` and deploy the `dist` folder.
-
-## 📝 Customization
-
-### Colors
-Update the color palette in `tailwind.config.js`:
-```javascript
-colors: {
-  primary: { /* your primary colors */ },
-  accent: { /* your accent colors */ },
-  // ...
-}
-```
-
-### Content
-Update product data in `src/utils/data.ts` to match your inventory.
-
-### Styling
-Modify components in `src/components/` to customize the appearance.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is based on the original SnP Brand template and follows the same licensing terms.
-
-## 🙏 Acknowledgments
-
-- Original design by TemplatesJungle
-- Icons by Lucide React
-- Animations by Framer Motion
-- Styling by Tailwind CSS
-
----
-
-**Note**: This is a complete migration and improvement of the original HTML template. All functionality has been recreated and enhanced using modern React patterns and best practices.
+Sylvester Anderson — CS student, KNUST | Co-founder, SnP Brand

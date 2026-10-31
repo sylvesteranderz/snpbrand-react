@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CheckCircle, Truck, Clock, MapPin, Phone, Mail } from 'lucide-react'
+import { CheckCircle, Truck, Clock, MapPin, Phone, Mail, Tag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatPrice } from '@/utils/currency'
 
@@ -28,6 +28,8 @@ interface OrderConfirmationProps {
   paymentMethod: 'paystack' | 'pay_on_delivery'
   total: number
   subtotal: number
+  discountCode?: string | null
+  discountAmount?: number
   estimatedDelivery: string
 }
 
@@ -38,6 +40,8 @@ const OrderConfirmation = ({
   paymentMethod,
   total,
   subtotal,
+  discountCode,
+  discountAmount = 0,
   estimatedDelivery
 }: OrderConfirmationProps) => {
   /* Commented out as Order Tracking is disabled
@@ -243,6 +247,15 @@ const OrderConfirmation = ({
                     Would be calculated
                   </span>
                 </div>
+                {discountCode && discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      {discountCode}
+                    </span>
+                    <span className="font-medium">- {formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <hr />
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
